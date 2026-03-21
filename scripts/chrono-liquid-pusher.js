@@ -50,6 +50,7 @@ const blockType = extend(Block, "chrono-liquid-pusher", {
     },
 });
 blockType.buildVisibility  = BuildVisibility.shown;
+blockType.alwaysUnlocked   = true;
 blockType.category         = Category.liquid;
 blockType.size             = 1;
 blockType.health           = 300;

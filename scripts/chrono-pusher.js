@@ -44,10 +44,7 @@ const blockType = extend(StorageBlock, "chrono-pusher", {
         return ns;
     },
 });
-blockType.buildVisibility = BuildVisibility.shown;
-blockType.category        = Category.distribution;
-blockType.size            = 1;
-blockType.health          = 300;
+blockType.alwaysUnlocked  = true;
 blockType.update          = true;
 blockType.solid           = true;
 blockType.hasItems        = true;
@@ -55,7 +52,6 @@ blockType.configurable    = true;
 blockType.saveConfig      = false;
 blockType.itemCapacity    = 100;
 blockType.noUpdateDisabled = true;
-blockType.requirements    = ItemStack.with();
 
 blockType.config(IntSeq, lib.cons2((tile, sq) => {
     let links = new Seq(java.lang.Integer), lx = null;
@@ -153,6 +149,25 @@ blockType.buildType = prov(() => {
             Draw.alpha(warmup); Draw.rect(bottomRegion, this.x, this.y); Draw.color();
             Draw.alpha(warmup); Draw.rect(rotatorRegion, this.x, this.y, -rotateDeg);
             Draw.alpha(1); Draw.rect(topRegion, this.x, this.y);
+        },
+        display(table) {
+            this.super$display(table);
+            if (this.items != null) {
+                table.row(); table.left();
+                table.table(cons(l => {
+                    let map = new ObjectMap();
+                    l.update(run(() => {
+                        l.clearChildren(); l.left();
+                        let seq = new Seq(Item);
+                        this.items.each(new ItemModule.ItemConsumer({ accept(item, amount) { map.put(item, amount); seq.add(item); } }));
+                        map.each(lib.cons2((item, amount) => {
+                            l.image(item.uiIcon).padRight(3.0);
+                            l.label(prov(() => '  ' + Strings.fixed(seq.contains(item) ? amount : 0, 0))).color(Color.lightGray);
+                            l.row();
+                        }));
+                    }));
+                })).left();
+            }
         },
         drawConfigure() {
             let sin = Mathf.absin(Time.time, 6, 1); Lines.stroke(1);

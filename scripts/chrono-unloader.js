@@ -53,6 +53,7 @@ const blockType = extend(StorageBlock, "chrono-unloader", {
     },
 });
 blockType.buildVisibility = BuildVisibility.shown;
+blockType.alwaysUnlocked  = true;
 blockType.category        = Category.distribution;
 blockType.size            = 1;
 blockType.health          = 300;
@@ -156,6 +157,25 @@ blockType.buildType = prov(() => {
             Draw.alpha(1); Draw.rect(topRegion, this.x, this.y);
             Draw.color(itemType == null ? Color.clear : itemType.color);
             Draw.rect("unloader-center", this.x, this.y); Draw.color();
+        },
+        display(table) {
+            this.super$display(table);
+            if (this.items != null) {
+                table.row(); table.left();
+                table.table(cons(l => {
+                    let map = new ObjectMap();
+                    l.update(run(() => {
+                        l.clearChildren(); l.left();
+                        let seq = new Seq(Item);
+                        this.items.each(new ItemModule.ItemConsumer({ accept(item, amount) { map.put(item, amount); seq.add(item); } }));
+                        map.each(lib.cons2((item, amount) => {
+                            l.image(item.uiIcon).padRight(3.0);
+                            l.label(prov(() => '  ' + Strings.fixed(seq.contains(item) ? amount : 0, 0))).color(Color.lightGray);
+                            l.row();
+                        }));
+                    }));
+                })).left();
+            }
         },
         drawConfigure() {
             let sin = Mathf.absin(Time.time, 6, 1); Lines.stroke(1);
