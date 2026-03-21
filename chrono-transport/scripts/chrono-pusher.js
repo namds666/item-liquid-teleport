@@ -194,3 +194,5 @@ blockType.buildType = prov(() => {
 Events.on(BlockBuildEndEvent, cons(e => {
     if (!e.breaking) rdcGroup.each(cons(cen => { cen.tryResumeDeadLink(e.tile.pos()); }));
 }));
+
+module.exports = blockType;
