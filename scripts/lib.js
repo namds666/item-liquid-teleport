@@ -1,4 +1,4 @@
-exports.modName = "chrono-transport";
+exports.modName = "item-liquid-teleport";
 exports.newEffect = (lifetime, renderer) => new Effect(lifetime, cons(renderer));
 exports.cons2 = (func) => new Cons2({ get: (v1, v2) => func(v1, v2) });
 exports.func  = (getter) => new Func({ get: getter });

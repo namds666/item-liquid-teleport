@@ -1,8 +1,8 @@
 {
-  name: "chrono-transport",
-  displayName: "Chrono Transport",
+  name: "item-liquid-teleport",
+  displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code",
-  description: "4 cheat-grade 1x1 transport blocks.",
+  description: "Makes item and liquid teleport in a huge range! 4 cheat-grade 1x1 transport blocks.",
   version: "1.0.0",
   minGameVersion: "146"
 }
