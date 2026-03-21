@@ -6,8 +6,14 @@ const chronoLiquidPusher   = require("chrono-liquid-pusher");
 
 Events.on(ClientLoadEvent, cons(e => {
     const cost = ItemStack.with(Items.copper, 1, Items.lead, 1);
-    new TechTree.TechNode(TechTree.get(Blocks.conveyor), chronoUnloader,       cost);
-    new TechTree.TechNode(TechTree.get(Blocks.conveyor), chronoPusher,         cost);
-    new TechTree.TechNode(TechTree.get(Blocks.conduit),  chronoLiquidUnloader, cost);
-    new TechTree.TechNode(TechTree.get(Blocks.conduit),  chronoLiquidPusher,   cost);
+    const conveyorNode = TechTree.all.find(boolf(n => n.content === Blocks.conveyor));
+    const conduitNode  = TechTree.all.find(boolf(n => n.content === Blocks.conduit));
+    if (conveyorNode) {
+        new TechTree.TechNode(conveyorNode, chronoUnloader, cost);
+        new TechTree.TechNode(conveyorNode, chronoPusher,   cost);
+    }
+    if (conduitNode) {
+        new TechTree.TechNode(conduitNode, chronoLiquidUnloader, cost);
+        new TechTree.TechNode(conduitNode, chronoLiquidPusher,   cost);
+    }
 }));
