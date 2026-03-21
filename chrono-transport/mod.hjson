@@ -1,0 +1,8 @@
+{
+  name: "chrono-transport",
+  displayName: "Chrono Transport",
+  author: "you",
+  description: "4 cheat-grade 1x1 transport blocks.",
+  version: "1.0.0",
+  minGameVersion: "146"
+}
