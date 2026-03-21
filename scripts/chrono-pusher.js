@@ -44,6 +44,7 @@ const blockType = extend(StorageBlock, "chrono-pusher", {
         return ns;
     },
 });
+blockType.buildVisibility = BuildVisibility.shown;
 blockType.alwaysUnlocked  = true;
 blockType.update          = true;
 blockType.solid           = true;
