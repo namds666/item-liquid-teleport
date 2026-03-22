@@ -55,6 +55,7 @@ blockType.alwaysUnlocked   = true;
 blockType.category         = Category.liquid;
 blockType.size             = 1;
 blockType.health           = 2147483647;
+blockType.buildCost        = 0.001;
 blockType.update           = true;
 blockType.solid            = true;
 blockType.hasLiquids       = true;
