@@ -1,6 +1,6 @@
 
 const lib = require("lib");
-const range = 1200, warmupSpeed = 0.05, TRANSFER_RATE = 20;
+const range = 1200, warmupSpeed = 0.05, TRANSFER_RATE = 500;
 let topRegion, bottomRegion, rotatorRegion;
 const TEAL = Color.valueOf("#00c8c8");
 const outEffect = lib.newEffect(38, e => {
@@ -56,7 +56,7 @@ blockType.hasLiquids       = true;
 blockType.outputsLiquid    = true;
 blockType.configurable     = true;
 blockType.saveConfig       = false;
-blockType.liquidCapacity   = 200;
+blockType.liquidCapacity   = 10000;
 blockType.noUpdateDisabled = true;
 blockType.requirements     = ItemStack.with();
 
@@ -75,7 +75,7 @@ blockType.configClear(tile => { tile.setLiquidTypeId(-1); });
 
 const theGroup = new EntityGroup(Building, false, false);
 blockType.buildType = prov(() => {
-    const MAX_LOOP = 8, FRAME_DELAY = 5;
+    const MAX_LOOP = 100, FRAME_DELAY = 5;
     const timer = new Interval(2);
     let liquidType = null, links = new Seq(java.lang.Integer), deadLinks = new Seq(java.lang.Integer);
     let slowdownDelay = 0, warmup = 0, rotateDeg = 0, rotateSpeed = 0;

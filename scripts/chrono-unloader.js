@@ -56,7 +56,7 @@ blockType.solid           = true;
 blockType.hasItems        = true;
 blockType.configurable    = true;
 blockType.saveConfig      = false;
-blockType.itemCapacity    = 100;
+blockType.itemCapacity    = 10000;
 blockType.noUpdateDisabled = true;
 blockType.requirements    = ItemStack.with();
 
@@ -75,7 +75,7 @@ blockType.configClear(tile => { tile.setItemTypeId(null); });
 
 const theGroup = new EntityGroup(Building, false, false);
 blockType.buildType = prov(() => {
-    const MAX_LOOP = 8, FRAME_DELAY = 5;
+    const MAX_LOOP = 100, FRAME_DELAY = 5;
     const timer = new Interval(6);
     let itemType = null, links = new Seq(java.lang.Integer), deadLinks = new Seq(java.lang.Integer);
     let slowdownDelay = 0, warmup = 0, rotateDeg = 0, rotateSpeed = 0, consValid = false;
@@ -120,7 +120,7 @@ blockType.buildType = prov(() => {
                         let lt = Vars.world.build(pos);
                         if (!lvt(this, lt)) { this.deadLink(pos); if (--max <= 0) break; continue; }
                         let cnt = lt.items.get(itemType);
-                        let acc = Math.min(cnt, this.acceptStack(itemType, Math.min(cnt, FRAME_DELAY), lt));
+                        let acc = Math.min(cnt, this.acceptStack(itemType, Math.min(cnt, 500), lt));
                         if (acc > 0) {
                             this.handleStack(itemType, acc, lt);
                             lt.removeStack(itemType, acc);

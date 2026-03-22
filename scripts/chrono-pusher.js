@@ -51,7 +51,7 @@ blockType.solid           = true;
 blockType.hasItems        = true;
 blockType.configurable    = true;
 blockType.saveConfig      = false;
-blockType.itemCapacity    = 100;
+blockType.itemCapacity    = 10000;
 blockType.noUpdateDisabled = true;
 
 blockType.config(IntSeq, lib.cons2((tile, sq) => {
@@ -107,7 +107,7 @@ blockType.buildType = prov(() => {
             let s = false;
             for (let i = have.length-1; i >= 0; i--) {
                 let h = have[i], item = h.item, cnt = h.count;
-                let acc = Math.min(cnt, target.acceptStack(item, Math.min(cnt, FRAME_DELAY), this));
+                let acc = Math.min(cnt, target.acceptStack(item, Math.min(cnt, 500), this));
                 if (acc > 0) {
                     s = true; target.handleStack(item, acc, this);
                     this.items.remove(item, acc); h.count -= acc;

@@ -61,7 +61,7 @@ blockType.hasLiquids       = true;
 blockType.outputsLiquid    = false;
 blockType.configurable     = true;
 blockType.saveConfig       = false;
-blockType.liquidCapacity   = 200;
+blockType.liquidCapacity   = 10000;
 blockType.noUpdateDisabled = true;
 blockType.requirements     = ItemStack.with();
 
