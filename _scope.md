@@ -22,16 +22,16 @@ A standalone Mindustry mod providing 4 cheat-grade, 1×1 transport blocks for in
 
 ### Chrono Liquid Pusher (`chrono-liquid-pusher`)
 - **Category:** Liquid
-- **Function:** Accepts a chosen liquid from adjacent pipes and pushes it into all linked buildings within range.
-- **Config:** Click block → select liquid type. Tap buildings within range to link/unlink them (up to 32 links).
+- **Function:** Accepts any liquid from adjacent pipes and pushes it into all linked buildings within range.
+- **Config:** Tap buildings within range to link/unlink them. No liquid filter — pushes every liquid it holds.
 
 ## Shared Properties
 | Property | Value |
 |---|---|
 | Size | 1×1 |
 | Range | 1200 px (150 tiles) |
-| Max links | 32 |
-| Transfer rate | 20 units per 5-tick batch |
+| Max links | Unlimited (no enforced cap in code) |
+| Transfer rate | Items: up to 500 per link per 5-tick batch; Liquid unloader: 500 per link; Liquid pusher: 20 per link |
 | Requirements | None (free to place) |
 | Research | None |
 
@@ -54,7 +54,7 @@ chrono-transport.zip
 ```
 
 ## Notes
-- Liquid blocks reuse the unloader/pusher sprites; the center dot is tinted to the selected liquid's color at render time.
+- Liquid blocks have their own separate sprite files (`chrono-liquid-*`); the center dot reuses the vanilla `"unloader-center"` sprite, tinted to the dominant liquid's color at render time.
 - All sprites are the original abomb4-super-cheat sprites downscaled from 64×64 to 32×32.
 - Item blocks extend `StorageBlock` (uses `StorageBlock.StorageBuild` inner class).
 - Liquid blocks extend `Block` (uses `extend(Building, {...})` — no inner class).
