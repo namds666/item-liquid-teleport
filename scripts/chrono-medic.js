@@ -55,6 +55,7 @@ const MedicAI = extend(FlyingAI, {
     }
 });
 
+chronoMedic.constructor       = UnitTypes.mono.constructor;
 chronoMedic.defaultController = prov(() => new MedicAI());
 
 // ── Add to Air Factory (alongside Mono and Flare) ────────────────────────────
