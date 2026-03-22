@@ -33,7 +33,7 @@ const blockType = extend(Block, "chrono-liquid-pusher", {
             }
             return new Bar(
                 prov(() => dominant == null ? Core.bundle.get("bar.liquid") : dominant.localizedName),
-                prov(() => dominant == null ? Pal.gray : dominant.barColor),
+                prov(() => dominant == null ? Pal.gray : (dominant.barColor != null ? dominant.barColor : dominant.color != null ? dominant.color : Pal.gray)),
                 floatp(() => domAmt / e.block.liquidCapacity)
             );
         }));
@@ -161,7 +161,7 @@ blockType.buildType = prov(() => {
                 let liq = Vars.content.liquids().get(li), amt = this.liquids.get(liq);
                 if (amt > domAmt) { domAmt = amt; dominant = liq; }
             }
-            Draw.color(dominant == null ? Color.clear : dominant.color);
+            Draw.color(dominant != null && dominant.color != null ? dominant.color : Color.clear);
             Draw.rect("unloader-center", this.x, this.y); Draw.color();
         },
         drawConfigure() {
