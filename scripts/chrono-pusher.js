@@ -20,7 +20,6 @@ const blockType = extend(StorageBlock, "chrono-pusher", {
     },
     setStats() {
         this.super$setStats();
-        this.stats.add(Stat.powerConnections, LINK_LIMIT, StatUnit.none);
         this.stats.add(Stat.range, range / Vars.tilesize, StatUnit.blocks);
     },
     setBars() {
