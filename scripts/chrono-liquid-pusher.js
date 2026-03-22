@@ -34,7 +34,7 @@ const blockType = extend(Block, "chrono-liquid-pusher", {
             return new Bar(
                 prov(() => dominant == null ? Core.bundle.get("bar.liquid") : dominant.localizedName),
                 prov(() => dominant == null ? Pal.gray : dominant.barColor),
-                floatp(() => e.liquids.total() / e.block.liquidCapacity)
+                floatp(() => domAmt / e.block.liquidCapacity)
             );
         }));
     },
