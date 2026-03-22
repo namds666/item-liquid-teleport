@@ -1,6 +1,6 @@
 
 const lib = require("lib");
-const range = 1200, warmupSpeed = 0.05, LINK_LIMIT = 32;
+const range = 1200, warmupSpeed = 0.05;
 let topRegion, bottomRegion, rotatorRegion;
 const BLUE = Color.valueOf("#0068fc");
 const outEffect = lib.newEffect(38, e => {
@@ -21,7 +21,6 @@ const blockType = extend(StorageBlock, "chrono-unloader", {
     init() { this.super$init(); this.acceptsItems = false; },
     setStats() {
         this.super$setStats();
-        this.stats.add(Stat.powerConnections, LINK_LIMIT, StatUnit.none);
         this.stats.add(Stat.range, range / Vars.tilesize, StatUnit.blocks);
     },
     setBars() {
@@ -30,11 +29,6 @@ const blockType = extend(StorageBlock, "chrono-unloader", {
             prov(() => Core.bundle.format("bar.capacity", UI.formatAmount(e.block.itemCapacity))),
             prov(() => Pal.items),
             floatp(() => e.items.total() / (e.block.itemCapacity * Vars.content.items().count(boolf(i => i.unlockedNow()))))
-        )));
-        this.barMap.put("connections", lib.func(e => new Bar(
-            prov(() => Core.bundle.format("bar.powerlines", e.getLinks().size, LINK_LIMIT)),
-            prov(() => Pal.items),
-            floatp(() => e.getLinks().size / LINK_LIMIT)
         )));
     },
     drawPlace(x, y, rotation, valid) { Drawf.dashCircle(x * Vars.tilesize, y * Vars.tilesize, range, Pal.accent); },
@@ -97,24 +91,21 @@ blockType.buildType = prov(() => {
                 let t = Vars.world.build(links.get(i));
                 if (!lvt(this, t)) links.remove(i); else links.set(i, lib.int(t.pos()));
             }
-            links.truncate(LINK_LIMIT);
         },
         setOneLink(v) {
             let int = new java.lang.Integer(v);
-            if (!links.remove(boolf(i => i == int)) && links.size < LINK_LIMIT) links.add(int);
+            if (!links.remove(boolf(i => i == int))) links.add(int);
         },
         deadLink(v) {
             if (Vars.net.client()) return;
             let int = new java.lang.Integer(v);
             if (links.contains(boolf(i => i == int))) this.configure(int);
             deadLinks.add(int);
-            if (deadLinks.size > LINK_LIMIT) deadLinks.remove(0);
         },
         tryResumeDeadLink(v) {
             if (Vars.net.client()) return;
             let int = new java.lang.Integer(v);
             if (!deadLinks.remove(boolf(i => i == int))) return;
-            if (links.size >= LINK_LIMIT) return;
             if (lv(this, int)) this.configure(new java.lang.Integer(Vars.world.build(int).pos()));
         },
         setItemTypeId(v) { itemType = (!v && v !== 0 || v < 0) ? null : Vars.content.items().get(v); },

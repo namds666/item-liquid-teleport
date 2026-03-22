@@ -1,6 +1,6 @@
 
 const lib = require("lib");
-const range = 1200, warmupSpeed = 0.05, LINK_LIMIT = 32, TRANSFER_RATE = 20;
+const range = 1200, warmupSpeed = 0.05, TRANSFER_RATE = 20;
 let topRegion, bottomRegion, rotatorRegion;
 const GREEN = Color.valueOf("#00e070");
 const inEffect = lib.newEffect(38, e => {
@@ -21,21 +21,22 @@ const blockType = extend(Block, "chrono-liquid-pusher", {
     },
     setStats() {
         this.super$setStats();
-        this.stats.add(Stat.powerConnections, LINK_LIMIT, StatUnit.none);
         this.stats.add(Stat.range, range / Vars.tilesize, StatUnit.blocks);
     },
     setBars() {
         this.super$setBars();
-        this.barMap.put("liquid", lib.func(e => new Bar(
-            prov(() => e.liquidType == null ? Core.bundle.get("bar.liquid") : e.liquidType.localizedName),
-            prov(() => e.liquidType == null ? Pal.gray : e.liquidType.barColor),
-            floatp(() => e.liquidType == null ? 0 : e.liquids.get(e.liquidType) / e.block.liquidCapacity)
-        )));
-        this.barMap.put("connections", lib.func(e => new Bar(
-            prov(() => Core.bundle.format("bar.powerlines", e.getLinks().size, LINK_LIMIT)),
-            prov(() => Pal.items),
-            floatp(() => e.getLinks().size / LINK_LIMIT)
-        )));
+        this.barMap.put("liquid", lib.func(e => {
+            let dominant = null, domAmt = 0;
+            for (let li = 0; li < Vars.content.liquids().size; li++) {
+                let liq = Vars.content.liquids().get(li), amt = e.liquids.get(liq);
+                if (amt > domAmt) { domAmt = amt; dominant = liq; }
+            }
+            return new Bar(
+                prov(() => dominant == null ? Core.bundle.get("bar.liquid") : dominant.localizedName),
+                prov(() => dominant == null ? Pal.gray : dominant.barColor),
+                floatp(() => e.liquids.total() / e.block.liquidCapacity)
+            );
+        }));
     },
     drawPlace(x, y, rotation, valid) { Drawf.dashCircle(x * Vars.tilesize, y * Vars.tilesize, range, Pal.accent); },
     pointConfig(config, transformer) {
@@ -74,21 +75,17 @@ blockType.config(IntSeq, lib.cons2((tile, sq) => {
     tile.setLink(links);
 }));
 blockType.config(java.lang.Integer, lib.cons2((tile, int) => { tile.setOneLink(int); }));
-blockType.config(Liquid, lib.cons2((tile, liquid) => { tile.setLiquidTypeId(liquid == null ? -1 : liquid.id); }));
-blockType.configClear(tile => { tile.setLiquidTypeId(-1); });
 
 const rdcGroup = new EntityGroup(Building, false, false);
 blockType.buildType = prov(() => {
     const MAX_LOOP = 50, FRAME_DELAY = 5;
     const timer = new Interval(2);
-    let liquidType = null, links = new Seq(java.lang.Integer), deadLinks = new Seq(java.lang.Integer);
+    let links = new Seq(java.lang.Integer), deadLinks = new Seq(java.lang.Integer);
     let warmup = 0, rotateDeg = 0, rotateSpeed = 0, liquidSent = false;
     const looper = (() => { let idx = 0; return { next(m) { if (idx < 0) idx = m-1; let v = idx; idx--; return v; } }; })();
     function lvt(the, t) { return t && t.team == the.team && the.within(t, range); }
     function lv(the, pos) { if (pos == null || pos == -1) return false; return lvt(the, Vars.world.build(pos)); }
     return extend(Building, {
-        get liquidType() { return liquidType; },
-        set liquidType(v) { liquidType = v; },
         getLinks() { return links; },
         setLink(v) {
             links = v == null ? new Seq(java.lang.Integer) : v;
@@ -115,13 +112,14 @@ blockType.buildType = prov(() => {
             let t = Vars.world.build(int);
             if (lv(this, int)) this.configure(new java.lang.Integer(t.pos()));
         },
-        setLiquidTypeId(v) { liquidType = (v == null || v < 0) ? null : Vars.content.liquids().get(v); },
         updateTile() {
             if (timer.get(0, FRAME_DELAY)) {
                 liquidSent = false;
-                if (liquidType != null && this.efficiency > 0) {
-                    let have = this.liquids.get(liquidType);
-                    if (have > 0.001) {
+                if (this.efficiency > 0) {
+                    for (let li = 0; li < Vars.content.liquids().size; li++) {
+                        let liq = Vars.content.liquids().get(li);
+                        let have = this.liquids.get(liq);
+                        if (have <= 0.001) continue;
                         let max = links.size;
                         for (let i = 0; i < Math.min(MAX_LOOP, max); i++) {
                             let idx = looper.next(max), pos = links.get(idx);
@@ -129,11 +127,11 @@ blockType.buildType = prov(() => {
                             let lt = Vars.world.build(pos);
                             if (!lvt(this, lt)) { this.deadLink(pos); if (--max <= 0) break; continue; }
                             if (!lt.block.hasLiquids) continue;
-                            let space = lt.block.liquidCapacity - lt.liquids.get(liquidType);
+                            let space = lt.block.liquidCapacity - lt.liquids.get(liq);
                             let amount = Math.min(have, Math.min(space, TRANSFER_RATE));
                             if (amount > 0.001) {
-                                lt.liquids.add(liquidType, amount);
-                                this.liquids.remove(liquidType, amount);
+                                lt.liquids.add(liq, amount);
+                                this.liquids.remove(liq, amount);
                                 have -= amount;
                                 liquidSent = true;
                             }
@@ -158,7 +156,12 @@ blockType.buildType = prov(() => {
             Draw.alpha(warmup); Draw.rect(bottomRegion, this.x, this.y); Draw.color();
             Draw.alpha(warmup); Draw.rect(rotatorRegion, this.x, this.y, -rotateDeg);
             Draw.alpha(1); Draw.rect(topRegion, this.x, this.y);
-            Draw.color(liquidType == null ? Color.clear : liquidType.color);
+            let dominant = null, domAmt = 0;
+            for (let li = 0; li < Vars.content.liquids().size; li++) {
+                let liq = Vars.content.liquids().get(li), amt = this.liquids.get(liq);
+                if (amt > domAmt) { domAmt = amt; dominant = liq; }
+            }
+            Draw.color(dominant == null ? Color.clear : dominant.color);
             Draw.rect("unloader-center", this.x, this.y); Draw.color();
         },
         drawConfigure() {
@@ -177,26 +180,23 @@ blockType.buildType = prov(() => {
             if (this.dst(other) <= range && other.team == this.team) { this.configure(new java.lang.Integer(other.pos())); return false; }
             return true;
         },
-        buildConfiguration(table) {
-            ItemSelection.buildTable(table, Vars.content.liquids(), prov(() => liquidType), cons(v => { this.configure(v); }));
-        },
         config() {
             let out = new IntSeq(links.size*2);
             for (let i = 0; i < links.size; i++) { let p = Point2.unpack(links.get(i)).sub(this.tile.x, this.tile.y); out.add(p.x, p.y); }
             return out;
         },
-        acceptLiquid(source, liquid) { return liquidType != null && liquid == liquidType; },
+        acceptLiquid(source, _liquid) { return true; },
         add() { if (this.added) return; rdcGroup.add(this); this.super$add(); },
         remove() { if (!this.added) return; rdcGroup.remove(this); this.super$remove(); },
-        version() { return 1; },
+        version() { return 2; },
         write(write) {
             this.super$write(write);
-            write.s(liquidType == null ? -1 : liquidType.id); write.s(links.size);
+            write.s(links.size);
             let it = links.iterator(); while (it.hasNext()) write.i(it.next());
         },
         read(read, revision) {
             this.super$read(read, revision);
-            let id = read.s(); liquidType = id == -1 ? null : Vars.content.liquids().get(id);
+            if (revision == 1) read.s(); // discard old liquidType id
             links = new Seq(java.lang.Integer);
             let sz = read.s(); for (let i = 0; i < sz; i++) links.add(new java.lang.Integer(read.i()));
         },

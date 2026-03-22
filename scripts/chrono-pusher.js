@@ -1,6 +1,6 @@
 
 const lib = require("lib");
-const range = 1200, warmupSpeed = 0.05, LINK_LIMIT = 32;
+const range = 1200, warmupSpeed = 0.05;
 let topRegion, bottomRegion, rotatorRegion;
 const ORANGE = Color.valueOf("#fea947");
 const inEffect = lib.newEffect(38, e => {
