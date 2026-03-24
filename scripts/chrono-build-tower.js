@@ -1,35 +1,91 @@
 
 const lib = require("lib");
 
-// ── Extend vanilla BuildTower ──────────────────────────────────────────────
-// BuildTower handles: scanning range for ConstructBuilds (advance progress)
-// and damaged buildings (heal them). We override power away so it runs free.
-const BuildTowerClass = Packages.mindustry.world.blocks.defense.BuildTower;
+const RANGE_TILES   = 100;   // tiles
+const REPAIR_SPEED  = 10;    // hp/s for healing; build fraction/s for construction
+const SCAN_INTERVAL = 5;     // ticks between scans (every 5 ticks ≈ 12×/s)
 
-const chronoBuildTower = extend(BuildTowerClass, "chrono-build-tower", {
-    // Override efficiency so the block always operates at 100% without power.
-    // BuildTowerBuild.updateTile() multiplies repairSpeed by efficiency().
+// ── Block ──────────────────────────────────────────────────────────────────
+const chronoBuildTower = extend(Block, "chrono-build-tower", {
+    load() {
+        this.super$load();
+        if (Vars.headless) return;
+        this.baseRegion = lib.loadRegion("chrono-build-tower-base");
+        this.glowRegion = lib.loadRegion("chrono-build-tower-glow");
+    },
+
+    setStats() {
+        this.super$setStats();
+        this.stats.add(Stat.range, RANGE_TILES, StatUnit.blocks);
+    },
+
+    drawPlace(x, y, rotation, valid) {
+        this.super$drawPlace(x, y, rotation, valid);
+        if (!Vars.headless) {
+            Drawf.dashCircle(
+                x * Vars.tilesize, y * Vars.tilesize,
+                RANGE_TILES * Vars.tilesize,
+                Pal.accent
+            );
+        }
+    }
 });
 
 // ── Properties ─────────────────────────────────────────────────────────────
-chronoBuildTower.size            = 1;       // 1×1 (vanilla: 3×3)
+chronoBuildTower.size            = 1;
 chronoBuildTower.health          = 80;
-chronoBuildTower.range           = 100;     // 100 tiles (vanilla: 25)
-chronoBuildTower.repairSpeed     = 10;      // same as vanilla (10 hp/s, 10%/s build)
+chronoBuildTower.update          = true;
+chronoBuildTower.solid           = true;
 chronoBuildTower.buildVisibility = BuildVisibility.shown;
 chronoBuildTower.alwaysUnlocked  = true;
 chronoBuildTower.category        = Category.effect;
 chronoBuildTower.requirements    = ItemStack.with(Items.copper, 25);
 
-// Remove power requirement added by BuildTower's constructor.
-chronoBuildTower.hasPower  = false;
-chronoBuildTower.consPower = null;
-try { chronoBuildTower.consumers.clear(); } catch(e) {}
+try { chronoBuildTower.envEnabled = Packages.mindustry.type.Env.terrestrial; } catch(e) {}
 
-// Restrict to Serpulo and Erekir (both terrestrial) — excludes space/void stages.
-chronoBuildTower.envEnabled = Packages.mindustry.type.Env.terrestrial;
+// ── Build type ─────────────────────────────────────────────────────────────
+chronoBuildTower.buildType = prov(() => extend(Building, {
+    scanTimer: 0,
 
-// BuildTower.updateTile checks efficiency(); with hasPower=false the
-// Building base class returns 1.0 (full), so the block works at full speed.
+    updateTile() {
+        this.scanTimer += Time.delta;
+        if (this.scanTimer < SCAN_INTERVAL) return;
+        this.scanTimer = 0;
+
+        const self    = this;
+        const rangePx = RANGE_TILES * Vars.tilesize;
+        // Amount to apply per scan (scaled to scan interval so effective rate = REPAIR_SPEED)
+        const amount  = REPAIR_SPEED / 60 * SCAN_INTERVAL;
+
+        Groups.build.each(bld => {
+            if (bld.team !== self.team || bld === self) return;
+            if (self.dst(bld) > rangePx) return;
+
+            // Detect ConstructBuild by class name (duck-type, no import needed)
+            try {
+                if (bld.getClass().getName().indexOf("ConstructBuild") >= 0) {
+                    bld.progress = Math.min(bld.progress + amount, 1.0);
+                    return;
+                }
+            } catch(e) {}
+
+            if (bld.damaged && bld.damaged()) {
+                bld.heal(amount * 60); // heal in hp (amount is fraction/s * s → hp)
+            }
+        });
+    },
+
+    draw() {
+        if (!Vars.headless && chronoBuildTower.baseRegion) {
+            Draw.rect(chronoBuildTower.baseRegion, this.x, this.y);
+        }
+        this.super$draw();
+        if (!Vars.headless && chronoBuildTower.glowRegion) {
+            Draw.color(Color.white, 0.6);
+            Draw.rect(chronoBuildTower.glowRegion, this.x, this.y);
+            Draw.color();
+        }
+    }
+}, chronoBuildTower));
 
 module.exports = chronoBuildTower;

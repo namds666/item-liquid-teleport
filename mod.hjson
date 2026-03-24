@@ -3,6 +3,6 @@
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code",
   description: "Makes item and liquid teleport in a huge range! 4 cheat-grade 1x1 transport blocks.",
-  version: "1.0.0",
+  version: "1.1.0",
   minGameVersion: "146"
 }
