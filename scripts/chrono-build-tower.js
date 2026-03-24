@@ -46,32 +46,56 @@ chronoBuildTower.requirements    = ItemStack.with(Items.copper, 25);
 try { chronoBuildTower.envEnabled = Packages.mindustry.type.Env.terrestrial; } catch(e) {}
 
 // ── Detect destroyed buildings → queue instant rebuild ─────────────────────
-// BlockDestroyEvent fires for damage-caused destruction (NOT player demolition),
-// so we only auto-rebuild buildings that were killed by enemies.
 Events.on(EventType.BlockDestroyEvent, cons(e => {
     if (!Vars.state.isGame()) return;
     const build = e.unit;
     if (!build || !build.team || !build.block) return;
 
+    const tx = build.tileX();
+    const ty = build.tileY();
+
+    // ── Intentional-demolition guard (mirrors BuildTurret.java logic) ────────
+    // Skip rebuild if a break plan exists in the team queue for this tile, OR
+    // if a player unit is actively breaking it right now.
+    try {
+        const plans = build.team.data().plans;
+        for (let i = 0; i < plans.size; i++) {
+            const p = plans.get(i);
+            if (p.breaking && p.x === tx && p.y === ty) return;
+        }
+        let playerBreaking = false;
+        Groups.player.each(pl => {
+            if (playerBreaking || pl.team() !== build.team) return;
+            try {
+                const u = pl.unit();
+                if (u && u.activelyBuilding()) {
+                    const plan = u.buildPlan();
+                    if (plan && plan.breaking && plan.x === tx && plan.y === ty) {
+                        playerBreaking = true;
+                    }
+                }
+            } catch(ignored) {}
+        });
+        if (playerBreaking) return;
+    } catch(err) {}
+
+    // ── Check coverage ────────────────────────────────────────────────────────
     const rangePx = RANGE_TILES * Vars.tilesize;
     let covered = false;
-
-    // Check whether any placed chrono-build-tower of the same team covers this tile
     Groups.build.each(tower => {
         if (covered) return;
         if (tower.block !== chronoBuildTower) return;
         if (tower.team !== build.team) return;
         if (tower.dst(build) <= rangePx) covered = true;
     });
-
     if (!covered) return;
 
     rebuildQueue.push({
         block:    build.block,
         team:     build.team,
-        tileX:    build.tileX(),
-        tileY:    build.tileY(),
-        rotation: build.rotation | 0   // ensure int (0-3)
+        tileX:    tx,
+        tileY:    ty,
+        rotation: build.rotation | 0
     });
 }));
 
