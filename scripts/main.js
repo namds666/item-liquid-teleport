@@ -5,3 +5,4 @@ require("chrono-liquid-unloader");
 require("chrono-liquid-pusher");
 require("chrono-core");
 require("chrono-medic");
+require("chrono-build-tower");
