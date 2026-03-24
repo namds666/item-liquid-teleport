@@ -86,6 +86,6 @@ chronoBuildTower.buildType = prov(() => extend(Building, {
             Draw.color();
         }
     }
-}, chronoBuildTower));
+}));
 
 module.exports = chronoBuildTower;
