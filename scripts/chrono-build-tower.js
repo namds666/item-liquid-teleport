@@ -1,25 +1,24 @@
 
 const lib = require("lib");
 
-const RANGE_TILES   = 100;
-const SCAN_INTERVAL = 5;     // ticks between scan passes
+// ── Constants (mirrors MendProjector defaults) ─────────────────────────────
+const RANGE_TILES  = 100;    // tiles (vanilla MendProjector ≈ 7.5 tiles)
+const HEAL_PERCENT = 12;     // % of max health healed per pulse
+const RELOAD       = 250;    // ticks between pulses (~4.2 s, same as vanilla)
 
-// Module-level queue: buildings destroyed within range of a chrono-build-tower.
-// Filled by BlockDestroyEvent; consumed in updateTile.
-const rebuildQueue = [];
-
-// ── Block ──────────────────────────────────────────────────────────────────
+// ── Block definition ───────────────────────────────────────────────────────
 const chronoBuildTower = extend(Block, "chrono-build-tower", {
     load() {
         this.super$load();
         if (Vars.headless) return;
-        this.baseRegion = lib.loadRegion("chrono-build-tower-base");
-        this.glowRegion = lib.loadRegion("chrono-build-tower-glow");
+        // @-top region, same convention as MendProjector
+        this.topRegion = lib.loadRegion("chrono-build-tower-top");
     },
 
     setStats() {
         this.super$setStats();
         this.stats.add(Stat.range, RANGE_TILES, StatUnit.blocks);
+        this.stats.add(Stat.repairTime, (100 / HEAL_PERCENT * RELOAD / 60) | 0, StatUnit.seconds);
     },
 
     drawPlace(x, y, rotation, valid) {
@@ -28,7 +27,7 @@ const chronoBuildTower = extend(Block, "chrono-build-tower", {
             Drawf.dashCircle(
                 x * Vars.tilesize, y * Vars.tilesize,
                 RANGE_TILES * Vars.tilesize,
-                Pal.accent
+                Pal.heal
             );
         }
     }
@@ -45,124 +44,73 @@ chronoBuildTower.category        = Category.effect;
 chronoBuildTower.requirements    = ItemStack.with(Items.copper, 25);
 try { chronoBuildTower.envEnabled = Packages.mindustry.type.Env.terrestrial; } catch(e) {}
 
-// ── Detect destroyed buildings → queue instant rebuild ─────────────────────
-Events.on(EventType.BlockDestroyEvent, cons(e => {
-    if (!Vars.state.isGame()) return;
-    const build = e.unit;
-    if (!build || !build.team || !build.block) return;
-
-    const tx = build.tileX();
-    const ty = build.tileY();
-
-    // ── Intentional-demolition guard (mirrors BuildTurret.java logic) ────────
-    // Skip rebuild if a break plan exists in the team queue for this tile, OR
-    // if a player unit is actively breaking it right now.
-    try {
-        const plans = build.team.data().plans;
-        for (let i = 0; i < plans.size; i++) {
-            const p = plans.get(i);
-            if (p.breaking && p.x === tx && p.y === ty) return;
-        }
-        let playerBreaking = false;
-        Groups.player.each(pl => {
-            if (playerBreaking || pl.team() !== build.team) return;
-            try {
-                const u = pl.unit();
-                if (u && u.activelyBuilding()) {
-                    const plan = u.buildPlan();
-                    if (plan && plan.breaking && plan.x === tx && plan.y === ty) {
-                        playerBreaking = true;
-                    }
-                }
-            } catch(ignored) {}
-        });
-        if (playerBreaking) return;
-    } catch(err) {}
-
-    // ── Check coverage ────────────────────────────────────────────────────────
-    const rangePx = RANGE_TILES * Vars.tilesize;
-    let covered = false;
-    Groups.build.each(tower => {
-        if (covered) return;
-        if (tower.block !== chronoBuildTower) return;
-        if (tower.team !== build.team) return;
-        if (tower.dst(build) <= rangePx) covered = true;
-    });
-    if (!covered) return;
-
-    rebuildQueue.push({
-        block:    build.block,
-        team:     build.team,
-        tileX:    tx,
-        tileY:    ty,
-        rotation: build.rotation | 0
-    });
-}));
-
-// ── Build type ─────────────────────────────────────────────────────────────
+// ── Build type (mirrors MendBuild) ─────────────────────────────────────────
 chronoBuildTower.buildType = prov(() => extend(Building, {
-    scanTimer: 0,
+    heat:   0,
+    charge: 0,   // randomised in created() so towers don't all pulse at once
+
+    created() {
+        this.super$created();
+        this.charge = Math.random() * RELOAD;
+    },
 
     updateTile() {
-        this.scanTimer += Time.delta;
-        if (this.scanTimer < SCAN_INTERVAL) return;
-        this.scanTimer = 0;
+        // Always warm — no power gate
+        this.heat   = Mathf.lerpDelta(this.heat, 1, 0.08);
+        this.charge += this.heat * Time.delta;
 
-        const self    = this;
+        if (this.charge < RELOAD) return;
+        this.charge = 0;
+
         const rangePx = RANGE_TILES * Vars.tilesize;
-        // 10 hp/s heal; 10 %/s build progress (same rate as vanilla BuildTower)
-        const amount  = 10 / 60 * SCAN_INTERVAL;
 
-        // ── Heal damaged / advance under-construction buildings ──────────────
-        Groups.build.each(bld => {
-            if (bld.team !== self.team || bld === self) return;
-            if (self.dst(bld) > rangePx) return;
-
-            try {
-                if (bld.getClass().getName().indexOf("ConstructBuild") >= 0) {
-                    // Advance construction progress (0 → 1)
-                    bld.progress = Math.min(bld.progress + amount, 1.0);
-                    return;
+        try {
+            Vars.indexer.eachBlock(
+                this,
+                rangePx,
+                b => b.damaged() && !b.isHealSuppressed(),
+                b => {
+                    b.heal(b.maxHealth * HEAL_PERCENT / 100.0);
+                    b.recentlyHealed();
+                    try { Fx.healBlockFull.at(b.x, b.y, b.block.size, Pal.heal, b.block); } catch(fe) {}
                 }
-            } catch(err) {}
+            );
+        } catch(e) {}
+    },
 
-            // Repair damaged buildings at 10 hp/s (same as vanilla)
-            if (bld.damaged && bld.damaged()) {
-                bld.heal(amount);
-            }
-        });
-
-        // ── Process rebuild queue ────────────────────────────────────────────
-        // Iterate backwards so splice doesn't skip entries
-        for (let i = rebuildQueue.length - 1; i >= 0; i--) {
-            const info = rebuildQueue[i];
-            if (info.team !== self.team) continue;
-
-            // Check if this tower covers the rebuild site
-            const bx = info.tileX * Vars.tilesize;
-            const by = info.tileY * Vars.tilesize;
-            if (self.dst(bx, by) > rangePx) continue;
-
-            rebuildQueue.splice(i, 1);
-
-            // Only place if the tile is still empty (nothing rebuilt it already)
-            const tile = Vars.world.tile(info.tileX, info.tileY);
-            if (tile && !tile.build) {
-                tile.setNet(info.block, info.team, info.rotation);
-            }
-        }
+    drawSelect() {
+        if (Vars.headless) return;
+        Drawf.dashCircle(this.x, this.y, RANGE_TILES * Vars.tilesize, Pal.heal);
     },
 
     draw() {
-        if (!Vars.headless && chronoBuildTower.baseRegion) {
-            Draw.rect(chronoBuildTower.baseRegion, this.x, this.y);
+        this.super$draw();  // draws main body region
+
+        if (Vars.headless) return;
+
+        // Pulsing top sprite — mirrors MendProjector.draw()
+        const f = 1 - (Time.time / 100) % 1;
+        Draw.color(Pal.heal);
+        Draw.alpha(this.heat * Mathf.absin(Time.time, 50 / Mathf.PI2, 1) * 0.5);
+        if (chronoBuildTower.topRegion && chronoBuildTower.topRegion.found()) {
+            Draw.rect(chronoBuildTower.topRegion, this.x, this.y);
         }
-        this.super$draw();
-        if (!Vars.headless && chronoBuildTower.glowRegion) {
-            Draw.color(Color.white, 0.6);
-            Draw.rect(chronoBuildTower.glowRegion, this.x, this.y);
-            Draw.color();
-        }
+        Draw.alpha(1);
+        Lines.stroke((2 * f + 0.2) * this.heat);
+        Lines.square(this.x, this.y, Math.min(1 + (1 - f) * 4, 4));
+        Draw.reset();
+    },
+
+    write(write) {
+        this.super$write(write);
+        write.f(this.heat);
+        write.f(this.charge);
+    },
+
+    read(read, revision) {
+        this.super$read(read, revision);
+        this.heat   = read.f();
+        this.charge = read.f();
     }
 }));
 
