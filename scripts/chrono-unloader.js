@@ -57,7 +57,7 @@ blockType.solid           = true;
 blockType.hasItems        = true;
 blockType.configurable    = true;
 blockType.saveConfig      = false;
-blockType.itemCapacity    = 10000;
+blockType.itemCapacity    = 100;
 blockType.noUpdateDisabled = true;
 blockType.requirements    = ItemStack.with();
 
