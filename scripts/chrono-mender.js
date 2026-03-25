@@ -3,8 +3,8 @@ const lib = require("lib");
 
 // ── Config ─────────────────────────────────────────────────────────────────
 const RANGE_TILES  = 100;   // tiles
-const HEAL_PERCENT = 100;   // % of max health healed per pulse (insane)
-const RELOAD       = 30;    // ticks between pulses (0.5 s — fully heals twice/sec)
+const HEAL_PERCENT = 50;   // % of max health healed per pulse (insane)
+const RELOAD       = 10;    // ticks between pulses (0.5 s — fully heals twice/sec)
 
 // ── Block definition ───────────────────────────────────────────────────────
 const chronoMender = extend(Block, "chrono-mender", {
@@ -34,7 +34,7 @@ const chronoMender = extend(Block, "chrono-mender", {
 
 // ── Properties ─────────────────────────────────────────────────────────────
 chronoMender.size            = 1;
-chronoMender.health          = 80;
+chronoMender.health          = 8000;
 chronoMender.update          = true;
 chronoMender.solid           = true;
 chronoMender.buildVisibility = BuildVisibility.shown;
