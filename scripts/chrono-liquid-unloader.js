@@ -80,7 +80,7 @@ blockType.buildType = prov(() => {
     const timer = new Interval(2);
     let liquidType = null, links = new Seq(java.lang.Integer), deadLinks = new Seq(java.lang.Integer);
     let slowdownDelay = 0, warmup = 0, rotateDeg = 0, rotateSpeed = 0;
-    const looper = (() => { let idx = 0; return { next(m) { if (idx < 0) idx = m-1; let v = idx; idx--; return v; } }; })();
+    const looper = (() => { let idx = 0; return { next(m) { if (idx < 0 || idx >= m) idx = m-1; let v = idx; idx--; return v; } }; })();
     function lvt(the, t) { return t && t.team == the.team && t.liquids != null && the.within(t, range); }
     function lv(the, pos) { if (pos == null || pos == -1) return false; return lvt(the, Vars.world.build(pos)); }
     return extend(Building, {
