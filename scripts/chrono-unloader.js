@@ -184,7 +184,7 @@ blockType.buildType = prov(() => {
             return true;
         },
         buildConfiguration(table) {
-            lib.addAutoConnectButtons(table, this, links, lvt, () => { let s = new IntSeq(2); s.add(itemType == null ? -1 : itemType.id); s.add(0); return s; });
+            lib.addAutoConnectButtons(table, this, () => links, lvt, () => { let s = new IntSeq(2); s.add(itemType == null ? -1 : itemType.id); s.add(0); return s; });
             ItemSelection.buildTable(table, Vars.content.items(), prov(() => itemType), cons(v => { this.configure(v); }));
         },
         config() {

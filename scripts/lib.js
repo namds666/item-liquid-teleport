@@ -1,7 +1,8 @@
 exports.modName = "item-liquid-teleport";
 
 const CHRONO_NAMES = ["chrono-pusher", "chrono-unloader", "chrono-liquid-pusher", "chrono-liquid-unloader"].map(n => exports.modName + "-" + n);
-exports.autoConnectAll = (the, links, lvt) => {
+exports.autoConnectAll = (the, getLinks, lvt) => {
+    let links = getLinks();
     Groups.build.each(cons(b => {
         if (b == the) return;
         if (CHRONO_NAMES.indexOf(b.block.name) >= 0) return;
@@ -10,8 +11,8 @@ exports.autoConnectAll = (the, links, lvt) => {
         if (!links.contains(boolf(i => i == int))) the.configure(int);
     }));
 };
-exports.addAutoConnectButtons = (table, the, links, lvt, clearFn) => {
-    table.button("Auto-Connect All", run(() => { exports.autoConnectAll(the, links, lvt); })).size(180, 40).row();
+exports.addAutoConnectButtons = (table, the, getLinks, lvt, clearFn) => {
+    table.button("Auto-Connect All", run(() => { exports.autoConnectAll(the, getLinks, lvt); })).size(180, 40).row();
     table.button("Clear All Links", run(() => { the.configure(clearFn()); })).size(180, 40).row();
 };
 exports.newEffect = (lifetime, renderer) => new Effect(lifetime, cons(renderer));

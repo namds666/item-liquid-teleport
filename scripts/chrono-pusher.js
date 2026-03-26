@@ -188,7 +188,7 @@ blockType.buildType = prov(() => {
             return true;
         },
         buildConfiguration(table) {
-            lib.addAutoConnectButtons(table, this, links, lvt, () => new IntSeq());
+            lib.addAutoConnectButtons(table, this, () => links, lvt, () => new IntSeq());
         },
         config() {
             let out = new IntSeq(links.size*2);
