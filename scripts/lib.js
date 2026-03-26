@@ -15,7 +15,7 @@ const autoConnect = (the, getLinks, lvt, filter) => {
 exports.addAutoConnectButtons = (table, the, getLinks, lvt, clearFn) => {
     table.button("Auto-Connect All",       run(() => { autoConnect(the, getLinks, lvt, null); })).size(180, 40).row();
     table.button("Auto-Connect Turrets",   run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.turret); })).size(180, 40).row();
-    table.button("Auto-Connect Factories", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.units); })).size(180, 40).row();
+    table.button("Auto-Connect Factories", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.crafting); })).size(180, 40).row();
     table.button("Clear All Links",        run(() => { the.configure(clearFn()); })).size(180, 40).row();
 };
 exports.newEffect = (lifetime, renderer) => new Effect(lifetime, cons(renderer));
