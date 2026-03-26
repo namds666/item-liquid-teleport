@@ -167,7 +167,22 @@ blockType.buildType = prov(() => {
             return true;
         },
         buildConfiguration(table) {
+            table.button("Auto-Connect All", run(() => { this.autoConnectAll(); })).size(180, 40).row();
+            table.button("Clear All Links", run(() => {
+                let seq = new IntSeq(2);
+                seq.add(liquidType == null ? -1 : liquidType.id);
+                seq.add(0);
+                this.configure(seq);
+            })).size(180, 40).row();
             ItemSelection.buildTable(table, Vars.content.liquids(), prov(() => liquidType), cons(v => { this.configure(v); }));
+        },
+        autoConnectAll() {
+            Groups.build.each(cons(b => {
+                if (b == this) return;
+                if (!lvt(this, b)) return;
+                let int = new java.lang.Integer(b.pos());
+                if (!links.contains(boolf(i => i == int))) this.configure(int);
+            }));
         },
         config() {
             let seq = new IntSeq(links.size*2+2);

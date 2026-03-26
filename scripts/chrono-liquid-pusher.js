@@ -181,6 +181,18 @@ blockType.buildType = prov(() => {
             if (this.dst(other) <= range && other.team == this.team) { this.configure(new java.lang.Integer(other.pos())); return false; }
             return true;
         },
+        buildConfiguration(table) {
+            table.button("Auto-Connect All", run(() => { this.autoConnectAll(); })).size(180, 40).row();
+            table.button("Clear All Links", run(() => { this.configure(new IntSeq()); })).size(180, 40);
+        },
+        autoConnectAll() {
+            Groups.build.each(cons(b => {
+                if (b == this) return;
+                if (!lvt(this, b)) return;
+                let int = new java.lang.Integer(b.pos());
+                if (!links.contains(boolf(i => i == int))) this.configure(int);
+            }));
+        },
         config() {
             let out = new IntSeq(links.size*2);
             for (let i = 0; i < links.size; i++) { let p = Point2.unpack(links.get(i)).sub(this.tile.x, this.tile.y); out.add(p.x, p.y); }
