@@ -184,24 +184,8 @@ blockType.buildType = prov(() => {
             return true;
         },
         buildConfiguration(table) {
-            table.button("Auto-Connect All", run(() => { this.autoConnectAll(); })).size(180, 40).row();
-            table.button("Clear All Links", run(() => {
-                let seq = new IntSeq(2);
-                seq.add(itemType == null ? -1 : itemType.id);
-                seq.add(0);
-                this.configure(seq);
-            })).size(180, 40).row();
+            lib.addAutoConnectButtons(table, this, links, lvt, () => { let s = new IntSeq(2); s.add(itemType == null ? -1 : itemType.id); s.add(0); return s; });
             ItemSelection.buildTable(table, Vars.content.items(), prov(() => itemType), cons(v => { this.configure(v); }));
-        },
-        autoConnectAll() {
-            Groups.build.each(cons(b => {
-                if (b == this) return;
-                let n = b.block.name;
-                if (n == "chrono-pusher" || n == "chrono-unloader" || n == "chrono-liquid-pusher" || n == "chrono-liquid-unloader") return;
-                if (!lvt(this, b)) return;
-                let int = new java.lang.Integer(b.pos());
-                if (!links.contains(boolf(i => i == int))) this.configure(int);
-            }));
         },
         config() {
             let seq = new IntSeq(links.size*2+2);
