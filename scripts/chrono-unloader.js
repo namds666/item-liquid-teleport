@@ -196,6 +196,8 @@ blockType.buildType = prov(() => {
         autoConnectAll() {
             Groups.build.each(cons(b => {
                 if (b == this) return;
+                let n = b.block.name;
+                if (n == "chrono-pusher" || n == "chrono-unloader" || n == "chrono-liquid-pusher" || n == "chrono-liquid-unloader") return;
                 if (!lvt(this, b)) return;
                 let int = new java.lang.Integer(b.pos());
                 if (!links.contains(boolf(i => i == int))) this.configure(int);
