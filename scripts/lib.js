@@ -1,6 +1,6 @@
 exports.modName = "item-liquid-teleport";
 
-const CHRONO_NAMES = ["chrono-pusher", "chrono-unloader", "chrono-liquid-pusher", "chrono-liquid-unloader"];
+const CHRONO_NAMES = ["chrono-pusher", "chrono-unloader", "chrono-liquid-pusher", "chrono-liquid-unloader"].map(n => exports.modName + "-" + n);
 exports.autoConnectAll = (the, links, lvt) => {
     Groups.build.each(cons(b => {
         if (b == the) return;
