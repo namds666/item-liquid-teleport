@@ -77,8 +77,9 @@ blockType.configClear(tile => { tile.setLiquidTypeId(-1); });
 const theGroup = new EntityGroup(Building, false, false);
 blockType.buildType = prov(() => {
     const MAX_LOOP = 100, FRAME_DELAY = 5;
-    const timer = new Interval(2);
+    const timer = new Interval(3);
     let liquidType = null, links = new Seq(java.lang.Integer), deadLinks = new Seq(java.lang.Integer);
+    let autoFlags = [false, false, false, false];
     let slowdownDelay = 0, warmup = 0, rotateDeg = 0, rotateSpeed = 0;
     const looper = (() => { let idx = 0; return { next(m) { if (idx < 0 || idx >= m) idx = m-1; let v = idx; idx--; return v; } }; })();
     function lvt(the, t) { return t && t.team == the.team && t.liquids != null && the.within(t, range); }
@@ -138,6 +139,7 @@ blockType.buildType = prov(() => {
                 }
                 if (liquidType != null && this.liquids.get(liquidType) > 0.001) this.dumpLiquid(liquidType);
             }
+            if (timer.get(1, 120)) lib.tickAutoConnect(this, () => links, lvt, autoFlags);
             warmup = Mathf.lerpDelta(warmup, this.efficiency > 0 ? 1 : 0, warmupSpeed);
             rotateSpeed = Mathf.lerpDelta(rotateSpeed, slowdownDelay > 0 ? 1 : 0, warmupSpeed);
             slowdownDelay = Math.max(0, slowdownDelay - 1);
@@ -167,7 +169,7 @@ blockType.buildType = prov(() => {
             return true;
         },
         buildConfiguration(table) {
-            lib.addAutoConnectButtons(table, this, () => links, lvt, () => { let s = new IntSeq(2); s.add(liquidType == null ? -1 : liquidType.id); s.add(0); return s; });
+            lib.addAutoConnectButtons(table, this, () => links, lvt, () => { let s = new IntSeq(2); s.add(liquidType == null ? -1 : liquidType.id); s.add(0); return s; }, autoFlags);
             ItemSelection.buildTable(table, Vars.content.liquids(), prov(() => liquidType), cons(v => { this.configure(v); }));
         },
         config() {
@@ -180,17 +182,19 @@ blockType.buildType = prov(() => {
         outputsLiquid() { return true; },
         add() { if (this.added) return; theGroup.add(this); this.super$add(); },
         remove() { if (!this.added) return; theGroup.remove(this); this.super$remove(); },
-        version() { return 1; },
+        version() { return 2; },
         write(write) {
             this.super$write(write);
             write.s(liquidType == null ? -1 : liquidType.id); write.s(links.size);
             let it = links.iterator(); while (it.hasNext()) write.i(it.next());
+            write.bool(autoFlags[0]); write.bool(autoFlags[1]); write.bool(autoFlags[2]); write.bool(autoFlags[3]);
         },
         read(read, revision) {
             this.super$read(read, revision);
             let id = read.s(); liquidType = id == -1 ? null : Vars.content.liquids().get(id);
             links = new Seq(java.lang.Integer);
             let sz = read.s(); for (let i = 0; i < sz; i++) links.add(new java.lang.Integer(read.i()));
+            if (revision >= 2) { autoFlags[0] = read.bool(); autoFlags[1] = read.bool(); autoFlags[2] = read.bool(); autoFlags[3] = read.bool(); }
         },
     });
 });

@@ -79,6 +79,7 @@ blockType.buildType = prov(() => {
     const MAX_LOOP = 100, FRAME_DELAY = 5;
     const timer = new Interval(6);
     let itemType = null, links = new Seq(java.lang.Integer), deadLinks = new Seq(java.lang.Integer);
+    let autoFlags = [false, false, false, false];
     let slowdownDelay = 0, warmup = 0, rotateDeg = 0, rotateSpeed = 0, consValid = false;
     const looper = (() => { let idx = 0; return { next(m) { if (idx < 0 || idx >= m) idx = m-1; let v = idx; idx--; return v; } }; })();
     function lvt(the, t) { return t && t.team == the.team && t.items != null && the.within(t, range); }
@@ -136,6 +137,7 @@ blockType.buildType = prov(() => {
                     Time.run(Mathf.random(10), run(() => { outEffect.at(this.x, this.y, 0); }));
                 for (let i = 0; i < FRAME_DELAY; i++) this.dump();
             }
+            if (timer.get(2, 120)) lib.tickAutoConnect(this, () => links, lvt, autoFlags);
             warmup = Mathf.lerpDelta(warmup, consValid ? 1 : 0, warmupSpeed);
             rotateSpeed = Mathf.lerpDelta(rotateSpeed, slowdownDelay > 0 ? 1 : 0, warmupSpeed);
             slowdownDelay = Math.max(0, slowdownDelay - 1);
@@ -184,7 +186,7 @@ blockType.buildType = prov(() => {
             return true;
         },
         buildConfiguration(table) {
-            lib.addAutoConnectButtons(table, this, () => links, lvt, () => { let s = new IntSeq(2); s.add(itemType == null ? -1 : itemType.id); s.add(0); return s; });
+            lib.addAutoConnectButtons(table, this, () => links, lvt, () => { let s = new IntSeq(2); s.add(itemType == null ? -1 : itemType.id); s.add(0); return s; }, autoFlags);
             ItemSelection.buildTable(table, Vars.content.items(), prov(() => itemType), cons(v => { this.configure(v); }));
         },
         config() {
@@ -196,7 +198,7 @@ blockType.buildType = prov(() => {
         outputsItems() { return true; },
         add() { if (this.added) return; theGroup.add(this); this.super$add(); },
         remove() { if (!this.added) return; theGroup.remove(this); this.super$remove(); },
-        version() { return 2; },
+        version() { return 3; },
         canDump(to, item) { return this.linkedCore == null && !links.contains(boolf(pos => { return to == Vars.world.build(pos); })); },
         acceptItem(source, item) { return this.linkedCore != null; },
         acceptStack(item, amount, source) {
@@ -207,12 +209,14 @@ blockType.buildType = prov(() => {
             this.super$write(write);
             write.s(itemType == null ? -1 : itemType.id); write.s(links.size);
             let it = links.iterator(); while (it.hasNext()) write.i(it.next());
+            write.bool(autoFlags[0]); write.bool(autoFlags[1]); write.bool(autoFlags[2]); write.bool(autoFlags[3]);
         },
         read(read, revision) {
             this.super$read(read, revision);
             let id = read.s(); itemType = id == -1 ? null : Vars.content.items().get(id);
             links = new Seq(java.lang.Integer);
             let sz = read.s(); for (let i = 0; i < sz; i++) links.add(new java.lang.Integer(read.i()));
+            if (revision >= 3) { autoFlags[0] = read.bool(); autoFlags[1] = read.bool(); autoFlags[2] = read.bool(); autoFlags[3] = read.bool(); }
         },
     }, blockType);
 });
