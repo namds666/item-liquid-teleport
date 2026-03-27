@@ -19,18 +19,21 @@ exports.tickAutoConnect = (the, getLinks, lvt, autoFlags) => {
     if (autoFlags[2]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.crafting);
     if (autoFlags[3]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.power);
 };
+const makeCheck = (table, autoFlags, idx) => {
+    let chk = new CheckBox("");
+    chk.setChecked(autoFlags[idx]);
+    chk.changed(run(() => { autoFlags[idx] = chk.isChecked(); }));
+    table.add(chk).size(40, 40);
+    return chk;
+};
 exports.addAutoConnectButtons = (table, the, getLinks, lvt, clearFn, autoFlags) => {
-    let chk0 = table.check("", autoFlags[0]).size(40, 40).get();
-    chk0.changed(run(() => { autoFlags[0] = chk0.isChecked(); }));
+    makeCheck(table, autoFlags, 0);
     table.button("Auto-Connect All",       run(() => { autoConnect(the, getLinks, lvt, null); })).size(100, 40);
-    let chk1 = table.check("", autoFlags[1]).size(40, 40).get();
-    chk1.changed(run(() => { autoFlags[1] = chk1.isChecked(); }));
+    makeCheck(table, autoFlags, 1);
     table.button("Auto-Connect Turrets",   run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.turret); })).size(100, 40).row();
-    let chk2 = table.check("", autoFlags[2]).size(40, 40).get();
-    chk2.changed(run(() => { autoFlags[2] = chk2.isChecked(); }));
+    makeCheck(table, autoFlags, 2);
     table.button("Auto-Connect Factories", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.crafting); })).size(100, 40);
-    let chk3 = table.check("", autoFlags[3]).size(40, 40).get();
-    chk3.changed(run(() => { autoFlags[3] = chk3.isChecked(); }));
+    makeCheck(table, autoFlags, 3);
     table.button("Auto-Connect Power",     run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.power); })).size(100, 40).row();
     table.button("Clear All Links",        run(() => { the.configure(clearFn()); })).size(280, 40).row();
 };
