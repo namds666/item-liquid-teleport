@@ -21,20 +21,30 @@ exports.tickAutoConnect = (the, getLinks, lvt, autoFlags) => {
 };
 exports.addAutoConnectButtons = (table, the, getLinks, lvt, clearFn, autoFlags) => {
     table.center();
-    const filters = [null, b => b.block.category == Category.turret, b => b.block.category == Category.crafting, b => b.block.category == Category.power];
-    const names   = ["All", "Turrets", "Factories", "Power"];
+    const filters = [
+        null,
+        b => b.block.category == Category.turret,
+        b => b.block.category == Category.crafting,
+        b => b.block.category == Category.power
+    ];
+    const names = ["All", "Turrets", "Factories", "Power"];
     const getLabel = (i) => (autoFlags[i] ? "[x] " : "[ ] ") + names[i];
     let btns = [];
+
+    const order = [0, 1, 2, 3];
+
     for (let idx = 0; idx < 4; idx++) {
-        let i = idx, f = filters[i];
+        let i = order[idx], f = filters[i];
         let cell = table.button(getLabel(i), run(() => {
             autoFlags[i] = !autoFlags[i];
             btns[i].setText(getLabel(i));
             if (autoFlags[i]) autoConnect(the, getLinks, lvt, f);
         })).size(150, 40);
-        btns.push(cell.get());
-        if (i % 2 === 1) cell.row();
+        btns[i] = cell.get();
+
+        if (idx % 2 === 1) cell.row();
     }
+
     table.button("Clear All Links", run(() => { the.configure(clearFn()); })).size(300, 40).row();
 };
 exports.newEffect = (lifetime, renderer) => new Effect(lifetime, cons(renderer));
