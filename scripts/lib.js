@@ -21,14 +21,17 @@ exports.tickAutoConnect = (the, getLinks, lvt, autoFlags) => {
 };
 exports.addAutoConnectButtons = (table, the, getLinks, lvt, clearFn, autoFlags) => {
     const filters = [null, b => b.block.category == Category.turret, b => b.block.category == Category.crafting, b => b.block.category == Category.power];
-    const labels  = ["Auto-Connect All", "Auto-Connect Turrets", "Auto-Connect Factories", "Auto-Connect Power"];
+    const names   = ["All", "Turrets", "Factories", "Power"];
+    const getLabel = (i) => (autoFlags[i] ? "[x] " : "[ ] ") + names[i];
+    let btns = [];
     for (let idx = 0; idx < 4; idx++) {
         let i = idx, f = filters[i];
-        let cell = table.button(labels[i], Styles.togglet, run(() => {
+        let cell = table.button(getLabel(i), run(() => {
             autoFlags[i] = !autoFlags[i];
+            btns[i].label.setText(getLabel(i));
             if (autoFlags[i]) autoConnect(the, getLinks, lvt, f);
         })).size(140, 40);
-        cell.get().setChecked(autoFlags[i]);
+        btns.push(cell.get());
         if (i % 2 === 1) cell.row();
     }
     table.button("Clear All Links", run(() => { the.configure(clearFn()); })).size(280, 40).row();
