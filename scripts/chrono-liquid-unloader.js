@@ -169,8 +169,12 @@ blockType.buildType = prov(() => {
             return true;
         },
         buildConfiguration(table) {
-            lib.addAutoConnectButtons(table, this, () => links, lvt, () => { let s = new IntSeq(2); s.add(liquidType == null ? -1 : liquidType.id); s.add(0); return s; }, autoFlags);
-            ItemSelection.buildTable(table, Vars.content.liquids(), prov(() => liquidType), cons(v => { this.configure(v); }));
+            table.table(cons(t => {
+                lib.addAutoConnectButtons(t, this, () => links, lvt, () => { let s = new IntSeq(2); s.add(liquidType == null ? -1 : liquidType.id); s.add(0); return s; }, autoFlags);
+            })).row();
+            table.table(cons(t => {
+                ItemSelection.buildTable(t, Vars.content.liquids(), prov(() => liquidType), cons(v => { this.configure(v); }));
+            })).row();
         },
         config() {
             let seq = new IntSeq(links.size*2+2);
