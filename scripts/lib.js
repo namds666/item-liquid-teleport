@@ -19,23 +19,19 @@ exports.tickAutoConnect = (the, getLinks, lvt, autoFlags) => {
     if (autoFlags[2]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.crafting);
     if (autoFlags[3]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.power);
 };
-const makeCheck = (table, autoFlags, idx) => {
-    let chk = new CheckBox("");
-    chk.setChecked(autoFlags[idx]);
-    chk.changed(run(() => { autoFlags[idx] = chk.isChecked(); }));
-    table.add(chk).size(40, 40);
-    return chk;
-};
 exports.addAutoConnectButtons = (table, the, getLinks, lvt, clearFn, autoFlags) => {
-    makeCheck(table, autoFlags, 0);
-    table.button("Auto-Connect All",       run(() => { autoConnect(the, getLinks, lvt, null); })).size(100, 40);
-    makeCheck(table, autoFlags, 1);
-    table.button("Auto-Connect Turrets",   run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.turret); })).size(100, 40).row();
-    makeCheck(table, autoFlags, 2);
-    table.button("Auto-Connect Factories", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.crafting); })).size(100, 40);
-    makeCheck(table, autoFlags, 3);
-    table.button("Auto-Connect Power",     run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.power); })).size(100, 40).row();
-    table.button("Clear All Links",        run(() => { the.configure(clearFn()); })).size(280, 40).row();
+    const filters = [null, b => b.block.category == Category.turret, b => b.block.category == Category.crafting, b => b.block.category == Category.power];
+    const labels  = ["Auto-Connect All", "Auto-Connect Turrets", "Auto-Connect Factories", "Auto-Connect Power"];
+    for (let idx = 0; idx < 4; idx++) {
+        let i = idx, f = filters[i];
+        let cell = table.button(labels[i], Styles.togglet, run(() => {
+            autoFlags[i] = !autoFlags[i];
+            if (autoFlags[i]) autoConnect(the, getLinks, lvt, f);
+        })).size(140, 40);
+        cell.get().setChecked(autoFlags[i]);
+        if (i % 2 === 1) cell.row();
+    }
+    table.button("Clear All Links", run(() => { the.configure(clearFn()); })).size(280, 40).row();
 };
 exports.newEffect = (lifetime, renderer) => new Effect(lifetime, cons(renderer));
 exports.cons2 = (func) => new Cons2({ get: (v1, v2) => func(v1, v2) });

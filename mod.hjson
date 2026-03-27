@@ -2,9 +2,9 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code",
-  subtitle: "v1.2.6: fix checkbox crash",
+  subtitle: "v1.2.7: toggle buttons, instant connect on enable",
   description: "Makes item and liquid teleport in a huge range! 4 cheat-grade 1x1 transport blocks.
   Update: fix auto rebuild when destroying blocks.",
-  version: "1.2.6",
+  version: "1.2.7",
   minGameVersion: "146"
 }
