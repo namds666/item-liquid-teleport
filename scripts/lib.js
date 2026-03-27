@@ -28,27 +28,25 @@ const makeCheck = (table, autoFlags, idx) => {
 };
 exports.addAutoConnectButtons = (table, the, getLinks, lvt, clearFn, autoFlags) => {
     table.center();
-    const bw = 150;
-    const cw = 40;
-    const bh = 40;
-    const sp = 10;
+    const bw = 150; // Button width
+    const cw = 40;  // Checkbox width
+    const bh = 40;  // Button and Checkbox height 
+    const sp = 20;  // Horizontal spacing between button groups
 
     makeCheck(table, autoFlags, 0);
-    table.button("Auto-Connect All",       run(() => { autoConnect(the, getLinks, lvt, null); })).size(bw, bh).padRight(sp);
+    table.button("All", run(() => { autoConnect(the, getLinks, lvt, null); })).size(bw, bh).padRight(sp);
     makeCheck(table, autoFlags, 1);
-    table.button("Auto-Connect Turrets",   run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.turret); })).size(bw, bh).row();
-    
+    table.button("Turrets", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.turret); })).size(bw, bh).row();
     makeCheck(table, autoFlags, 2);
-    table.button("Auto-Connect Factories", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.crafting); })).size(bw, bh).padRight(sp);
+    table.button("Factories", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.crafting); })).size(bw, bh).padRight(sp);
     makeCheck(table, autoFlags, 3);
-    table.button("Auto-Connect Power",     run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.power); })).size(bw, bh).row();
-    
-    table.button("Clear All Links",        run(() => { the.configure(clearFn()); })).size(bw * 2 + cw * 2 + sp, bh).colspan(4).padTop(4).row();
+    table.button("Power", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.power); })).size(bw, bh).row();
+    table.button("Clear All Links", run(() => { the.configure(clearFn()); })).size(bw * 2 + cw * 2 + sp, bh).colspan(4).padTop(4).row();
 };
 exports.newEffect = (lifetime, renderer) => new Effect(lifetime, cons(renderer));
 exports.cons2 = (func) => new Cons2({ get: (v1, v2) => func(v1, v2) });
-exports.func  = (getter) => new Func({ get: getter });
-exports.int   = (v) => new java.lang.Integer(v);
+exports.func = (getter) => new Func({ get: getter });
+exports.int = (v) => new java.lang.Integer(v);
 exports.loadRegion = (name) => {
     if (Vars.headless === true) return null;
     return Core.atlas.find(exports.modName + "-" + name, "error");
