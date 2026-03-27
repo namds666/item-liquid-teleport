@@ -28,7 +28,7 @@ exports.addAutoConnectButtons = (table, the, getLinks, lvt, clearFn, autoFlags) 
         let i = idx, f = filters[i];
         let cell = table.button(getLabel(i), run(() => {
             autoFlags[i] = !autoFlags[i];
-            btns[i].label.setText(getLabel(i));
+            btns[i].setText(getLabel(i));
             if (autoFlags[i]) autoConnect(the, getLinks, lvt, f);
         })).size(140, 40);
         btns.push(cell.get());
