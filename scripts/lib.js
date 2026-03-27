@@ -20,6 +20,7 @@ exports.tickAutoConnect = (the, getLinks, lvt, autoFlags) => {
     if (autoFlags[3]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.power);
 };
 exports.addAutoConnectButtons = (table, the, getLinks, lvt, clearFn, autoFlags) => {
+    table.center();
     const filters = [null, b => b.block.category == Category.turret, b => b.block.category == Category.crafting, b => b.block.category == Category.power];
     const names   = ["All", "Turrets", "Factories", "Power"];
     const getLabel = (i) => (autoFlags[i] ? "[x] " : "[ ] ") + names[i];
@@ -30,11 +31,11 @@ exports.addAutoConnectButtons = (table, the, getLinks, lvt, clearFn, autoFlags) 
             autoFlags[i] = !autoFlags[i];
             btns[i].setText(getLabel(i));
             if (autoFlags[i]) autoConnect(the, getLinks, lvt, f);
-        })).size(140, 40);
+        })).size(150, 40);
         btns.push(cell.get());
         if (i % 2 === 1) cell.row();
     }
-    table.button("Clear All Links", run(() => { the.configure(clearFn()); })).size(280, 40).row();
+    table.button("Clear All Links", run(() => { the.configure(clearFn()); })).size(300, 40).row();
 };
 exports.newEffect = (lifetime, renderer) => new Effect(lifetime, cons(renderer));
 exports.cons2 = (func) => new Cons2({ get: (v1, v2) => func(v1, v2) });
