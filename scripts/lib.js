@@ -46,7 +46,7 @@ exports.addAutoConnectButtons = (table, the, getLinks, lvt, clearFn, autoFlags) 
     makeCheck(table, autoFlags, 3);
     table.button("Power", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.power); })).size(bw, bh).row();
     makeCheck(table, autoFlags, 4);
-    table.button("Unit", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.unit); })).size(bw, bh).padRight(sp);
+    table.button("Unit", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.units); })).size(bw, bh).padRight(sp);
     makeCheck(table, autoFlags, 5);
     table.button("Drill", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.production); })).size(bw, bh).row();
     table.button("Clear All Links", run(() => { the.configure(clearFn()); })).size(bw * 2 + cw * 2 + sp, bh).colspan(4).padTop(4).row();
