@@ -20,7 +20,7 @@ exports.tickAutoConnect = (the, getLinks, lvt, autoFlags, clearFn) => {
     if (autoFlags[1]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.turret);
     if (autoFlags[2]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.crafting);
     if (autoFlags[3]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.power);
-    if (autoFlags[4]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.unit);
+    if (autoFlags[4]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.units);
     if (autoFlags[5]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.production);
 };
 const makeCheck = (table, autoFlags, idx) => {
