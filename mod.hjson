@@ -2,7 +2,7 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code",
-  subtitle: "v1.2.11: fix unloader buffer bottleneck on multiple links",
+  subtitle: "v1.2.11: fix unloader multi-link drain",
   description: "Makes item and liquid teleport in a huge range! 4 cheat-grade 1x1 transport blocks.
   Update: fix auto rebuild when destroying blocks.",
   version: "1.2.11",
