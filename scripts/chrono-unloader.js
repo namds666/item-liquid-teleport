@@ -62,13 +62,10 @@ blockType.noUpdateDisabled = true;
 blockType.requirements    = ItemStack.with();
 
 blockType.config(IntSeq, lib.cons2((tile, seq) => {
-    let lx = null, nl = new Seq(true, seq.get(1), java.lang.Integer);
-    for (let i = 2; i < seq.size; i++) {
-        let n = seq.get(i);
-        if (lx == null) lx = n;
-        else { nl.add(lib.int(Point2.pack(lx + tile.tileX(), n + tile.tileY()))); lx = null; }
-    }
+    let lc = seq.get(1), lx = null, nl = new Seq(true, lc, java.lang.Integer);
+    for (let i = 2; i < 2 + lc*2; i++) { let n = seq.get(i); if (lx == null) lx = n; else { nl.add(lib.int(Point2.pack(lx + tile.tileX(), n + tile.tileY()))); lx = null; } }
     tile.setItemTypeId(seq.get(0)); tile.setLinks(nl);
+    if (seq.size > 2 + lc*2) tile.setAutoFlagsFromSeq(seq, 2 + lc*2);
 }));
 blockType.config(java.lang.Integer, lib.cons2((tile, int) => { tile.setOneLink(int); }));
 blockType.config(Item, lib.cons2((tile, item) => { tile.setItemTypeId(item.id); }));
@@ -98,6 +95,7 @@ blockType.buildType = prov(() => {
             let int = new java.lang.Integer(v);
             if (!links.remove(boolf(i => i == int))) links.add(int);
         },
+        setAutoFlagsFromSeq(seq, offset) { for (let i = 0; i < 6; i++) autoFlags[i] = seq.get(offset + i) > 0; },
         deadLink(v) {
             if (Vars.net.client()) return;
             let int = new java.lang.Integer(v);
@@ -195,9 +193,10 @@ blockType.buildType = prov(() => {
             })).row();
         },
         config() {
-            let seq = new IntSeq(links.size*2+2);
+            let seq = new IntSeq(links.size*2+8);
             seq.add(itemType == null ? -1 : itemType.id); seq.add(links.size);
             for (let i = 0; i < links.size; i++) { let p = Point2.unpack(links.get(i)).sub(this.tile.x, this.tile.y); seq.add(p.x, p.y); }
+            for (let i = 0; i < 6; i++) seq.add(autoFlags[i] ? 1 : 0);
             return seq;
         },
         outputsItems() { return true; },

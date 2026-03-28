@@ -57,12 +57,15 @@ blockType.noUpdateDisabled = true;
 
 blockType.config(IntSeq, lib.cons2((tile, sq) => {
     let links = new Seq(java.lang.Integer), lx = null;
-    for (let i = 0; i < sq.size; i++) {
-        let n = sq.get(i);
-        if (lx == null) lx = n;
-        else { links.add(lib.int(Point2.pack(lx + tile.tileX(), n + tile.tileY()))); lx = null; }
+    if (sq.size % 2 == 1) {
+        let lc = sq.get(0);
+        for (let i = 1; i < 1 + lc*2; i++) { let n = sq.get(i); if (lx == null) lx = n; else { links.add(lib.int(Point2.pack(lx + tile.tileX(), n + tile.tileY()))); lx = null; } }
+        tile.setLink(links);
+        tile.setAutoFlagsFromSeq(sq, 1 + lc*2);
+    } else {
+        for (let i = 0; i < sq.size; i++) { let n = sq.get(i); if (lx == null) lx = n; else { links.add(lib.int(Point2.pack(lx + tile.tileX(), n + tile.tileY()))); lx = null; } }
+        tile.setLink(links);
     }
-    tile.setLink(links);
 }));
 blockType.config(java.lang.Integer, lib.cons2((tile, int) => { tile.setOneLink(int); }));
 blockType.configClear(tile => { tile.setLink(new Seq(java.lang.Integer)); });
@@ -91,6 +94,7 @@ blockType.buildType = prov(() => {
             let int = new java.lang.Integer(v);
             if (!links.remove(boolf(i => i == int))) links.add(int);
         },
+        setAutoFlagsFromSeq(seq, offset) { for (let i = 0; i < 6; i++) autoFlags[i] = seq.get(offset + i) > 0; },
         deadLink(v) {
             if (Vars.net.client()) return;
             let int = new java.lang.Integer(v);
@@ -195,8 +199,10 @@ blockType.buildType = prov(() => {
             })).row();
         },
         config() {
-            let out = new IntSeq(links.size*2);
+            let out = new IntSeq(links.size*2 + 7);
+            out.add(links.size);
             for (let i = 0; i < links.size; i++) { let p = Point2.unpack(links.get(i)).sub(this.tile.x, this.tile.y); out.add(p.x, p.y); }
+            for (let i = 0; i < 6; i++) out.add(autoFlags[i] ? 1 : 0);
             return out;
         },
         acceptStack(item, amount, source) {
