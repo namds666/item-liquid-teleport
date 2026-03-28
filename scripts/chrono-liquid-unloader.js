@@ -139,7 +139,7 @@ blockType.buildType = prov(() => {
                 }
                 if (liquidType != null && this.liquids.get(liquidType) > 0.001) this.dumpLiquid(liquidType);
             }
-            if (timer.get(1, 120)) lib.tickAutoConnect(this, () => links, lvt, autoFlags);
+            if (timer.get(1, 120)) lib.tickAutoConnect(this, () => links, lvt, autoFlags, () => { let s = new IntSeq(2); s.add(liquidType == null ? -1 : liquidType.id); s.add(0); return s; });
             warmup = Mathf.lerpDelta(warmup, this.efficiency > 0 ? 1 : 0, warmupSpeed);
             rotateSpeed = Mathf.lerpDelta(rotateSpeed, slowdownDelay > 0 ? 1 : 0, warmupSpeed);
             slowdownDelay = Math.max(0, slowdownDelay - 1);

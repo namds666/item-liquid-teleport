@@ -137,7 +137,7 @@ blockType.buildType = prov(() => {
                     Time.run(Mathf.random(10), run(() => { outEffect.at(this.x, this.y, 0); }));
                 for (let i = 0; i < FRAME_DELAY; i++) this.dump();
             }
-            if (timer.get(2, 120)) lib.tickAutoConnect(this, () => links, lvt, autoFlags);
+            if (timer.get(2, 120)) lib.tickAutoConnect(this, () => links, lvt, autoFlags, () => { let s = new IntSeq(2); s.add(itemType == null ? -1 : itemType.id); s.add(0); return s; });
             warmup = Mathf.lerpDelta(warmup, consValid ? 1 : 0, warmupSpeed);
             rotateSpeed = Mathf.lerpDelta(rotateSpeed, slowdownDelay > 0 ? 1 : 0, warmupSpeed);
             slowdownDelay = Math.max(0, slowdownDelay - 1);

@@ -12,8 +12,10 @@ const autoConnect = (the, getLinks, lvt, filter) => {
         if (!links.contains(boolf(i => i == int))) the.configure(int);
     }));
 };
-exports.tickAutoConnect = (the, getLinks, lvt, autoFlags) => {
+exports.tickAutoConnect = (the, getLinks, lvt, autoFlags, clearFn) => {
     if (Vars.net.client()) return;
+    if (!autoFlags[0] && !autoFlags[1] && !autoFlags[2] && !autoFlags[3] && !autoFlags[4] && !autoFlags[5]) return;
+    the.configure(clearFn());
     if (autoFlags[0]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.effect);
     if (autoFlags[1]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.turret);
     if (autoFlags[2]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.crafting);

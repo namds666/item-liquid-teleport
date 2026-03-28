@@ -146,7 +146,7 @@ blockType.buildType = prov(() => {
                 rotateSpeed = Mathf.lerpDelta(rotateSpeed, 0, warmupSpeed);
             }
             if (warmup > 0) rotateDeg += rotateSpeed;
-            if (timer.get(2, 120)) lib.tickAutoConnect(this, () => links, lvt, autoFlags);
+            if (timer.get(2, 120)) lib.tickAutoConnect(this, () => links, lvt, autoFlags, () => new IntSeq());
         },
         draw() {
             this.super$draw();

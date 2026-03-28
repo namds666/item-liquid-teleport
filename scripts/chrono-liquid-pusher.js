@@ -150,7 +150,7 @@ blockType.buildType = prov(() => {
                 rotateSpeed = Mathf.lerpDelta(rotateSpeed, 0, warmupSpeed);
             }
             if (warmup > 0) rotateDeg += rotateSpeed;
-            if (timer.get(1, 120)) lib.tickAutoConnect(this, () => links, lvt, autoFlags);
+            if (timer.get(1, 120)) lib.tickAutoConnect(this, () => links, lvt, autoFlags, () => new IntSeq());
             if (liquidSent && rotateSpeed > 0.5 && Mathf.random(60) > 48)
                 Time.run(Mathf.random(10), run(() => { inEffect.at(this.x, this.y, 0); }));
         },
