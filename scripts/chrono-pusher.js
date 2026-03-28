@@ -72,7 +72,7 @@ blockType.buildType = prov(() => {
     const MAX_LOOP = 50, FRAME_DELAY = 5;
     const timer = new Interval(6);
     let links = new Seq(java.lang.Integer), deadLinks = new Seq(java.lang.Integer);
-    let autoFlags = [false, false, false, false];
+    let autoFlags = [false, false, false, false, false, false];
     let warmup = 0, rotateDeg = 0, rotateSpeed = 0, consValid = false, itemSent = false;
     const looper = (() => { let idx = 0; return { next(m) { if (idx < 0 || idx >= m) idx = m-1; let v = idx; idx--; return v; } }; })();
     function lvt(the, t) { return t && t.team == the.team && the.within(t, range); }
@@ -204,17 +204,18 @@ blockType.buildType = prov(() => {
         },
         add() { if (this.added) return; rdcGroup.add(this); this.super$add(); },
         remove() { if (!this.added) return; rdcGroup.remove(this); this.super$remove(); },
-        version() { return 1; },
+        version() { return 2; },
         write(write) {
             this.super$write(write); write.s(links.size);
             let it = links.iterator(); while (it.hasNext()) write.i(it.next());
-            write.bool(autoFlags[0]); write.bool(autoFlags[1]); write.bool(autoFlags[2]); write.bool(autoFlags[3]);
+            write.bool(autoFlags[0]); write.bool(autoFlags[1]); write.bool(autoFlags[2]); write.bool(autoFlags[3]); write.bool(autoFlags[4]); write.bool(autoFlags[5]);
         },
         read(read, revision) {
             this.super$read(read, revision);
             links = new Seq(java.lang.Integer);
             let sz = read.s(); for (let i = 0; i < sz; i++) links.add(new java.lang.Integer(read.i()));
             if (revision >= 1) { autoFlags[0] = read.bool(); autoFlags[1] = read.bool(); autoFlags[2] = read.bool(); autoFlags[3] = read.bool(); }
+            if (revision >= 2) { autoFlags[4] = read.bool(); autoFlags[5] = read.bool(); }
         },
     }, blockType);
 });

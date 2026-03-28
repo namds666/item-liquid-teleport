@@ -79,7 +79,7 @@ blockType.buildType = prov(() => {
     const MAX_LOOP = 100, FRAME_DELAY = 5;
     const timer = new Interval(6);
     let itemType = null, links = new Seq(java.lang.Integer), deadLinks = new Seq(java.lang.Integer);
-    let autoFlags = [false, false, false, false];
+    let autoFlags = [false, false, false, false, false, false];
     let slowdownDelay = 0, warmup = 0, rotateDeg = 0, rotateSpeed = 0, consValid = false;
     const looper = (() => { let idx = 0; return { next(m) { if (idx < 0 || idx >= m) idx = m-1; let v = idx; idx--; return v; } }; })();
     function lvt(the, t) { return t && t.team == the.team && t.items != null && the.within(t, range); }
@@ -202,7 +202,7 @@ blockType.buildType = prov(() => {
         outputsItems() { return true; },
         add() { if (this.added) return; theGroup.add(this); this.super$add(); },
         remove() { if (!this.added) return; theGroup.remove(this); this.super$remove(); },
-        version() { return 3; },
+        version() { return 4; },
         canDump(to, item) { return this.linkedCore == null && !links.contains(boolf(pos => { return to == Vars.world.build(pos); })); },
         acceptItem(source, item) { return this.linkedCore != null; },
         acceptStack(item, amount, source) {
@@ -213,7 +213,7 @@ blockType.buildType = prov(() => {
             this.super$write(write);
             write.s(itemType == null ? -1 : itemType.id); write.s(links.size);
             let it = links.iterator(); while (it.hasNext()) write.i(it.next());
-            write.bool(autoFlags[0]); write.bool(autoFlags[1]); write.bool(autoFlags[2]); write.bool(autoFlags[3]);
+            write.bool(autoFlags[0]); write.bool(autoFlags[1]); write.bool(autoFlags[2]); write.bool(autoFlags[3]); write.bool(autoFlags[4]); write.bool(autoFlags[5]);
         },
         read(read, revision) {
             this.super$read(read, revision);
@@ -221,6 +221,7 @@ blockType.buildType = prov(() => {
             links = new Seq(java.lang.Integer);
             let sz = read.s(); for (let i = 0; i < sz; i++) links.add(new java.lang.Integer(read.i()));
             if (revision >= 3) { autoFlags[0] = read.bool(); autoFlags[1] = read.bool(); autoFlags[2] = read.bool(); autoFlags[3] = read.bool(); }
+            if (revision >= 4) { autoFlags[4] = read.bool(); autoFlags[5] = read.bool(); }
         },
     }, blockType);
 });

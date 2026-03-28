@@ -14,10 +14,12 @@ const autoConnect = (the, getLinks, lvt, filter) => {
 };
 exports.tickAutoConnect = (the, getLinks, lvt, autoFlags) => {
     if (Vars.net.client()) return;
-    if (autoFlags[0]) autoConnect(the, getLinks, lvt, null);
+    if (autoFlags[0]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.effect);
     if (autoFlags[1]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.turret);
     if (autoFlags[2]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.crafting);
     if (autoFlags[3]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.power);
+    if (autoFlags[4]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.unit);
+    if (autoFlags[5]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.production);
 };
 const makeCheck = (table, autoFlags, idx) => {
     let chk = new CheckBox("");
@@ -34,13 +36,17 @@ exports.addAutoConnectButtons = (table, the, getLinks, lvt, clearFn, autoFlags) 
     const sp = 20;  // Horizontal spacing between button groups
 
     makeCheck(table, autoFlags, 0);
-    table.button("All", run(() => { autoConnect(the, getLinks, lvt, null); })).size(bw, bh).padRight(sp);
+    table.button("Misc", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.effect); })).size(bw, bh).padRight(sp);
     makeCheck(table, autoFlags, 1);
     table.button("Turret", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.turret); })).size(bw, bh).row();
     makeCheck(table, autoFlags, 2);
     table.button("Factory", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.crafting); })).size(bw, bh).padRight(sp);
     makeCheck(table, autoFlags, 3);
     table.button("Power", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.power); })).size(bw, bh).row();
+    makeCheck(table, autoFlags, 4);
+    table.button("Unit", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.unit); })).size(bw, bh).padRight(sp);
+    makeCheck(table, autoFlags, 5);
+    table.button("Drill", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.production); })).size(bw, bh).row();
     table.button("Clear All Links", run(() => { the.configure(clearFn()); })).size(bw * 2 + cw * 2 + sp, bh).colspan(4).padTop(4).row();
 };
 exports.newEffect = (lifetime, renderer) => new Effect(lifetime, cons(renderer));
