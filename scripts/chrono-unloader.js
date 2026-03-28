@@ -81,6 +81,8 @@ blockType.buildType = prov(() => {
     const looper = (() => { let idx = 0; return { next(m) { if (idx < 0 || idx >= m) idx = m-1; let v = idx; idx--; return v; } }; })();
     function lvt(the, t) { return t && t.team == the.team && t.items != null && the.within(t, range); }
     function lv(the, pos) { if (pos == null || pos == -1) return false; return lvt(the, Vars.world.build(pos)); }
+    const clearFn = () => { let s = new IntSeq(2); s.add(itemType == null ? -1 : itemType.id); s.add(0); return s; };
+    const scanJob = lib.makeScanJob(autoFlags, 20);
     return new JavaAdapter(StorageBlock.StorageBuild, {
         getLinks() { return links; },
         getItemType() { return itemType; },
@@ -136,7 +138,7 @@ blockType.buildType = prov(() => {
                     Time.run(Mathf.random(10), run(() => { outEffect.at(this.x, this.y, 0); }));
                 for (let i = 0; i < FRAME_DELAY; i++) this.dump();
             }
-            if (timer.get(2, 120)) lib.tickAutoConnect(this, () => links, lvt, autoFlags, () => { let s = new IntSeq(2); s.add(itemType == null ? -1 : itemType.id); s.add(0); return s; });
+            scanJob.tick(this, () => links, lvt, clearFn);
             warmup = Mathf.lerpDelta(warmup, consValid ? 1 : 0, warmupSpeed);
             rotateSpeed = Mathf.lerpDelta(rotateSpeed, slowdownDelay > 0 ? 1 : 0, warmupSpeed);
             slowdownDelay = Math.max(0, slowdownDelay - 1);
@@ -186,7 +188,7 @@ blockType.buildType = prov(() => {
         },
         buildConfiguration(table) {
             table.table(cons(t => {
-                lib.addAutoConnectButtons(t, this, () => links, lvt, () => { let s = new IntSeq(2); s.add(itemType == null ? -1 : itemType.id); s.add(0); return s; }, autoFlags);
+                lib.addAutoConnectButtons(t, this, () => links, lvt, clearFn, autoFlags);
             })).row();
             table.table(cons(t => {
                 ItemSelection.buildTable(t, Vars.content.items(), prov(() => itemType), cons(v => { this.configure(v); }));

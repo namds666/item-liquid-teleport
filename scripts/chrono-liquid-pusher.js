@@ -90,6 +90,8 @@ blockType.buildType = prov(() => {
     const looper = (() => { let idx = 0; return { next(m) { if (idx < 0 || idx >= m) idx = m-1; let v = idx; idx--; return v; } }; })();
     function lvt(the, t) { return t && t.team == the.team && the.within(t, range); }
     function lv(the, pos) { if (pos == null || pos == -1) return false; return lvt(the, Vars.world.build(pos)); }
+    const clearFn = () => new IntSeq();
+    const scanJob = lib.makeScanJob(autoFlags, 20);
     return extend(Building, {
         getLinks() { return links; },
         setLink(v) {
@@ -154,7 +156,7 @@ blockType.buildType = prov(() => {
                 rotateSpeed = Mathf.lerpDelta(rotateSpeed, 0, warmupSpeed);
             }
             if (warmup > 0) rotateDeg += rotateSpeed;
-            if (timer.get(1, 120)) lib.tickAutoConnect(this, () => links, lvt, autoFlags, () => new IntSeq());
+            scanJob.tick(this, () => links, lvt, clearFn);
             if (liquidSent && rotateSpeed > 0.5 && Mathf.random(60) > 48)
                 Time.run(Mathf.random(10), run(() => { inEffect.at(this.x, this.y, 0); }));
         },
@@ -189,7 +191,7 @@ blockType.buildType = prov(() => {
         },
         buildConfiguration(table) {
             table.table(cons(t => {
-                lib.addAutoConnectButtons(t, this, () => links, lvt, () => new IntSeq(), autoFlags);
+                lib.addAutoConnectButtons(t, this, () => links, lvt, clearFn, autoFlags);
             })).row();
         },
         config() {

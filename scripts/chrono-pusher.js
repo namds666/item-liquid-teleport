@@ -80,6 +80,8 @@ blockType.buildType = prov(() => {
     const looper = (() => { let idx = 0; return { next(m) { if (idx < 0 || idx >= m) idx = m-1; let v = idx; idx--; return v; } }; })();
     function lvt(the, t) { return t && t.team == the.team && the.within(t, range); }
     function lv(the, pos) { if (pos == null || pos == -1) return false; return lvt(the, Vars.world.build(pos)); }
+    const clearFn = () => new IntSeq();
+    const scanJob = lib.makeScanJob(autoFlags, 20);
     const tmpHave = [];
     return new JavaAdapter(StorageBlock.StorageBuild, {
         getLink() { return links; },
@@ -150,7 +152,7 @@ blockType.buildType = prov(() => {
                 rotateSpeed = Mathf.lerpDelta(rotateSpeed, 0, warmupSpeed);
             }
             if (warmup > 0) rotateDeg += rotateSpeed;
-            if (timer.get(2, 120)) lib.tickAutoConnect(this, () => links, lvt, autoFlags, () => new IntSeq());
+            scanJob.tick(this, () => links, lvt, clearFn);
         },
         draw() {
             this.super$draw();
@@ -195,7 +197,7 @@ blockType.buildType = prov(() => {
         },
         buildConfiguration(table) {
             table.table(cons(t => {
-                lib.addAutoConnectButtons(t, this, () => links, lvt, () => new IntSeq(), autoFlags);
+                lib.addAutoConnectButtons(t, this, () => links, lvt, clearFn, autoFlags);
             })).row();
         },
         config() {

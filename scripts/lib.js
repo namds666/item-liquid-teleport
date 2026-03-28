@@ -12,16 +12,41 @@ const autoConnect = (the, getLinks, lvt, filter) => {
         if (!links.contains(boolf(i => i == int))) the.configure(int);
     }));
 };
-exports.tickAutoConnect = (the, getLinks, lvt, autoFlags, clearFn) => {
-    if (Vars.net.client()) return;
-    if (!autoFlags[0] && !autoFlags[1] && !autoFlags[2] && !autoFlags[3] && !autoFlags[4] && !autoFlags[5]) return;
-    the.configure(clearFn());
-    if (autoFlags[0]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.effect);
-    if (autoFlags[1]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.turret);
-    if (autoFlags[2]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.crafting);
-    if (autoFlags[3]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.power);
-    if (autoFlags[4]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.units);
-    if (autoFlags[5]) autoConnect(the, getLinks, lvt, b => b.block.category == Category.production);
+exports.makeScanJob = (autoFlags, chunkSize) => {
+    const SCAN_DELAY = 120;
+    let snapshot = null, idx = -1, delay = 0;
+    return {
+        tick(the, getLinks, lvt, clearFn) {
+            if (Vars.net.client()) return;
+            if (idx >= 0) {
+                let links = getLinks();
+                let end = Math.min(idx + chunkSize, snapshot.length);
+                for (let si = idx; si < end; si++) {
+                    let b = snapshot[si];
+                    if (!b || b == the) continue;
+                    if (CHRONO_NAMES.indexOf(b.block.name) >= 0) continue;
+                    if (!lvt(the, b)) continue;
+                    if (!((autoFlags[0] && b.block.category == Category.effect) ||
+                          (autoFlags[1] && b.block.category == Category.turret) ||
+                          (autoFlags[2] && b.block.category == Category.crafting) ||
+                          (autoFlags[3] && b.block.category == Category.power) ||
+                          (autoFlags[4] && b.block.category == Category.units) ||
+                          (autoFlags[5] && b.block.category == Category.production))) continue;
+                    let int = new java.lang.Integer(b.pos());
+                    if (!links.contains(boolf(i => i == int))) the.configure(int);
+                }
+                idx = end;
+                if (idx >= snapshot.length) { idx = -1; snapshot = null; }
+            } else {
+                if (!autoFlags[0] && !autoFlags[1] && !autoFlags[2] && !autoFlags[3] && !autoFlags[4] && !autoFlags[5]) return;
+                if (++delay >= SCAN_DELAY) {
+                    the.configure(clearFn());
+                    snapshot = []; Groups.build.each(cons(b => snapshot.push(b)));
+                    idx = 0; delay = 0;
+                }
+            }
+        }
+    };
 };
 const makeCheck = (table, autoFlags, idx) => {
     let chk = new CheckBox("");
