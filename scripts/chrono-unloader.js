@@ -127,6 +127,7 @@ blockType.buildType = prov(() => {
                             this.handleStack(itemType, acc, lt);
                             lt.removeStack(itemType, acc);
                             for (let t = acc; t > 0; t--) lt.itemTaken(itemType);
+                            for (let t = 0; t < FRAME_DELAY; t++) this.dump();
                             hasItem = true;
                         }
                     }

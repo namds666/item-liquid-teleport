@@ -128,6 +128,7 @@ blockType.buildType = prov(() => {
                         if (amount > 0.001) {
                             lt.liquids.remove(liquidType, amount);
                             this.liquids.add(liquidType, amount);
+                            this.dumpLiquid(liquidType);
                             hasLiquid = true;
                         }
                     }
