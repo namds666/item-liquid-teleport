@@ -25,22 +25,30 @@ exports.makeScanJob = (autoFlags, chunkSize) => {
                     let b = snapshot[si];
                     if (!b || b == the) continue;
                     if (CHRONO_NAMES.indexOf(b.block.name) >= 0) continue;
-                    if (!lvt(the, b)) continue;
-                    if (!((autoFlags[0] && b.block.category == Category.effect) ||
+                    
+                    let int = new java.lang.Integer(b.pos());
+                    let hasLink = links.contains(boolf(i => i == int));
+                    
+                    let isValidTarget = lvt(the, b) && (
+                          (autoFlags[0] && b.block.category == Category.effect) ||
                           (autoFlags[1] && b.block.category == Category.turret) ||
                           (autoFlags[2] && b.block.category == Category.crafting) ||
                           (autoFlags[3] && b.block.category == Category.power) ||
                           (autoFlags[4] && b.block.category == Category.units) ||
-                          (autoFlags[5] && b.block.category == Category.production))) continue;
-                    let int = new java.lang.Integer(b.pos());
-                    if (!links.contains(boolf(i => i == int))) the.configure(int);
+                          (autoFlags[5] && b.block.category == Category.production)
+                    );
+                    
+                    if (isValidTarget && !hasLink) {
+                        the.configure(int);
+                    } else if (!isValidTarget && hasLink) {
+                        the.configure(int);
+                    }
                 }
                 idx = end;
                 if (idx >= snapshot.length) { idx = -1; snapshot = null; }
             } else {
                 if (!autoFlags[0] && !autoFlags[1] && !autoFlags[2] && !autoFlags[3] && !autoFlags[4] && !autoFlags[5]) return;
                 if (++delay >= SCAN_DELAY) {
-                    the.configure(clearFn());
                     snapshot = []; Groups.build.each(cons(b => snapshot.push(b)));
                     idx = 0; delay = 0;
                 }
