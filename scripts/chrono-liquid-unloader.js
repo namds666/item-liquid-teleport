@@ -178,9 +178,12 @@ blockType.buildType = prov(() => {
             })).row();
         },
         config() {
-            let seq = new IntSeq(links.size*2+8);
-            seq.add(liquidType == null ? -1 : liquidType.id); seq.add(links.size);
-            for (let i = 0; i < links.size; i++) { let p = Point2.unpack(links.get(i)).sub(this.tile.x, this.tile.y); seq.add(p.x, p.y); }
+            // TypeIO.writeObject has an array size limit; cap serialized links to avoid crash on save.
+            const MAX_CONFIG_LINKS = 200;
+            let sz = Math.min(links.size, MAX_CONFIG_LINKS);
+            let seq = new IntSeq(sz*2+8);
+            seq.add(liquidType == null ? -1 : liquidType.id); seq.add(sz);
+            for (let i = 0; i < sz; i++) { let p = Point2.unpack(links.get(i)).sub(this.tile.x, this.tile.y); seq.add(p.x, p.y); }
             for (let i = 0; i < 6; i++) seq.add(autoFlags[i] ? 1 : 0);
             return seq;
         },

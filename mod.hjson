@@ -2,9 +2,9 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code",
-  subtitle: "v1.2.15: auto connect triggers instantly",
+  subtitle: "v1.2.16: fix crash on map change with many links",
   description: "Makes item and liquid teleport in a huge range! 4 cheat-grade 1x1 transport blocks.
-  Update: fix auto rebuild when destroying blocks.",
-  version: "1.2.15",
+  Update: fix crash when entering a new map with many links.",
+  version: "1.2.16",
   minGameVersion: "146"
 }

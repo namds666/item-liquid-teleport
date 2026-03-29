@@ -195,9 +195,12 @@ blockType.buildType = prov(() => {
             })).row();
         },
         config() {
-            let out = new IntSeq(links.size*2 + 7);
-            out.add(links.size);
-            for (let i = 0; i < links.size; i++) { let p = Point2.unpack(links.get(i)).sub(this.tile.x, this.tile.y); out.add(p.x, p.y); }
+            // TypeIO.writeObject has an array size limit; cap serialized links to avoid crash on save.
+            const MAX_CONFIG_LINKS = 200;
+            let sz = Math.min(links.size, MAX_CONFIG_LINKS);
+            let out = new IntSeq(sz*2 + 7);
+            out.add(sz);
+            for (let i = 0; i < sz; i++) { let p = Point2.unpack(links.get(i)).sub(this.tile.x, this.tile.y); out.add(p.x, p.y); }
             for (let i = 0; i < 6; i++) out.add(autoFlags[i] ? 1 : 0);
             return out;
         },
