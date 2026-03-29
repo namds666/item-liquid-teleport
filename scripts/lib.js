@@ -14,10 +14,24 @@ const autoConnect = (the, getLinks, lvt, filter) => {
 };
 exports.makeScanJob = (autoFlags, chunkSize) => {
     const SCAN_DELAY = 120;
-    let snapshot = null, idx = -1, delay = 0;
+    let snapshot = null, idx = -1, delay = SCAN_DELAY;
+    let prevFlags = [false, false, false, false, false, false];
+    
     return {
         tick(the, getLinks, lvt, clearFn) {
             if (Vars.net.client()) return;
+            
+            let anyEnabled = false;
+            let flagsChanged = false;
+            for (let i = 0; i < 6; i++) {
+                if (autoFlags[i]) anyEnabled = true;
+                if (autoFlags[i] !== prevFlags[i]) flagsChanged = true;
+                prevFlags[i] = autoFlags[i];
+            }
+            if (flagsChanged && anyEnabled && idx < 0) {
+                delay = SCAN_DELAY;
+            }
+
             if (idx >= 0) {
                 let links = getLinks();
                 let end = Math.min(idx + chunkSize, snapshot.length);
@@ -47,7 +61,10 @@ exports.makeScanJob = (autoFlags, chunkSize) => {
                 idx = end;
                 if (idx >= snapshot.length) { idx = -1; snapshot = null; }
             } else {
-                if (!autoFlags[0] && !autoFlags[1] && !autoFlags[2] && !autoFlags[3] && !autoFlags[4] && !autoFlags[5]) return;
+                if (!anyEnabled) {
+                    delay = SCAN_DELAY;
+                    return;
+                }
                 if (++delay >= SCAN_DELAY) {
                     snapshot = []; Groups.build.each(cons(b => snapshot.push(b)));
                     idx = 0; delay = 0;
