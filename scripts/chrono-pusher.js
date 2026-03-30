@@ -56,18 +56,17 @@ blockType.itemCapacity    = 10000;
 blockType.noUpdateDisabled = true;
 
 blockType.config(IntSeq, lib.cons2((tile, sq) => {
-    let links = new Seq(java.lang.Integer), lx = null;
-    if (sq.size % 2 == 1) {
-        let lc = sq.get(0);
-        for (let i = 1; i < 1 + lc*2; i++) { let n = sq.get(i); if (lx == null) lx = n; else { links.add(lib.int(Point2.pack(lx + tile.tileX(), n + tile.tileY()))); lx = null; } }
-        tile.setLink(links);
-        tile.setAutoFlagsFromSeq(sq, 1 + lc*2);
-    } else {
-        for (let i = 0; i < sq.size; i++) { let n = sq.get(i); if (lx == null) lx = n; else { links.add(lib.int(Point2.pack(lx + tile.tileX(), n + tile.tileY()))); lx = null; } }
-        tile.setLink(links);
-    }
+    // Format v3+: [selectedItemId, lc, x0,y0,x1,y1,..., af0..af5]
+    let selectedId = sq.get(0);
+    tile.setSelectedItemId(selectedId);
+    let lc = sq.get(1), lx = null;
+    let links = new Seq(java.lang.Integer);
+    for (let i = 2; i < 2 + lc*2; i++) { let n = sq.get(i); if (lx == null) lx = n; else { links.add(lib.int(Point2.pack(lx + tile.tileX(), n + tile.tileY()))); lx = null; } }
+    tile.setLink(links);
+    if (sq.size > 2 + lc*2) tile.setAutoFlagsFromSeq(sq, 2 + lc*2);
 }));
 blockType.config(java.lang.Integer, lib.cons2((tile, int) => { tile.setOneLink(int); }));
+blockType.config(Item, lib.cons2((tile, item) => { tile.setSelectedItemId(item == null ? -1 : item.id); }));
 blockType.configClear(tile => { tile.setLink(new Seq(java.lang.Integer)); });
 
 const rdcGroup = new EntityGroup(Building, false, false);
@@ -76,6 +75,7 @@ blockType.buildType = prov(() => {
     const timer = new Interval(6);
     let links = new Seq(java.lang.Integer), deadLinks = new Seq(java.lang.Integer);
     let autoFlags = [false, false, false, false, false, false];
+    let selectedItem = null;
     let warmup = 0, rotateDeg = 0, rotateSpeed = 0, consValid = false, itemSent = false;
     const looper = (() => { let idx = 0; return { next(m) { if (idx < 0 || idx >= m) idx = m-1; let v = idx; idx--; return v; } }; })();
     function lvt(the, t) { return t && t.team == the.team && the.within(t, range); }
@@ -97,6 +97,7 @@ blockType.buildType = prov(() => {
             if (!links.remove(boolf(i => i == int))) links.add(int);
         },
         setAutoFlagsFromSeq(seq, offset) { for (let i = 0; i < 6; i++) autoFlags[i] = seq.get(offset + i) > 0; },
+        setSelectedItemId(v) { selectedItem = (v == null || v < 0) ? null : Vars.content.items().get(v); },
         deadLink(v) {
             if (Vars.net.client()) return;
             let int = new java.lang.Integer(v);
@@ -130,9 +131,16 @@ blockType.buildType = prov(() => {
                 itemSent = false; consValid = this.efficiency > 0;
                 if (consValid) {
                     this.consume();
-                    for (let i = 0; i < Vars.content.items().size; i++) {
-                        let item = Vars.content.items().get(i), cnt = this.items.get(item);
-                        if (cnt > 0) tmpHave.push({ item: item, count: cnt });
+                    if (selectedItem != null) {
+                        // Filter mode: only push the selected item
+                        let cnt = this.items.get(selectedItem);
+                        if (cnt > 0) tmpHave.push({ item: selectedItem, count: cnt });
+                    } else {
+                        // Push everything
+                        for (let i = 0; i < Vars.content.items().size; i++) {
+                            let item = Vars.content.items().get(i), cnt = this.items.get(item);
+                            if (cnt > 0) tmpHave.push({ item: item, count: cnt });
+                        }
                     }
                     let max = links.size;
                     for (let i = 0; i < Math.min(MAX_LOOP, max); i++) {
@@ -199,12 +207,16 @@ blockType.buildType = prov(() => {
             table.table(cons(t => {
                 lib.addAutoConnectButtons(t, this, () => links, lvt, clearFn, autoFlags);
             })).row();
+            table.table(cons(t => {
+                ItemSelection.buildTable(t, Vars.content.items(), prov(() => selectedItem), cons(v => { this.configure(v); }));
+            })).row();
         },
         config() {
             // TypeIO.writeObject has an array size limit; cap serialized links to avoid crash on save.
             const MAX_CONFIG_LINKS = 200;
             let sz = Math.min(links.size, MAX_CONFIG_LINKS);
-            let out = new IntSeq(sz*2 + 7);
+            let out = new IntSeq(sz*2 + 9);
+            out.add(selectedItem == null ? -1 : selectedItem.id);
             out.add(sz);
             for (let i = 0; i < sz; i++) { let p = Point2.unpack(links.get(i)).sub(this.tile.x, this.tile.y); out.add(p.x, p.y); }
             for (let i = 0; i < 6; i++) out.add(autoFlags[i] ? 1 : 0);
@@ -215,14 +227,17 @@ blockType.buildType = prov(() => {
         },
         add() { if (this.added) return; rdcGroup.add(this); this.super$add(); },
         remove() { if (!this.added) return; rdcGroup.remove(this); this.super$remove(); },
-        version() { return 2; },
+        version() { return 3; },
         write(write) {
-            this.super$write(write); write.s(links.size);
+            this.super$write(write);
+            write.s(selectedItem == null ? -1 : selectedItem.id);
+            write.s(links.size);
             let it = links.iterator(); while (it.hasNext()) write.i(it.next());
             write.bool(autoFlags[0]); write.bool(autoFlags[1]); write.bool(autoFlags[2]); write.bool(autoFlags[3]); write.bool(autoFlags[4]); write.bool(autoFlags[5]);
         },
         read(read, revision) {
             this.super$read(read, revision);
+            if (revision >= 3) { let id = read.s(); selectedItem = id < 0 ? null : Vars.content.items().get(id); }
             links = new Seq(java.lang.Integer);
             let sz = read.s(); for (let i = 0; i < sz; i++) links.add(new java.lang.Integer(read.i()));
             if (revision >= 1) { autoFlags[0] = read.bool(); autoFlags[1] = read.bool(); autoFlags[2] = read.bool(); autoFlags[3] = read.bool(); }

@@ -2,9 +2,9 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code",
-  subtitle: "v1.2.16: fix crash on map change with many links",
+  subtitle: "v1.2.17: pusher resource filter",
   description: "Makes item and liquid teleport in a huge range! 4 cheat-grade 1x1 transport blocks.
   Update: fix crash when entering a new map with many links.",
-  version: "1.2.16",
+  version: "1.2.17",
   minGameVersion: "146"
 }

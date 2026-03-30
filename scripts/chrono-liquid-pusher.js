@@ -67,18 +67,17 @@ blockType.noUpdateDisabled = true;
 blockType.requirements     = ItemStack.with();
 
 blockType.config(IntSeq, lib.cons2((tile, sq) => {
-    let links = new Seq(java.lang.Integer), lx = null;
-    if (sq.size % 2 == 1) {
-        let lc = sq.get(0);
-        for (let i = 1; i < 1 + lc*2; i++) { let n = sq.get(i); if (lx == null) lx = n; else { links.add(lib.int(Point2.pack(lx + tile.tileX(), n + tile.tileY()))); lx = null; } }
-        tile.setLink(links);
-        tile.setAutoFlagsFromSeq(sq, 1 + lc*2);
-    } else {
-        for (let i = 0; i < sq.size; i++) { let n = sq.get(i); if (lx == null) lx = n; else { links.add(lib.int(Point2.pack(lx + tile.tileX(), n + tile.tileY()))); lx = null; } }
-        tile.setLink(links);
-    }
+    // Format v5+: [selectedLiquidId, lc, x0,y0,x1,y1,..., af0..af5]
+    let selectedId = sq.get(0);
+    tile.setSelectedLiquidId(selectedId);
+    let lc = sq.get(1), lx = null;
+    let links = new Seq(java.lang.Integer);
+    for (let i = 2; i < 2 + lc*2; i++) { let n = sq.get(i); if (lx == null) lx = n; else { links.add(lib.int(Point2.pack(lx + tile.tileX(), n + tile.tileY()))); lx = null; } }
+    tile.setLink(links);
+    tile.setAutoFlagsFromSeq(sq, 2 + lc*2);
 }));
 blockType.config(java.lang.Integer, lib.cons2((tile, int) => { tile.setOneLink(int); }));
+blockType.config(Liquid, lib.cons2((tile, liquid) => { tile.setSelectedLiquidId(liquid == null ? -1 : liquid.id); }));
 
 const rdcGroup = new EntityGroup(Building, false, false);
 blockType.buildType = prov(() => {
@@ -86,6 +85,7 @@ blockType.buildType = prov(() => {
     const timer = new Interval(3);
     let links = new Seq(java.lang.Integer), deadLinks = new Seq(java.lang.Integer);
     let autoFlags = [false, false, false, false, false, false];
+    let selectedLiquid = null;
     let warmup = 0, rotateDeg = 0, rotateSpeed = 0, liquidSent = false;
     const looper = (() => { let idx = 0; return { next(m) { if (idx < 0 || idx >= m) idx = m-1; let v = idx; idx--; return v; } }; })();
     function lvt(the, t) { return t && t.team == the.team && the.within(t, range); }
@@ -106,6 +106,7 @@ blockType.buildType = prov(() => {
             if (!links.remove(boolf(i => i == int))) links.add(int);
         },
         setAutoFlagsFromSeq(seq, offset) { for (let i = 0; i < 6; i++) autoFlags[i] = seq.get(offset + i) > 0; },
+        setSelectedLiquidId(v) { selectedLiquid = (v == null || v < 0) ? null : Vars.content.liquids().get(v); },
         deadLink(v) {
             if (Vars.net.client()) return;
             let int = new java.lang.Integer(v);
@@ -124,26 +125,51 @@ blockType.buildType = prov(() => {
             if (timer.get(0, FRAME_DELAY)) {
                 liquidSent = false;
                 if (this.efficiency > 0) {
-                    for (let li = 0; li < Vars.content.liquids().size; li++) {
-                        let liq = Vars.content.liquids().get(li);
-                        let have = this.liquids.get(liq);
-                        if (have <= 0.001) continue;
-                        let max = links.size;
-                        for (let i = 0; i < Math.min(MAX_LOOP, max); i++) {
-                            let idx = looper.next(max), pos = links.get(idx);
-                            if (pos == null || pos == -1) { this.configure(lib.int(pos)); continue; }
-                            let lt = Vars.world.build(pos);
-                            if (!lvt(this, lt)) { this.deadLink(pos); if (--max <= 0) break; continue; }
-                            if (!lt.block.hasLiquids) continue;
-                            let space = lt.block.liquidCapacity - lt.liquids.get(liq);
-                            let amount = Math.min(have, Math.min(space, TRANSFER_RATE));
-                            if (amount > 0.001) {
-                                lt.liquids.add(liq, amount);
-                                this.liquids.remove(liq, amount);
-                                have -= amount;
-                                liquidSent = true;
+                    if (selectedLiquid != null) {
+                        // Filter mode: only push the selected liquid
+                        let have = this.liquids.get(selectedLiquid);
+                        if (have > 0.001) {
+                            let max = links.size;
+                            for (let i = 0; i < Math.min(MAX_LOOP, max); i++) {
+                                let idx = looper.next(max), pos = links.get(idx);
+                                if (pos == null || pos == -1) { this.configure(lib.int(pos)); continue; }
+                                let lt = Vars.world.build(pos);
+                                if (!lvt(this, lt)) { this.deadLink(pos); if (--max <= 0) break; continue; }
+                                if (!lt.block.hasLiquids) continue;
+                                let space = lt.block.liquidCapacity - lt.liquids.get(selectedLiquid);
+                                let amount = Math.min(have, Math.min(space, TRANSFER_RATE));
+                                if (amount > 0.001) {
+                                    lt.liquids.add(selectedLiquid, amount);
+                                    this.liquids.remove(selectedLiquid, amount);
+                                    have -= amount;
+                                    liquidSent = true;
+                                }
+                                if (have <= 0.001) break;
                             }
-                            if (have <= 0.001) break;
+                        }
+                    } else {
+                        // Push all liquids
+                        for (let li = 0; li < Vars.content.liquids().size; li++) {
+                            let liq = Vars.content.liquids().get(li);
+                            let have = this.liquids.get(liq);
+                            if (have <= 0.001) continue;
+                            let max = links.size;
+                            for (let i = 0; i < Math.min(MAX_LOOP, max); i++) {
+                                let idx = looper.next(max), pos = links.get(idx);
+                                if (pos == null || pos == -1) { this.configure(lib.int(pos)); continue; }
+                                let lt = Vars.world.build(pos);
+                                if (!lvt(this, lt)) { this.deadLink(pos); if (--max <= 0) break; continue; }
+                                if (!lt.block.hasLiquids) continue;
+                                let space = lt.block.liquidCapacity - lt.liquids.get(liq);
+                                let amount = Math.min(have, Math.min(space, TRANSFER_RATE));
+                                if (amount > 0.001) {
+                                    lt.liquids.add(liq, amount);
+                                    this.liquids.remove(liq, amount);
+                                    have -= amount;
+                                    liquidSent = true;
+                                }
+                                if (have <= 0.001) break;
+                            }
                         }
                     }
                 }
@@ -165,12 +191,15 @@ blockType.buildType = prov(() => {
             Draw.alpha(warmup); Draw.rect(bottomRegion, this.x, this.y); Draw.color();
             Draw.alpha(warmup); Draw.rect(rotatorRegion, this.x, this.y, -rotateDeg);
             Draw.alpha(1); Draw.rect(topRegion, this.x, this.y);
-            let dominant = null, domAmt = 0;
-            for (let li = 0; li < Vars.content.liquids().size; li++) {
-                let liq = Vars.content.liquids().get(li), amt = this.liquids.get(liq);
-                if (amt > domAmt) { domAmt = amt; dominant = liq; }
+            let displayLiquid = selectedLiquid;
+            if (displayLiquid == null) {
+                let domAmt = 0;
+                for (let li = 0; li < Vars.content.liquids().size; li++) {
+                    let liq = Vars.content.liquids().get(li), amt = this.liquids.get(liq);
+                    if (amt > domAmt) { domAmt = amt; displayLiquid = liq; }
+                }
             }
-            Draw.color(dominant != null && dominant.color != null ? dominant.color : Color.clear);
+            Draw.color(displayLiquid != null && displayLiquid.color != null ? displayLiquid.color : Color.clear);
             Draw.rect("unloader-center", this.x, this.y); Draw.color();
         },
         drawConfigure() {
@@ -193,12 +222,16 @@ blockType.buildType = prov(() => {
             table.table(cons(t => {
                 lib.addAutoConnectButtons(t, this, () => links, lvt, clearFn, autoFlags);
             })).row();
+            table.table(cons(t => {
+                ItemSelection.buildTable(t, Vars.content.liquids(), prov(() => selectedLiquid), cons(v => { this.configure(v); }));
+            })).row();
         },
         config() {
             // TypeIO.writeObject has an array size limit; cap serialized links to avoid crash on save.
             const MAX_CONFIG_LINKS = 200;
             let sz = Math.min(links.size, MAX_CONFIG_LINKS);
-            let out = new IntSeq(sz*2 + 7);
+            let out = new IntSeq(sz*2 + 9);
+            out.add(selectedLiquid == null ? -1 : selectedLiquid.id);
             out.add(sz);
             for (let i = 0; i < sz; i++) { let p = Point2.unpack(links.get(i)).sub(this.tile.x, this.tile.y); out.add(p.x, p.y); }
             for (let i = 0; i < 6; i++) out.add(autoFlags[i] ? 1 : 0);
@@ -207,16 +240,18 @@ blockType.buildType = prov(() => {
         acceptLiquid(source, _liquid) { return true; },
         add() { if (this.added) return; rdcGroup.add(this); this.super$add(); },
         remove() { if (!this.added) return; rdcGroup.remove(this); this.super$remove(); },
-        version() { return 4; },
+        version() { return 5; },
         write(write) {
             this.super$write(write);
+            write.s(selectedLiquid == null ? -1 : selectedLiquid.id);
             write.s(links.size);
             let it = links.iterator(); while (it.hasNext()) write.i(it.next());
             write.bool(autoFlags[0]); write.bool(autoFlags[1]); write.bool(autoFlags[2]); write.bool(autoFlags[3]); write.bool(autoFlags[4]); write.bool(autoFlags[5]);
         },
         read(read, revision) {
             this.super$read(read, revision);
-            if (revision == 1) read.s(); // discard old liquidType id
+            if (revision == 1) read.s(); // discard old liquidType id (single-liquid mode, old unloader-style)
+            if (revision >= 5) { let id = read.s(); selectedLiquid = id < 0 ? null : Vars.content.liquids().get(id); }
             links = new Seq(java.lang.Integer);
             let sz = read.s(); for (let i = 0; i < sz; i++) links.add(new java.lang.Integer(read.i()));
             if (revision >= 3) { autoFlags[0] = read.bool(); autoFlags[1] = read.bool(); autoFlags[2] = read.bool(); autoFlags[3] = read.bool(); }
