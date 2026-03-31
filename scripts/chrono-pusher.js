@@ -34,18 +34,22 @@ const blockType = extend(StorageBlock, "chrono-pusher", {
     outputsItems() { return false; },
     pointConfig(config, transformer) {
         if (!IntSeq.__javaObject__.isInstance(config)) return config;
-        if (config.size < 2) return config;
-        let selectedId = config.get(0), lc = config.get(1);
-        let ns = new IntSeq(config.size);
+        if (config.size < 1) return config;
+        // v3 format is even-sized (2 + lc*2 + 6); all older formats are odd-sized (1 + lc*2 + autoFlagCount)
+        let isV3 = (config.size % 2 == 0);
+        let selectedId = isV3 ? config.get(0) : -1;
+        let lc         = isV3 ? config.get(1) : config.get(0);
+        let linkStart  = isV3 ? 2 : 1;
+        let afterLinks = linkStart + lc * 2;
+        let ns = new IntSeq(config.size + (isV3 ? 0 : 1));
         ns.add(selectedId); ns.add(lc);
         for (let i = 0; i < lc; i++) {
-            let base = 2 + i*2;
+            let base = linkStart + i*2;
             if (base + 1 >= config.size) break;
             let p = new Point2(config.get(base)*2-1, config.get(base+1)*2-1);
             transformer.get(p);
             ns.add((p.x+1)/2); ns.add((p.y+1)/2);
         }
-        let afterLinks = 2 + lc*2;
         for (let i = afterLinks; i < config.size; i++) ns.add(config.get(i));
         return ns;
     },
@@ -71,7 +75,7 @@ blockType.config(IntSeq, lib.cons2((tile, sq) => {
     let links = new Seq(java.lang.Integer);
     for (let i = 2; i < 2 + lc*2; i++) { let n = sq.get(i); if (lx == null) lx = n; else { links.add(lib.int(Point2.pack(lx + tile.tileX(), n + tile.tileY()))); lx = null; } }
     tile.setLink(links);
-    if (sq.size > 2 + lc*2) tile.setAutoFlagsFromSeq(sq, 2 + lc*2);
+    if (sq.size >= 2 + lc*2 + 6) tile.setAutoFlagsFromSeq(sq, 2 + lc*2);
 }));
 blockType.config(java.lang.Integer, lib.cons2((tile, int) => { if (int < 0) tile.setSelectedItemId(-1); else tile.setOneLink(int); }));
 blockType.config(Item, lib.cons2((tile, item) => { tile.setSelectedItemId(item == null ? -1 : item.id); }));
