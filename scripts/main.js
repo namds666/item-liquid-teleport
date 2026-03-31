@@ -4,5 +4,4 @@ require("chrono-pusher");
 require("chrono-liquid-unloader");
 require("chrono-liquid-pusher");
 require("chrono-core");
-require("chrono-medic");
 require("chrono-mender");

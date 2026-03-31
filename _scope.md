@@ -6,24 +6,26 @@ A standalone Mindustry mod providing 4 cheat-grade, 1×1 transport blocks for in
 ## Blocks
 
 ### Chrono Unloader (`chrono-unloader`)
-- **Category:** Distribution
-- **Function:** Pulls a chosen item type from all linked buildings within range and outputs it through adjacent conveyors.
-- **Config:** Click block → select item type. Tap buildings within range to link/unlink them (up to 32 links).
+- **Category:** Distribution — extends `StorageBlock` / `StorageBuild`
+- **Function:** Pulls the selected item type from every linked building (up to 500/link per 5-tick batch), buffers it (100-item capacity), then dumps it through adjacent conveyors every tick.
+- **Filter:** Must have an item type selected; does nothing without one.
+- **Config:** Tap to toggle individual links. UI: auto-connect buttons (6 categories) + item picker. `clearFn` preserves the selected item id when clearing links.
 
 ### Chrono Pusher (`chrono-pusher`)
-- **Category:** Distribution
-- **Function:** Accepts items from adjacent conveyors and pushes them into all linked buildings within range.
-- **Config:** Tap buildings within range to link/unlink them (up to 32 links). No item filter — pushes everything it holds.
+- **Category:** Distribution — extends `StorageBlock` / `StorageBuild`
+- **Function:** Receives items from adjacent conveyors (10 000-item capacity), then pushes them into every linked building (up to 500/link per 5-tick batch). Optionally filtered to a single item type via UI picker; without a filter it pushes all held items.
+- **Config:** Tap to toggle individual links. UI: auto-connect buttons + optional item filter. Config format is v3 (even-length IntSeq: `[selectedItemId, lc, x0,y0,…, af0..af5]`); older odd-length saves are handled in both `pointConfig` and the IntSeq config handler.
 
 ### Chrono Liquid Unloader (`chrono-liquid-unloader`)
-- **Category:** Liquid
-- **Function:** Pulls a chosen liquid from all linked buildings within range and outputs it through adjacent pipes.
-- **Config:** Click block → select liquid type. Tap buildings within range to link/unlink them (up to 32 links).
+- **Category:** Liquid — extends `Block` / `Building`
+- **Function:** Pulls the selected liquid from every linked building (up to 500/link per 5-tick batch), buffers it (100-unit capacity), then dumps it through adjacent pipes.
+- **Filter:** Must have a liquid type selected; does nothing without one.
+- **Config:** Tap to toggle individual links. UI: auto-connect buttons + liquid picker. `clearFn` preserves the liquid type id when clearing.
 
 ### Chrono Liquid Pusher (`chrono-liquid-pusher`)
-- **Category:** Liquid
-- **Function:** Accepts any liquid from adjacent pipes and pushes it into all linked buildings within range.
-- **Config:** Tap buildings within range to link/unlink them. No liquid filter — pushes every liquid it holds.
+- **Category:** Liquid — extends `Block` / `Building`
+- **Function:** Receives liquid from adjacent pipes (10 000-unit capacity), then pushes it into every linked building (up to 20/link per 5-tick batch). Optionally filtered to a single liquid; without a filter it pushes all held liquids in sequence.
+- **Config:** Tap to toggle individual links. UI: auto-connect buttons + optional liquid filter.
 
 ### Chrono Core (`chrono-core`)
 - **Category:** Effect
@@ -32,45 +34,63 @@ A standalone Mindustry mod providing 4 cheat-grade, 1×1 transport blocks for in
 - **Requirements:** 1000 copper + 1000 lead.
 - **Size:** 1×1, health 500.
 
-### Chrono Medic (`chrono-medic`)
-- **Category:** Unit (flying)
-- **Function:** Autonomous flying medic unit. Automatically seeks the nearest injured friendly unit and flies to it, healing at **200 hp/s** (via `RepairFieldAbility`, 20 hp per 6 ticks, 80 px ≈ 5 tile radius). Cannot be player-controlled.
-- **AI:** Custom `MedicAI extends FlyingAI` — rescans for nearest damaged ally every 30 ticks, moves to within 40 px of target.
-- **Production:** Built in the vanilla **Air Factory** (75 copper + 25 titanium, 20 s).
-- **Speed:** 7 (≈ 2× faster than Mono/Flare).
-- **Sprite:** `sprites/units/chrono-medic.png` + `chrono-medic-cell.png` (mono sprites, 48×48).
-- **Constructor:** Inherits `UnitTypes.mono.constructor` (standard `UnitEntity`).
+## Shared lib.js Infrastructure
+
+All four transport blocks share the same plumbing from `lib.js`:
+
+### Link management
+- Links are stored as a `Seq<Integer>` of packed tile positions (`Point2.pack`).
+- `Integer` config type: toggles one link (add if absent, remove if present) — fires on every tap in configure mode.
+- `IntSeq` config type: full replace — rebuilds the link list from a serialized snapshot (used on load and auto-scan end).
+- **Dead links:** when `lvt()` fails during `updateTile`, the position is removed from `links` and added to `deadLinks`. On `BlockBuildEndEvent` (a building is placed), every transport block checks `tryResumeDeadLink` to re-add it. This handles demolish-and-rebuild without manual relinking.
+
+### Auto-scan (`makeScanJob`)
+Returns a stateful scan job called from `updateTile` every tick. Flow:
+1. Waits 60 ticks between scans (resets if `autoFlags` change while any flag is on).
+2. On trigger: snapshots `Groups.build` into an array, sets `idx = 0`.
+3. Each tick, processes `chunkSize` (50) buildings from the snapshot — checks `lvt` and category flags, accumulates `toAdd`/`toRemove` lists.
+4. At scan end: calls `batchApply(toAdd, toRemove)` to flush the final batch, then fires one `configure(config())` sync to propagate to other clients.
+5. Chrono blocks themselves are excluded from linking to each other via `CHRONO_NAMES` check.
+
+### Batch apply (`makeBatchApply`)
+Mutates the `links` Seq directly (add/remove) without going through `configure()` per-entry. Deferred to scan end to avoid mid-scan cap truncation (serialization cap is 2000 links).
+
+### Auto-connect buttons (`addAutoConnectButtons`)
+Renders 6 checkbox+button pairs for categories: Misc (effect), Turret, Factory (crafting), Power, Unit, Drill (production). Checkboxes toggle `autoFlags[i]` for continuous auto-scan; buttons trigger a one-shot `autoConnect` scan for their category.
 
 ## Shared Properties
 | Property | Value |
 |---|---|
 | Size | 1×1 |
 | Range | 1200 px (150 tiles) |
-| Max links | Unlimited (no enforced cap in code) |
-| Transfer rate | Items: up to 500 per link per 5-tick batch; Liquid unloader: 500 per link; Liquid pusher: 20 per link |
+| Max links (runtime) | Unlimited |
+| Max links (serialized) | 2000 (capped in `config()` to avoid `TypeIO.writeObject` crash) |
+| Transfer rate | Items: 500/link/5-tick; Liquid unloader: 500/link/5-tick; Liquid pusher: 20/link/5-tick |
 | Requirements | None (free to place) |
 | Research | None |
 
 ## File Structure
 ```
-chrono-transport.zip
+item-liquid-teleport/
 ├── mod.hjson
 ├── bundles/
 │   └── bundle.properties
 ├── scripts/
-│   ├── lib.js                      shared helpers + modName
-│   ├── main.js                     entry point, requires all 4 scripts
+│   ├── lib.js                      shared link mgmt, scan job, batch apply, UI buttons
+│   ├── main.js                     entry point
 │   ├── chrono-unloader.js
 │   ├── chrono-pusher.js
 │   ├── chrono-liquid-unloader.js
-│   └── chrono-liquid-pusher.js
+│   ├── chrono-liquid-pusher.js
+│   ├── chrono-core.js
+│   └── chrono-mender.js
 └── sprites/
-    ├── blocks/distribution/        item blocks (32×32, from abomb4 mod)
-    └── blocks/liquid/              liquid blocks (32×32, same sprites recolored at runtime)
+    ├── blocks/distribution/        item blocks (32×32)
+    └── blocks/liquid/              liquid blocks (32×32, center dot tinted at render time)
 ```
 
 ## Notes
-- Liquid blocks have their own separate sprite files (`chrono-liquid-*`); the center dot reuses the vanilla `"unloader-center"` sprite, tinted to the dominant liquid's color at render time.
-- All sprites are the original abomb4-super-cheat sprites downscaled from 64×64 to 32×32.
-- Item blocks extend `StorageBlock` (uses `StorageBlock.StorageBuild` inner class).
-- Liquid blocks extend `Block` (uses `extend(Building, {...})` — no inner class).
+- Item blocks extend `StorageBlock` (JavaAdapter over `StorageBlock.StorageBuild`); liquid blocks extend `Block` (plain `extend(Building, ...)`).
+- The center dot on all four blocks reuses the vanilla `"unloader-center"` sprite, tinted to the selected filter color (or dominant held liquid/item color) at render time.
+- Config serialization uses relative tile offsets (delta from block's own tile) so configs survive copy-paste and schematic placement (`pointConfig` transforms them back).
+- Save/load versioned via `version()`: unloader v4, pusher v3, liquid-unloader v3, liquid-pusher v5. Older revisions handled in `read()`.
