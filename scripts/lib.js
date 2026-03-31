@@ -18,6 +18,7 @@ exports.makeScanJob = (autoFlags, chunkSize) => {
     let prevFlags = [false, false, false, false, false, false];
     let linkSet = null;
     let toAdd = [], toRemove = [];
+    let scanChanged = false;
 
     return {
         tick(the, getLinks, lvt, clearFn, batchApply) {
@@ -71,13 +72,15 @@ exports.makeScanJob = (autoFlags, chunkSize) => {
                 idx = end;
 
                 if (batchApply && (toAdd.length > 0 || toRemove.length > 0)) {
-                    batchApply(the, toAdd, toRemove);
+                    batchApply(toAdd, toRemove);
                     toAdd = []; toRemove = [];
+                    scanChanged = true;
                 }
 
                 if (idx >= snapshot.length) {
                     idx = -1; snapshot = null; linkSet = null;
                     toAdd = []; toRemove = [];
+                    if (scanChanged && !Vars.net.client()) { the.configure(the.config()); scanChanged = false; }
                 }
             } else {
                 if (!anyEnabled) {
@@ -92,11 +95,11 @@ exports.makeScanJob = (autoFlags, chunkSize) => {
         }
     };
 };
-exports.makeBatchApply = (getLinks) => (the, toAdd, toRemove) => {
+exports.makeBatchApply = (getLinks) => (toAdd, toRemove) => {
     let links = getLinks();
     for (let pos of toAdd) links.add(exports.int(pos));
     for (let pos of toRemove) { let int = exports.int(pos); links.remove(boolf(i => i == int)); }
-    if (!Vars.net.client()) the.configure(the.config());
+    // configure sync is deferred to scan end in makeScanJob to avoid mid-scan cap truncation
 };
 const makeCheck = (table, autoFlags, idx) => {
     let chk = new CheckBox("");

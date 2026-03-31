@@ -197,7 +197,7 @@ blockType.buildType = prov(() => {
         },
         config() {
             // TypeIO.writeObject has an array size limit; cap serialized links to avoid crash on save.
-            const MAX_CONFIG_LINKS = 200;
+            const MAX_CONFIG_LINKS = 2000;
             let sz = Math.min(links.size, MAX_CONFIG_LINKS);
             let seq = new IntSeq(sz*2+8);
             seq.add(itemType == null ? -1 : itemType.id); seq.add(sz);

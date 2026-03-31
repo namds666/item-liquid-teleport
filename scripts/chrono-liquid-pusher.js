@@ -229,7 +229,7 @@ blockType.buildType = prov(() => {
         },
         config() {
             // TypeIO.writeObject has an array size limit; cap serialized links to avoid crash on save.
-            const MAX_CONFIG_LINKS = 200;
+            const MAX_CONFIG_LINKS = 2000;
             let sz = Math.min(links.size, MAX_CONFIG_LINKS);
             let out = new IntSeq(sz*2 + 9);
             out.add(selectedLiquid == null ? -1 : selectedLiquid.id);
