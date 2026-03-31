@@ -83,6 +83,7 @@ blockType.buildType = prov(() => {
     function lv(the, pos) { if (pos == null || pos == -1) return false; return lvt(the, Vars.world.build(pos)); }
     const clearFn = () => { let s = new IntSeq(2); s.add(itemType == null ? -1 : itemType.id); s.add(0); return s; };
     const scanJob = lib.makeScanJob(autoFlags, 50);
+    const batchApply = lib.makeBatchApply(() => links);
     return new JavaAdapter(StorageBlock.StorageBuild, {
         getLinks() { return links; },
         getItemType() { return itemType; },
@@ -138,11 +139,7 @@ blockType.buildType = prov(() => {
                     Time.run(Mathf.random(10), run(() => { outEffect.at(this.x, this.y, 0); }));
                 for (let i = 0; i < FRAME_DELAY; i++) this.dump();
             }
-            scanJob.tick(this, () => links, lvt, clearFn, (toAdd, toRemove) => {
-                for (let pos of toAdd) links.add(lib.int(pos));
-                for (let pos of toRemove) { let int = lib.int(pos); links.remove(boolf(i => i == int)); }
-                if (!Vars.net.client()) this.configure(this.config());
-            });
+            scanJob.tick(this, () => links, lvt, clearFn, batchApply);
             warmup = Mathf.lerpDelta(warmup, consValid ? 1 : 0, warmupSpeed);
             rotateSpeed = Mathf.lerpDelta(rotateSpeed, slowdownDelay > 0 ? 1 : 0, warmupSpeed);
             slowdownDelay = Math.max(0, slowdownDelay - 1);

@@ -71,7 +71,7 @@ exports.makeScanJob = (autoFlags, chunkSize) => {
                 idx = end;
 
                 if (batchApply && (toAdd.length > 0 || toRemove.length > 0)) {
-                    batchApply(toAdd, toRemove);
+                    batchApply(the, toAdd, toRemove);
                     toAdd = []; toRemove = [];
                 }
 
@@ -91,6 +91,12 @@ exports.makeScanJob = (autoFlags, chunkSize) => {
             }
         }
     };
+};
+exports.makeBatchApply = (getLinks) => (the, toAdd, toRemove) => {
+    let links = getLinks();
+    for (let pos of toAdd) links.add(exports.int(pos));
+    for (let pos of toRemove) { let int = exports.int(pos); links.remove(boolf(i => i == int)); }
+    if (!Vars.net.client()) the.configure(the.config());
 };
 const makeCheck = (table, autoFlags, idx) => {
     let chk = new CheckBox("");

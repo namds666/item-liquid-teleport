@@ -83,6 +83,7 @@ blockType.buildType = prov(() => {
     function lv(the, pos) { if (pos == null || pos == -1) return false; return lvt(the, Vars.world.build(pos)); }
     const clearFn = () => { let s = new IntSeq(2); s.add(liquidType == null ? -1 : liquidType.id); s.add(0); return s; };
     const scanJob = lib.makeScanJob(autoFlags, 50);
+    const batchApply = lib.makeBatchApply(() => links);
     return extend(Building, {
         get liquidType() { return liquidType; },
         set liquidType(v) { liquidType = v; },
@@ -140,11 +141,7 @@ blockType.buildType = prov(() => {
                 }
                 if (liquidType != null && this.liquids.get(liquidType) > 0.001) this.dumpLiquid(liquidType);
             }
-            scanJob.tick(this, () => links, lvt, clearFn, (toAdd, toRemove) => {
-                for (let pos of toAdd) links.add(lib.int(pos));
-                for (let pos of toRemove) { let int = lib.int(pos); links.remove(boolf(i => i == int)); }
-                if (!Vars.net.client()) this.configure(this.config());
-            });
+            scanJob.tick(this, () => links, lvt, clearFn, batchApply);
             warmup = Mathf.lerpDelta(warmup, this.efficiency > 0 ? 1 : 0, warmupSpeed);
             rotateSpeed = Mathf.lerpDelta(rotateSpeed, slowdownDelay > 0 ? 1 : 0, warmupSpeed);
             slowdownDelay = Math.max(0, slowdownDelay - 1);
