@@ -67,15 +67,23 @@ blockType.itemCapacity    = 10000;
 blockType.noUpdateDisabled = true;
 
 blockType.config(IntSeq, lib.cons2((tile, sq) => {
-    // Format v3+: [selectedItemId, lc, x0,y0,x1,y1,..., af0..af5]
+    // v3 format (even size): [selectedItemId, lc, x0,y0,..., af0..af5]
+    // old format (odd size):  [lc, x0,y0,..., af0..af5]  (no selectedItemId)
     if (sq.size == 0) { tile.setLink(new Seq(java.lang.Integer)); return; }
-    let selectedId = sq.get(0);
+    let isV3 = (sq.size % 2 == 0);
+    let selectedId = isV3 ? sq.get(0) : -1;
+    let lc         = isV3 ? sq.get(1) : sq.get(0);
+    let linkStart  = isV3 ? 2 : 1;
     tile.setSelectedItemId(selectedId);
-    let lc = sq.get(1), lx = null;
+    let lx = null;
     let links = new Seq(java.lang.Integer);
-    for (let i = 2; i < 2 + lc*2; i++) { let n = sq.get(i); if (lx == null) lx = n; else { links.add(lib.int(Point2.pack(lx + tile.tileX(), n + tile.tileY()))); lx = null; } }
+    for (let i = linkStart; i < Math.min(linkStart + lc*2, sq.size); i++) {
+        let n = sq.get(i);
+        if (lx == null) lx = n; else { links.add(lib.int(Point2.pack(lx + tile.tileX(), n + tile.tileY()))); lx = null; }
+    }
     tile.setLink(links);
-    if (sq.size >= 2 + lc*2 + 6) tile.setAutoFlagsFromSeq(sq, 2 + lc*2);
+    let autoStart = linkStart + lc*2;
+    if (sq.size >= autoStart + 6) tile.setAutoFlagsFromSeq(sq, autoStart);
 }));
 blockType.config(java.lang.Integer, lib.cons2((tile, int) => { if (int < 0) tile.setSelectedItemId(-1); else tile.setOneLink(int); }));
 blockType.config(Item, lib.cons2((tile, item) => { tile.setSelectedItemId(item == null ? -1 : item.id); }));
