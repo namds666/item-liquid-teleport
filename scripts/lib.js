@@ -13,14 +13,16 @@ const autoConnect = (the, getLinks, lvt, filter) => {
     }));
 };
 exports.makeScanJob = (autoFlags, chunkSize) => {
-    const SCAN_DELAY = 120;
+    const SCAN_DELAY = 60;
     let snapshot = null, idx = -1, delay = SCAN_DELAY;
     let prevFlags = [false, false, false, false, false, false];
-    
+    let linkSet = null;
+    let toAdd = [], toRemove = [];
+
     return {
-        tick(the, getLinks, lvt, clearFn) {
+        tick(the, getLinks, lvt, clearFn, batchApply) {
             if (Vars.net.client()) return;
-            
+
             let anyEnabled = false;
             let flagsChanged = false;
             for (let i = 0; i < 6; i++) {
@@ -33,16 +35,22 @@ exports.makeScanJob = (autoFlags, chunkSize) => {
             }
 
             if (idx >= 0) {
-                let links = getLinks();
+                // Build linkSet once at scan start for O(1) lookup
+                if (linkSet == null) {
+                    linkSet = new Set();
+                    let it = getLinks().iterator();
+                    while (it.hasNext()) linkSet.add(it.next() | 0);
+                }
+
                 let end = Math.min(idx + chunkSize, snapshot.length);
                 for (let si = idx; si < end; si++) {
                     let b = snapshot[si];
                     if (!b || b == the) continue;
                     if (CHRONO_NAMES.indexOf(b.block.name) >= 0) continue;
-                    
-                    let int = new java.lang.Integer(b.pos());
-                    let hasLink = links.contains(boolf(i => i == int));
-                    
+
+                    let pos = b.pos() | 0;
+                    let hasLink = linkSet.has(pos);
+
                     let isValidTarget = lvt(the, b) && (
                           (autoFlags[0] && b.block.category == Category.effect) ||
                           (autoFlags[1] && b.block.category == Category.turret) ||
@@ -51,15 +59,26 @@ exports.makeScanJob = (autoFlags, chunkSize) => {
                           (autoFlags[4] && b.block.category == Category.units) ||
                           (autoFlags[5] && b.block.category == Category.production)
                     );
-                    
+
                     if (isValidTarget && !hasLink) {
-                        the.configure(int);
+                        if (batchApply) { toAdd.push(pos); linkSet.add(pos); }
+                        else the.configure(new java.lang.Integer(pos));
                     } else if (!isValidTarget && hasLink) {
-                        the.configure(int);
+                        if (batchApply) { toRemove.push(pos); linkSet.delete(pos); }
+                        else the.configure(new java.lang.Integer(pos));
                     }
                 }
                 idx = end;
-                if (idx >= snapshot.length) { idx = -1; snapshot = null; }
+
+                if (batchApply && (toAdd.length > 0 || toRemove.length > 0)) {
+                    batchApply(toAdd, toRemove);
+                    toAdd = []; toRemove = [];
+                }
+
+                if (idx >= snapshot.length) {
+                    idx = -1; snapshot = null; linkSet = null;
+                    toAdd = []; toRemove = [];
+                }
             } else {
                 if (!anyEnabled) {
                     delay = SCAN_DELAY;

@@ -101,7 +101,7 @@ blockType.buildType = prov(() => {
     function lvt(the, t) { return t && t.team == the.team && the.within(t, range); }
     function lv(the, pos) { if (pos == null || pos == -1) return false; return lvt(the, Vars.world.build(pos)); }
     const clearFn = () => new IntSeq();
-    const scanJob = lib.makeScanJob(autoFlags, 20);
+    const scanJob = lib.makeScanJob(autoFlags, 50);
     const tmpHave = [];
     return new JavaAdapter(StorageBlock.StorageBuild, {
         getLink() { return links; },
@@ -180,7 +180,11 @@ blockType.buildType = prov(() => {
                 rotateSpeed = Mathf.lerpDelta(rotateSpeed, 0, warmupSpeed);
             }
             if (warmup > 0) rotateDeg += rotateSpeed;
-            scanJob.tick(this, () => links, lvt, clearFn);
+            scanJob.tick(this, () => links, lvt, clearFn, (toAdd, toRemove) => {
+                for (let pos of toAdd) links.add(lib.int(pos));
+                for (let pos of toRemove) { let int = lib.int(pos); links.remove(boolf(i => i == int)); }
+                if (!Vars.net.client()) this.configure(this.config());
+            });
         },
         draw() {
             this.super$draw();
