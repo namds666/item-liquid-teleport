@@ -50,7 +50,7 @@ Returns a stateful scan job called from `updateTile` every tick. Flow:
 2. On trigger: snapshots `Groups.build` into an array, sets `idx = 0`.
 3. Each tick, processes `chunkSize` (50) buildings from the snapshot — checks `lvt` and category flags, accumulates `toAdd`/`toRemove` lists.
 4. At scan end: calls `batchApply(toAdd, toRemove)` to flush the final batch, then fires one `configure(config())` sync to propagate to other clients.
-5. Chrono blocks themselves are excluded from linking to each other via `CHRONO_NAMES` check.
+5. Chrono blocks themselves are excluded via `CHRONO_NAMES` check; `ConstructBuild`s (buildings under construction) are excluded via `getSimpleName() === "ConstructBuild"` — their `.block` resolves to the real block so they pass category checks, but their `.liquids` is null, causing crashes.
 
 ### Batch apply (`makeBatchApply`)
 Mutates the `links` Seq directly (add/remove) without going through `configure()` per-entry. Deferred to scan end to avoid mid-scan cap truncation (serialization cap is 2000 links).
@@ -84,6 +84,7 @@ item-liquid-teleport/
 │   ├── chrono-liquid-pusher.js
 │   ├── chrono-core.js
 │   └── chrono-mender.js
+├── edgeCase/                   known edge-case notes
 └── sprites/
     ├── blocks/distribution/        item blocks (32×32)
     └── blocks/liquid/              liquid blocks (32×32, center dot tinted at render time)

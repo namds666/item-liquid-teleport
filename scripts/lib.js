@@ -6,6 +6,7 @@ const autoConnect = (the, getLinks, lvt, filter) => {
     Groups.build.each(cons(b => {
         if (b == the) return;
         if (CHRONO_NAMES.indexOf(b.block.name) >= 0) return;
+        if (b.getClass().getSimpleName() === "ConstructBuild") return;
         if (filter && !filter(b)) return;
         if (!lvt(the, b)) return;
         let int = new java.lang.Integer(b.pos());
@@ -48,6 +49,7 @@ exports.makeScanJob = (autoFlags, chunkSize) => {
                     let b = snapshot[si];
                     if (!b || b == the) continue;
                     if (CHRONO_NAMES.indexOf(b.block.name) >= 0) continue;
+                    if (b.getClass().getSimpleName() === "ConstructBuild") continue;
 
                     let pos = b.pos() | 0;
                     let hasLink = linkSet.has(pos);

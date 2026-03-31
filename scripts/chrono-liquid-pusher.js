@@ -136,7 +136,7 @@ blockType.buildType = prov(() => {
                                 if (pos == null || pos == -1) { this.configure(lib.int(pos)); continue; }
                                 let lt = Vars.world.build(pos);
                                 if (!lvt(this, lt)) { this.deadLink(pos); if (--max <= 0) break; continue; }
-                                if (!lt.block.hasLiquids) continue;
+                                if (!lt.block.hasLiquids || lt.liquids == null) continue;
                                 let space = lt.block.liquidCapacity - lt.liquids.get(selectedLiquid);
                                 let amount = Math.min(have, Math.min(space, TRANSFER_RATE));
                                 if (amount > 0.001) {
@@ -160,7 +160,7 @@ blockType.buildType = prov(() => {
                                 if (pos == null || pos == -1) { this.configure(lib.int(pos)); continue; }
                                 let lt = Vars.world.build(pos);
                                 if (!lvt(this, lt)) { this.deadLink(pos); if (--max <= 0) break; continue; }
-                                if (!lt.block.hasLiquids) continue;
+                                if (!lt.block.hasLiquids || lt.liquids == null) continue;
                                 let space = lt.block.liquidCapacity - lt.liquids.get(liq);
                                 let amount = Math.min(have, Math.min(space, TRANSFER_RATE));
                                 if (amount > 0.001) {
