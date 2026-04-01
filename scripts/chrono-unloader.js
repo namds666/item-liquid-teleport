@@ -65,7 +65,7 @@ blockType.config(IntSeq, lib.cons2((tile, seq) => {
     let lc = seq.get(1), lx = null, nl = new Seq(true, lc, java.lang.Integer);
     for (let i = 2; i < 2 + lc*2; i++) { let n = seq.get(i); if (lx == null) lx = n; else { nl.add(lib.int(Point2.pack(lx + tile.tileX(), n + tile.tileY()))); lx = null; } }
     tile.setItemTypeId(seq.get(0)); tile.setLinks(nl);
-    if (seq.size > 2 + lc*2) tile.setAutoFlagsFromSeq(seq, 2 + lc*2);
+    if (seq.size >= 2 + lc*2 + 6) tile.setAutoFlagsFromSeq(seq, 2 + lc*2);
 }));
 blockType.config(java.lang.Integer, lib.cons2((tile, int) => { tile.setOneLink(int); }));
 blockType.config(Item, lib.cons2((tile, item) => { tile.setItemTypeId(item.id); }));
@@ -98,7 +98,7 @@ blockType.buildType = prov(() => {
             let int = new java.lang.Integer(v);
             if (!links.remove(boolf(i => i == int))) links.add(int);
         },
-        setAutoFlagsFromSeq(seq, offset) { for (let i = 0; i < 6; i++) autoFlags[i] = seq.get(offset + i) > 0; },
+        setAutoFlagsFromSeq(seq, offset) { for (let i = 0; i < 6; i++) autoFlags[i] = (offset + i < seq.size) && seq.get(offset + i) > 0; },
         deadLink(v) {
             if (Vars.net.client()) return;
             let int = new java.lang.Integer(v);

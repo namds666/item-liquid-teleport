@@ -68,13 +68,16 @@ blockType.requirements     = ItemStack.with();
 
 blockType.config(IntSeq, lib.cons2((tile, sq) => {
     // Format v5+: [selectedLiquidId, lc, x0,y0,x1,y1,..., af0..af5]
+    // Guard: an empty IntSeq means "clear links" (e.g. from the Clear All button).
+    if (sq.size == 0) { tile.setLink(new Seq(java.lang.Integer)); return; }
     let selectedId = sq.get(0);
     tile.setSelectedLiquidId(selectedId);
-    let lc = sq.get(1), lx = null;
+    let lc = sq.size >= 2 ? sq.get(1) : 0, lx = null;
     let links = new Seq(java.lang.Integer);
-    for (let i = 2; i < 2 + lc*2; i++) { let n = sq.get(i); if (lx == null) lx = n; else { links.add(lib.int(Point2.pack(lx + tile.tileX(), n + tile.tileY()))); lx = null; } }
+    for (let i = 2; i < Math.min(2 + lc*2, sq.size); i++) { let n = sq.get(i); if (lx == null) lx = n; else { links.add(lib.int(Point2.pack(lx + tile.tileX(), n + tile.tileY()))); lx = null; } }
     tile.setLink(links);
-    tile.setAutoFlagsFromSeq(sq, 2 + lc*2);
+    let autoStart = 2 + lc*2;
+    if (sq.size >= autoStart + 6) tile.setAutoFlagsFromSeq(sq, autoStart);
 }));
 blockType.config(java.lang.Integer, lib.cons2((tile, int) => { tile.setOneLink(int); }));
 blockType.config(Liquid, lib.cons2((tile, liquid) => { tile.setSelectedLiquidId(liquid == null ? -1 : liquid.id); }));
@@ -106,7 +109,7 @@ blockType.buildType = prov(() => {
             let int = new java.lang.Integer(v);
             if (!links.remove(boolf(i => i == int))) links.add(int);
         },
-        setAutoFlagsFromSeq(seq, offset) { for (let i = 0; i < 6; i++) autoFlags[i] = seq.get(offset + i) > 0; },
+        setAutoFlagsFromSeq(seq, offset) { for (let i = 0; i < 6; i++) autoFlags[i] = (offset + i < seq.size) && seq.get(offset + i) > 0; },
         setSelectedLiquidId(v) { selectedLiquid = (v == null || v < 0) ? null : Vars.content.liquids().get(v); },
         deadLink(v) {
             if (Vars.net.client()) return;
