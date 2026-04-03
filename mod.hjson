@@ -2,9 +2,9 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code",
-  subtitle: "v1.2.26: add chrono repair point",
+  subtitle: "v1.2.27: tune repair turret",
   description: "Makes item and liquid teleport in a huge range! 4 cheat-grade 1x1 transport blocks.
   Update: fix crash when entering a new map with many links.",
-  version: "1.2.26",
+  version: "1.2.27",
   minGameVersion: "146"
 }
