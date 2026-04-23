@@ -34,14 +34,18 @@ const blockType = extend(Block, "chrono-liquid-unloader", {
     drawPlace(x, y, rotation, valid) { Drawf.dashCircle(x * Vars.tilesize, y * Vars.tilesize, range, Pal.accent); },
     pointConfig(config, transformer) {
         if (!IntSeq.__javaObject__.isInstance(config)) return config;
+        if (config.size < 2) return config;
+        let lc = Math.max(0, Math.min(config.get(1), Math.floor((config.size - 2) / 2)));
         let ns = new IntSeq(config.size);
-        ns.add(config.get(0)); ns.add(config.get(1));
-        let lx = null;
-        for (let i = 2; i < config.size; i++) {
-            let n = config.get(i);
-            if (lx == null) { lx = n; }
-            else { let p = new Point2(lx*2-1, n*2-1); transformer.get(p); ns.add((p.x+1)/2); ns.add((p.y+1)/2); lx = null; }
+        ns.add(config.get(0)); ns.add(lc);
+        for (let i = 0; i < lc; i++) {
+            let base = 2 + i * 2;
+            let p = new Point2(config.get(base)*2-1, config.get(base+1)*2-1);
+            transformer.get(p);
+            ns.add((p.x+1)/2);
+            ns.add((p.y+1)/2);
         }
+        for (let i = 2 + lc * 2; i < config.size; i++) ns.add(config.get(i));
         return ns;
     },
 });
@@ -62,7 +66,9 @@ blockType.noUpdateDisabled = true;
 blockType.requirements     = ItemStack.with();
 
 blockType.config(IntSeq, lib.cons2((tile, seq) => {
-    let lc = seq.get(1), lx = null, nl = new Seq(true, lc, java.lang.Integer);
+    if (seq.size == 0) { tile.setLinks(new Seq(java.lang.Integer)); return; }
+    if (seq.size == 1) { tile.setLiquidTypeId(seq.get(0)); tile.setLinks(new Seq(java.lang.Integer)); return; }
+    let lc = Math.max(0, Math.min(seq.get(1), Math.floor((seq.size - 2) / 2))), lx = null, nl = new Seq(true, lc, java.lang.Integer);
     for (let i = 2; i < 2 + lc*2; i++) { let n = seq.get(i); if (lx == null) lx = n; else { nl.add(lib.int(Point2.pack(lx + tile.tileX(), n + tile.tileY()))); lx = null; } }
     tile.setLiquidTypeId(seq.get(0)); tile.setLinks(nl);
     if (seq.size >= 2 + lc*2 + 6) tile.setAutoFlagsFromSeq(seq, 2 + lc*2);
@@ -112,7 +118,10 @@ blockType.buildType = prov(() => {
             if (!deadLinks.remove(boolf(i => i == int))) return;
             if (lv(this, int)) this.configure(new java.lang.Integer(Vars.world.build(int).pos()));
         },
-        setLiquidTypeId(v) { liquidType = (v == null || v < 0) ? null : Vars.content.liquids().get(v); },
+        setLiquidTypeId(v) {
+            let liquids = Vars.content.liquids();
+            liquidType = (v == null || v < 0 || v >= liquids.size) ? null : liquids.get(v);
+        },
         updateTile() {
             let hasLiquid = false;
             if (timer.get(0, FRAME_DELAY)) {
@@ -201,7 +210,7 @@ blockType.buildType = prov(() => {
         },
         read(read, revision) {
             this.super$read(read, revision);
-            let id = read.s(); liquidType = id == -1 ? null : Vars.content.liquids().get(id);
+            let id = read.s(); this.setLiquidTypeId(id);
             links = new Seq(java.lang.Integer);
             let sz = read.s(); for (let i = 0; i < sz; i++) links.add(new java.lang.Integer(read.i()));
             if (revision >= 2) { autoFlags[0] = read.bool(); autoFlags[1] = read.bool(); autoFlags[2] = read.bool(); autoFlags[3] = read.bool(); }
