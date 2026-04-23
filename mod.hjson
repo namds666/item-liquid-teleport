@@ -2,9 +2,9 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code",
-  subtitle: "v1.2.28: fix liquid schematic crash",
+  subtitle: "v1.2.29: fix particle direction",
   description: "Makes item and liquid teleport in a huge range! 4 cheat-grade 1x1 transport blocks.
-  Update: fix liquid schematic crash.",
-  version: "1.2.28",
+  Update: fix particle direction.",
+  version: "1.2.29",
   minGameVersion: "146"
 }

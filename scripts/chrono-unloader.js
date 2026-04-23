@@ -5,10 +5,10 @@ let topRegion, bottomRegion, rotatorRegion;
 const BLUE = Color.valueOf("#0068fc");
 const outEffect = lib.newEffect(38, e => {
     Draw.color(BLUE);
-    Angles.randLenVectors(e.id, 1, 8 * e.fin(), 0, 360, new Floatc2({ get: (x, y) => {
+    Angles.randLenVectors(e.id, 1, 8 * e.fout(), 0, 360, new Floatc2({ get: (x, y) => {
         let a = Angles.angle(0, 0, x, y);
-        Fill.circle(e.x + Angles.trnsx(a,2) + x + Angles.trnsx(a,4)*e.fin(),
-                    e.y + Angles.trnsy(a,2) + y + Angles.trnsy(a,4)*e.fin(), e.fslope()*0.8);
+        Fill.circle(e.x + Angles.trnsx(a,2) + x + Angles.trnsx(a,4)*e.fout(),
+                    e.y + Angles.trnsy(a,2) + y + Angles.trnsy(a,4)*e.fout(), e.fslope()*0.8);
     }}));
 });
 const blockType = extend(StorageBlock, "chrono-unloader", {
