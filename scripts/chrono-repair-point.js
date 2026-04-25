@@ -1,12 +1,12 @@
 const cfg = {
     size: 1,
     health: 40,
-    range: 1200,
-    trackingRange: 1200,
+    range: 1000000,
+    trackingRange: 1000000,
     repairSpeed: 27 / 60,
     powerUse: 1,
     beamWidth: 0.7,
-    rotateSpeed: 7,
+    rotateSpeed: 360,
     shootCone: 30,
     coolantUse: 0,
     coolantMultiplier: 1,
@@ -20,11 +20,9 @@ const chronoRepairPoint = extend(RepairTurret, "chrono-repair-point", {
         try {
             this.stats.remove(Stat.range);
         } catch (e) {}
-        this.stats.add(Stat.range, cfg.range / Vars.tilesize, StatUnit.blocks);
     },
     drawPlace(x, y, rotation, valid) {
-        this.super$drawPlace(x, y, rotation, valid);
-        Drawf.dashCircle(x * Vars.tilesize, y * Vars.tilesize, cfg.range, Pal.heal);
+        // Keep the vanilla placement sprite but skip the enormous global range circle.
     }
 });
 
@@ -49,6 +47,13 @@ chronoRepairPoint.requirements = ItemStack.with(
     Items.silicon, 20
 );
 chronoRepairPoint.consumePower(cfg.powerUse);
+
+chronoRepairPoint.buildType = prov(() => new JavaAdapter(RepairTurret.RepairPointBuild, {
+    range() { return cfg.range; },
+    drawSelect() {
+        // Global range is intentionally not drawn.
+    }
+}, chronoRepairPoint));
 
 try { chronoRepairPoint.envEnabled = Packages.mindustry.type.Env.terrestrial; } catch (e) {}
 

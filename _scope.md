@@ -40,6 +40,12 @@ A standalone Mindustry mod providing 4 cheat-grade, 1×1 transport blocks for in
 - **Requirements:** 25 copper.
 - **Size:** 1×1, health 8000.
 
+### Chrono Repair Point (`chrono-repair-point`)
+- **Category:** Unit
+- **Function:** Repairs damaged friendly units globally with the vanilla continuous-beam repair turret logic.
+- **Requirements:** 30 copper + 30 lead + 20 silicon.
+- **Size:** 1×1, health 40.
+
 ## Shared lib.js Infrastructure
 
 All four transport blocks share the same plumbing from `lib.js`:
