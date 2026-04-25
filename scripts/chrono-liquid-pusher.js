@@ -1,6 +1,6 @@
 
 const lib = require("lib");
-const range = 1200, warmupSpeed = 0.05, TRANSFER_RATE = 20;
+const warmupSpeed = 0.05, TRANSFER_RATE = 500;
 let topRegion, bottomRegion, rotatorRegion;
 const GREEN = Color.valueOf("#00e070");
 const inEffect = lib.newEffect(38, e => {
@@ -19,10 +19,6 @@ const blockType = extend(Block, "chrono-liquid-pusher", {
         bottomRegion  = lib.loadRegion("chrono-liquid-pusher-bottom");
         rotatorRegion = lib.loadRegion("chrono-liquid-pusher-rotator");
     },
-    setStats() {
-        this.super$setStats();
-        this.stats.add(Stat.range, range / Vars.tilesize, StatUnit.blocks);
-    },
     setBars() {
         this.super$setBars();
         this.barMap.put("liquid", lib.func(e => {
@@ -38,7 +34,6 @@ const blockType = extend(Block, "chrono-liquid-pusher", {
             );
         }));
     },
-    drawPlace(x, y, rotation, valid) { Drawf.dashCircle(x * Vars.tilesize, y * Vars.tilesize, range, Pal.accent); },
     pointConfig(config, transformer) {
         if (!IntSeq.__javaObject__.isInstance(config)) return config;
         if (config.size < 2) return config;
@@ -99,7 +94,7 @@ blockType.buildType = prov(() => {
     let selectedLiquid = null;
     let warmup = 0, rotateDeg = 0, rotateSpeed = 0, liquidSent = false;
     const looper = (() => { let idx = 0; return { next(m) { if (idx < 0 || idx >= m) idx = m-1; let v = idx; idx--; return v; } }; })();
-    function lvt(the, t) { return t && t.team == the.team && the.within(t, range); }
+    function lvt(the, t) { return t && t.team == the.team; }
     function lv(the, pos) { if (pos == null || pos == -1) return false; return lvt(the, Vars.world.build(pos)); }
     const clearFn = () => new IntSeq();
     const scanJob = lib.makeScanJob(autoFlags, 50);
@@ -224,13 +219,12 @@ blockType.buildType = prov(() => {
                 let pos = links.get(i);
                 if (lv(this, pos)) { let lt = Vars.world.build(pos); Drawf.square(lt.x, lt.y, lt.block.size*Vars.tilesize/2+1, Pal.place); }
             }
-            Drawf.dashCircle(this.x, this.y, range, Pal.accent);
             if (this.enabled && rotateSpeed > 0.5 && Mathf.random(60) > 48)
                 Time.run(Mathf.random(10), run(() => { inEffect.at(this.x, this.y, 0); }));
         },
         onConfigureBuildTapped(other) {
             if (this == other) return false;
-            if (this.dst(other) <= range && other.team == this.team) { this.configure(new java.lang.Integer(other.pos())); return false; }
+            if (other.team == this.team) { this.configure(new java.lang.Integer(other.pos())); return false; }
             return true;
         },
         buildConfiguration(table) {

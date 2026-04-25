@@ -1,7 +1,7 @@
 # Chrono Transport — Mod Scope
 
 ## Overview
-A standalone Mindustry mod providing 4 cheat-grade, 1×1 transport blocks for instant item and liquid distribution across long distances.
+A standalone Mindustry mod providing 4 cheat-grade, 1×1 transport blocks for instant global item and liquid distribution.
 
 ## Blocks
 
@@ -62,7 +62,7 @@ Renders 6 checkbox+button pairs for categories: Misc (effect), Turret, Factory (
 | Property | Value |
 |---|---|
 | Size | 1×1 |
-| Range | 1200 px (150 tiles) |
+| Range | Global (no distance limit) |
 | Max links (runtime) | Unlimited |
 | Max links (serialized) | 2000 (capped in `config()` to avoid `TypeIO.writeObject` crash) |
 | Transfer rate | Items: 500/link/5-tick; Liquid unloader: 500/link/5-tick; Liquid pusher: 20/link/5-tick |

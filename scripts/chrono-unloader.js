@@ -1,6 +1,6 @@
 
 const lib = require("lib");
-const range = 1200, warmupSpeed = 0.05;
+const warmupSpeed = 0.05;
 let topRegion, bottomRegion, rotatorRegion;
 const BLUE = Color.valueOf("#0068fc");
 const outEffect = lib.newEffect(38, e => {
@@ -19,10 +19,6 @@ const blockType = extend(StorageBlock, "chrono-unloader", {
         rotatorRegion = lib.loadRegion("chrono-unloader-rotator");
     },
     init() { this.super$init(); this.acceptsItems = false; },
-    setStats() {
-        this.super$setStats();
-        this.stats.add(Stat.range, range / Vars.tilesize, StatUnit.blocks);
-    },
     setBars() {
         this.super$setBars();
         this.barMap.put("capacity", lib.func(e => new Bar(
@@ -31,7 +27,6 @@ const blockType = extend(StorageBlock, "chrono-unloader", {
             floatp(() => e.items.total() / (e.block.itemCapacity * Vars.content.items().count(boolf(i => i.unlockedNow()))))
         )));
     },
-    drawPlace(x, y, rotation, valid) { Drawf.dashCircle(x * Vars.tilesize, y * Vars.tilesize, range, Pal.accent); },
     outputsItems() { return true; },
     pointConfig(config, transformer) {
         if (!IntSeq.__javaObject__.isInstance(config)) return config;
@@ -79,7 +74,7 @@ blockType.buildType = prov(() => {
     let autoFlags = [false, false, false, false, false, false];
     let slowdownDelay = 0, warmup = 0, rotateDeg = 0, rotateSpeed = 0, consValid = false;
     const looper = (() => { let idx = 0; return { next(m) { if (idx < 0 || idx >= m) idx = m-1; let v = idx; idx--; return v; } }; })();
-    function lvt(the, t) { return t && t.team == the.team && t.items != null && the.within(t, range); }
+    function lvt(the, t) { return t && t.team == the.team && t.items != null; }
     function lv(the, pos) { if (pos == null || pos == -1) return false; return lvt(the, Vars.world.build(pos)); }
     const clearFn = () => { let s = new IntSeq(2); s.add(itemType == null ? -1 : itemType.id); s.add(0); return s; };
     const scanJob = lib.makeScanJob(autoFlags, 50);
@@ -180,11 +175,10 @@ blockType.buildType = prov(() => {
                 let pos = links.get(i);
                 if (lv(this, pos)) { let lt = Vars.world.build(pos); Drawf.square(lt.x, lt.y, lt.block.size*Vars.tilesize/2+1, Pal.place); }
             }
-            Drawf.dashCircle(this.x, this.y, range, Pal.accent);
         },
         onConfigureBuildTapped(other) {
             if (this == other) { this.configure(-1); return false; }
-            if (this.dst(other) <= range && other.team == this.team) { this.configure(new java.lang.Integer(other.pos())); return false; }
+            if (other.team == this.team) { this.configure(new java.lang.Integer(other.pos())); return false; }
             return true;
         },
         buildConfiguration(table) {
