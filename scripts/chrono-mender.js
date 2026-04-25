@@ -2,7 +2,6 @@
 const lib = require("lib");
 
 // ── Config ─────────────────────────────────────────────────────────────────
-const RANGE_TILES  = 100;   // tiles
 const HEAL_PERCENT = 50;   // % of max health healed per pulse (insane)
 const RELOAD       = 10;    // ticks between pulses (0.5 s — fully heals twice/sec)
 
@@ -16,19 +15,7 @@ const chronoMender = extend(Block, "chrono-mender", {
 
     setStats() {
         this.super$setStats();
-        this.stats.add(Stat.range, RANGE_TILES, StatUnit.blocks);
         this.stats.add(Stat.repairTime, (100 / HEAL_PERCENT * RELOAD / 60) | 0, StatUnit.seconds);
-    },
-
-    drawPlace(x, y, rotation, valid) {
-        this.super$drawPlace(x, y, rotation, valid);
-        if (!Vars.headless) {
-            Drawf.dashCircle(
-                x * Vars.tilesize, y * Vars.tilesize,
-                RANGE_TILES * Vars.tilesize,
-                Pal.heal
-            );
-        }
     }
 });
 
@@ -60,25 +47,14 @@ chronoMender.buildType = prov(() => extend(Building, {
         if (this.charge < RELOAD) return;
         this.charge = 0;
 
-        const rangePx = RANGE_TILES * Vars.tilesize;
-
         try {
-            Vars.indexer.eachBlock(
-                this,
-                rangePx,
-                b => b.damaged() && !b.isHealSuppressed(),
-                b => {
-                    b.heal(b.maxHealth * HEAL_PERCENT / 100.0);
-                    b.recentlyHealed();
-                    try { Fx.healBlockFull.at(b.x, b.y, b.block.size, Pal.heal, b.block); } catch(fe) {}
-                }
-            );
+            Groups.build.each(cons(b => {
+                if (!b || b.team != this.team || !b.damaged() || b.isHealSuppressed()) return;
+                b.heal(b.maxHealth * HEAL_PERCENT / 100.0);
+                b.recentlyHealed();
+                try { Fx.healBlockFull.at(b.x, b.y, b.block.size, Pal.heal, b.block); } catch(fe) {}
+            }));
         } catch(e) {}
-    },
-
-    drawSelect() {
-        if (Vars.headless) return;
-        Drawf.dashCircle(this.x, this.y, RANGE_TILES * Vars.tilesize, Pal.heal);
     },
 
     draw() {

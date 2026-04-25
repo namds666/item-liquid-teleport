@@ -2,9 +2,9 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code",
-  subtitle: "v1.2.30: global transport range",
+  subtitle: "v1.2.31: global chrono mender",
   description: "Makes item and liquid teleport globally! 4 cheat-grade 1x1 transport blocks.
-  Update: global transport range.",
-  version: "1.2.30",
+  Update: global chrono mender.",
+  version: "1.2.31",
   minGameVersion: "146"
 }

@@ -34,6 +34,12 @@ A standalone Mindustry mod providing 4 cheat-grade, 1×1 transport blocks for in
 - **Requirements:** 1000 copper + 1000 lead.
 - **Size:** 1×1, health 500.
 
+### Chrono Mender (`chrono-mender`)
+- **Category:** Effect
+- **Function:** Heals every damaged friendly building globally twice per second.
+- **Requirements:** 25 copper.
+- **Size:** 1×1, health 8000.
+
 ## Shared lib.js Infrastructure
 
 All four transport blocks share the same plumbing from `lib.js`:
