@@ -2,9 +2,9 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code",
-  subtitle: "v1.2.32: global repair point",
+  subtitle: "v1.2.33: true global repair",
   description: "Makes item and liquid teleport globally! 4 cheat-grade 1x1 transport blocks.
-  Update: global repair point.",
-  version: "1.2.32",
+  Update: true global repair.",
+  version: "1.2.33",
   minGameVersion: "146"
 }

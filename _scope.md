@@ -42,7 +42,7 @@ A standalone Mindustry mod providing 4 cheat-grade, 1×1 transport blocks for in
 
 ### Chrono Repair Point (`chrono-repair-point`)
 - **Category:** Unit
-- **Function:** Repairs damaged friendly units globally with the vanilla continuous-beam repair turret logic.
+- **Function:** Repairs the closest damaged friendly unit globally with custom continuous-beam logic.
 - **Requirements:** 30 copper + 30 lead + 20 silicon.
 - **Size:** 1×1, health 40.
 
