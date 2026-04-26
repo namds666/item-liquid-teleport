@@ -2,9 +2,9 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code",
-  subtitle: "v1.2.34: fix repair crash",
+  subtitle: "v1.2.35: fix repair hover",
   description: "Makes item and liquid teleport globally! 4 cheat-grade 1x1 transport blocks.
-  Update: fix repair crash.",
-  version: "1.2.34",
+  Update: fix repair hover.",
+  version: "1.2.35",
   minGameVersion: "146"
 }

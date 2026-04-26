@@ -1,20 +1,14 @@
 const cfg = {
     size: 1,
     health: 40,
-    range: 0,
-    trackingRange: 0,
     repairSpeed: 27 / 60,
     powerUse: 1,
     beamWidth: 0.7,
     rotateSpeed: 360,
-    shootCone: 30,
-    coolantUse: 0,
-    coolantMultiplier: 1,
-    acceptCoolant: false,
-    liquidCapacity: 0
+    shootCone: 30
 };
 
-const chronoRepairPoint = extend(RepairTurret, "chrono-repair-point", {
+const chronoRepairPoint = extend(Block, "chrono-repair-point", {
     setStats() {
         this.super$setStats();
         try {
@@ -23,22 +17,18 @@ const chronoRepairPoint = extend(RepairTurret, "chrono-repair-point", {
         this.stats.add(Stat.range, "Global");
     },
     drawPlace(x, y, rotation, valid) {
-        // Keep the vanilla placement sprite but skip the enormous global range circle.
+        this.super$drawPlace(x, y, rotation, valid);
     }
 });
 
 chronoRepairPoint.size = cfg.size;
 chronoRepairPoint.health = cfg.health;
-chronoRepairPoint.range = cfg.range;
-chronoRepairPoint.trackingRange = cfg.trackingRange;
 chronoRepairPoint.repairSpeed = cfg.repairSpeed;
 chronoRepairPoint.beamWidth = cfg.beamWidth;
 chronoRepairPoint.rotateSpeed = cfg.rotateSpeed;
 chronoRepairPoint.shootCone = cfg.shootCone;
-chronoRepairPoint.coolantUse = cfg.coolantUse;
-chronoRepairPoint.coolantMultiplier = cfg.coolantMultiplier;
-chronoRepairPoint.acceptCoolant = cfg.acceptCoolant;
-chronoRepairPoint.liquidCapacity = cfg.liquidCapacity;
+chronoRepairPoint.update = true;
+chronoRepairPoint.solid = true;
 chronoRepairPoint.buildVisibility = BuildVisibility.shown;
 chronoRepairPoint.alwaysUnlocked = true;
 chronoRepairPoint.category = Category.units;
