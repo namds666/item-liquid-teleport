@@ -59,6 +59,7 @@ blockType.saveConfig       = false;
 blockType.liquidCapacity   = 100;
 blockType.noUpdateDisabled = true;
 blockType.requirements     = ItemStack.with();
+lib.enableAllEnvironments(blockType);
 
 blockType.config(IntSeq, lib.cons2((tile, seq) => {
     if (seq.size == 0) { tile.setLinks(new Seq(java.lang.Integer)); return; }

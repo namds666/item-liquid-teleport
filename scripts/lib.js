@@ -139,3 +139,10 @@ exports.loadRegion = (name) => {
     if (Vars.headless === true) return null;
     return Core.atlas.find(exports.modName + "-" + name, "error");
 };
+exports.enableAllEnvironments = (block) => {
+    try {
+        block.envEnabled = Packages.mindustry.type.Env.any;
+        block.envDisabled = Packages.mindustry.type.Env.none;
+        block.envRequired = Packages.mindustry.type.Env.none;
+    } catch (e) {}
+};

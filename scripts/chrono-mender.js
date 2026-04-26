@@ -27,7 +27,8 @@ chronoMender.solid           = true;
 chronoMender.buildVisibility = BuildVisibility.shown;
 chronoMender.alwaysUnlocked  = true;
 chronoMender.category        = Category.effect;
-chronoMender.requirements    = ItemStack.with(Items.copper, 25);
+chronoMender.requirements    = ItemStack.with();
+lib.enableAllEnvironments(chronoMender);
 
 // ── Build type ─────────────────────────────────────────────────────────────
 chronoMender.buildType = prov(() => extend(Building, {

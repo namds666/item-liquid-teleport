@@ -32,11 +32,8 @@ chronoRepairPoint.solid = true;
 chronoRepairPoint.buildVisibility = BuildVisibility.shown;
 chronoRepairPoint.alwaysUnlocked = true;
 chronoRepairPoint.category = Category.units;
-chronoRepairPoint.requirements = ItemStack.with(
-    Items.copper, 30,
-    Items.lead, 30,
-    Items.silicon, 20
-);
+chronoRepairPoint.requirements = ItemStack.with();
+lib.enableAllEnvironments(chronoRepairPoint);
 chronoRepairPoint.consumePower(cfg.powerUse);
 
 chronoRepairPoint.buildType = prov(() => extend(Building, {

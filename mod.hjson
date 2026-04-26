@@ -2,9 +2,9 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code",
-  subtitle: "v1.2.40: all-map blocks",
+  subtitle: "v1.2.41: unlock all maps",
   description: "Makes item and liquid teleport globally! 4 cheat-grade 1x1 transport blocks.
-  Update: all-map blocks.",
-  version: "1.2.40",
+  Update: unlock all maps.",
+  version: "1.2.41",
   minGameVersion: "146"
 }

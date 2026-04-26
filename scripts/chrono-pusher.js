@@ -60,6 +60,8 @@ blockType.configurable    = true;
 blockType.saveConfig      = false;
 blockType.itemCapacity    = 10000;
 blockType.noUpdateDisabled = true;
+blockType.requirements    = ItemStack.with();
+lib.enableAllEnvironments(blockType);
 
 blockType.config(IntSeq, lib.cons2((tile, sq) => {
     // v3 format (even size): [selectedItemId, lc, x0,y0,..., af0..af5]

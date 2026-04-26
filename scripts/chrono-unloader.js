@@ -55,6 +55,7 @@ blockType.saveConfig      = false;
 blockType.itemCapacity    = 100;
 blockType.noUpdateDisabled = true;
 blockType.requirements    = ItemStack.with();
+lib.enableAllEnvironments(blockType);
 
 blockType.config(IntSeq, lib.cons2((tile, seq) => {
     let lc = seq.get(1), lx = null, nl = new Seq(true, lc, java.lang.Integer);

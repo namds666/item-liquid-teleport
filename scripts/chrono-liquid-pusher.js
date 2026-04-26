@@ -68,6 +68,7 @@ blockType.saveConfig       = false;
 blockType.liquidCapacity   = 10000;
 blockType.noUpdateDisabled = true;
 blockType.requirements     = ItemStack.with();
+lib.enableAllEnvironments(blockType);
 
 blockType.config(IntSeq, lib.cons2((tile, sq) => {
     // Format v5+: [selectedLiquidId, lc, x0,y0,x1,y1,..., af0..af5]

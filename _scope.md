@@ -37,13 +37,13 @@ A standalone Mindustry mod providing 4 cheat-grade, 1×1 transport blocks for in
 ### Chrono Mender (`chrono-mender`)
 - **Category:** Effect
 - **Function:** Heals every damaged friendly building globally twice per second.
-- **Requirements:** 25 copper.
+- **Requirements:** None (free to place).
 - **Size:** 1×1, health 8000.
 
 ### Chrono Repair Point (`chrono-repair-point`)
 - **Category:** Unit
 - **Function:** Repairs the closest damaged friendly unit globally with custom continuous-beam logic at 50% max health per second.
-- **Requirements:** 30 copper + 30 lead + 20 silicon.
+- **Requirements:** None (free to place).
 - **Size:** 1×1, health 40.
 
 ## Shared lib.js Infrastructure
