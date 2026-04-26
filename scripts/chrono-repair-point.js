@@ -112,7 +112,7 @@ chronoRepairPoint.buildType = prov(() => extend(Building, {
     buildRotation() { return this.rotation; },
     shouldConsume() { return this.target != null; },
     status() { return this.target == null ? BlockStatus.noInput : this.super$status(); },
-}, chronoRepairPoint));
+}));
 
 try { chronoRepairPoint.envEnabled = Packages.mindustry.type.Env.terrestrial; } catch (e) {}
 
