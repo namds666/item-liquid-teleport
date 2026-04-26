@@ -2,9 +2,9 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code",
-  subtitle: "v1.2.37: fix unit heal hook",
+  subtitle: "v1.2.39: percent unit repair",
   description: "Makes item and liquid teleport globally! 4 cheat-grade 1x1 transport blocks.
-  Update: fix unit heal hook.",
-  version: "1.2.37",
+  Update: percent unit repair.",
+  version: "1.2.39",
   minGameVersion: "146"
 }

@@ -1,7 +1,7 @@
 const cfg = {
     size: 1,
     health: 40,
-    repairSpeed: 27 / 60,
+    repairPercentPerSecond: 50,
     powerUse: 1,
     beamWidth: 0.7,
     rotateSpeed: 360,
@@ -23,7 +23,7 @@ const chronoRepairPoint = extend(Block, "chrono-repair-point", {
 
 chronoRepairPoint.size = cfg.size;
 chronoRepairPoint.health = cfg.health;
-chronoRepairPoint.repairSpeed = cfg.repairSpeed;
+chronoRepairPoint.repairPercentPerSecond = cfg.repairPercentPerSecond;
 chronoRepairPoint.beamWidth = cfg.beamWidth;
 chronoRepairPoint.rotateSpeed = cfg.rotateSpeed;
 chronoRepairPoint.shootCone = cfg.shootCone;
@@ -51,6 +51,13 @@ chronoRepairPoint.buildType = prov(() => extend(Building, {
         return typeof u.isHealSuppressed !== "function" || !u.isHealSuppressed();
     },
 
+    maxHealthOf(u) {
+        if (!u) return 0;
+        if (typeof u.maxHealth === "function") return u.maxHealth();
+        if (u.maxHealth != null) return u.maxHealth;
+        return u.type != null && u.type.health != null ? u.type.health : 0;
+    },
+
     findTarget() {
         let closest = null, closestDst2 = Number.MAX_VALUE;
         Groups.unit.each(cons(u => {
@@ -75,7 +82,7 @@ chronoRepairPoint.buildType = prov(() => extend(Building, {
             this.rotation = Angles.moveToward(this.rotation, angle, chronoRepairPoint.rotateSpeed * this.edelta());
 
             if (Angles.within(this.rotation, angle, chronoRepairPoint.shootCone)) {
-                let amount = chronoRepairPoint.repairSpeed * this.edelta();
+                let amount = this.maxHealthOf(this.target) * chronoRepairPoint.repairPercentPerSecond / 100 / 60 * this.edelta();
                 this.target.heal(amount);
                 if (typeof this.target.recentlyHealed === "function") this.target.recentlyHealed();
                 active = true;
