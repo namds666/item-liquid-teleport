@@ -1,8 +1,10 @@
 const lib = require("lib");
 
+const BuildTurretClass = Packages.mindustry.world.blocks.defense.BuildTurret;
+const Planets = Packages.mindustry.content.Planets;
 const GLOBAL_RANGE = 1000000;
 
-const blockType = extend(BuildTurret, "chrono-build-tower", {
+const blockType = extend(BuildTurretClass, "chrono-build-tower", {
     load() {
         this.super$load();
         if (Vars.headless) return;
@@ -22,9 +24,10 @@ const blockType = extend(BuildTurret, "chrono-build-tower", {
     drawPlace(x, y, rotation, valid) {}
 });
 
-blockType.buildVisibility = BuildVisibility.shown;
 blockType.alwaysUnlocked = true;
-blockType.category = Category.effect;
+blockType.setupRequirements(Category.effect, BuildVisibility.shown, ItemStack.with());
+blockType.shownPlanets.add(Planets.serpulo);
+blockType.shownPlanets.add(Planets.erekir);
 blockType.size = 1;
 blockType.health = 610;
 blockType.range = GLOBAL_RANGE;
@@ -32,7 +35,6 @@ blockType.buildSpeed = 1.5;
 blockType.buildBeamOffset = 5;
 blockType.unitType = UnitTypes.block;
 blockType.liquidCapacity = 0;
-blockType.requirements = ItemStack.with();
 lib.enableAllEnvironments(blockType);
 
 module.exports = blockType;
