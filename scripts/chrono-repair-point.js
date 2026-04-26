@@ -116,6 +116,4 @@ chronoRepairPoint.buildType = prov(() => extend(Building, {
     status() { return this.target == null ? BlockStatus.noInput : this.super$status(); },
 }));
 
-try { chronoRepairPoint.envEnabled = Packages.mindustry.type.Env.terrestrial; } catch (e) {}
-
 module.exports = chronoRepairPoint;

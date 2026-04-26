@@ -28,7 +28,6 @@ chronoMender.buildVisibility = BuildVisibility.shown;
 chronoMender.alwaysUnlocked  = true;
 chronoMender.category        = Category.effect;
 chronoMender.requirements    = ItemStack.with(Items.copper, 25);
-try { chronoMender.envEnabled = Packages.mindustry.type.Env.terrestrial; } catch(e) {}
 
 // ── Build type ─────────────────────────────────────────────────────────────
 chronoMender.buildType = prov(() => extend(Building, {
