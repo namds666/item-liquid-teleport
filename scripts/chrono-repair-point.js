@@ -46,10 +46,15 @@ chronoRepairPoint.buildType = prov(() => extend(Building, {
 
     range() { return Number.MAX_VALUE; },
 
+    canHealUnit(u) {
+        if (!u || u.team != this.team || !u.damaged()) return false;
+        return typeof u.isHealSuppressed !== "function" || !u.isHealSuppressed();
+    },
+
     findTarget() {
         let closest = null, closestDst2 = Number.MAX_VALUE;
         Groups.unit.each(cons(u => {
-            if (!u || u.team != this.team || !u.damaged() || u.isHealSuppressed()) return;
+            if (!this.canHealUnit(u)) return;
             let dst2 = this.dst2(u);
             if (dst2 < closestDst2) {
                 closest = u;
@@ -60,7 +65,7 @@ chronoRepairPoint.buildType = prov(() => extend(Building, {
     },
 
     updateTile() {
-        if (this.target == null || !this.target.isValid() || this.target.team != this.team || !this.target.damaged() || this.target.isHealSuppressed()) {
+        if (this.target == null || !this.target.isValid() || !this.canHealUnit(this.target)) {
             this.target = this.findTarget();
         }
 
