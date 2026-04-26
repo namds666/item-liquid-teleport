@@ -46,6 +46,12 @@ A standalone Mindustry mod providing 4 cheat-grade, 1×1 transport blocks for in
 - **Requirements:** None (free to place).
 - **Size:** 1×1, health 40.
 
+### Chrono Build Tower (`chrono-build-tower`)
+- **Category:** Effect
+- **Function:** Rebuilds structures and assists construction globally using vanilla `BuildTurret` logic.
+- **Requirements:** None (free to place).
+- **Size:** 1×1, health 610.
+
 ## Shared lib.js Infrastructure
 
 All four transport blocks share the same plumbing from `lib.js`:
@@ -95,7 +101,8 @@ item-liquid-teleport/
 │   ├── chrono-liquid-unloader.js
 │   ├── chrono-liquid-pusher.js
 │   ├── chrono-core.js
-│   └── chrono-mender.js
+│   ├── chrono-mender.js
+│   └── chrono-build-tower.js
 ├── edgeCase/                   known edge-case notes
 └── sprites/
     ├── blocks/distribution/        item blocks (32×32)

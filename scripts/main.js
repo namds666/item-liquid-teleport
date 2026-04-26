@@ -6,3 +6,4 @@ require("chrono-liquid-pusher");
 require("chrono-core");
 require("chrono-mender");
 require("chrono-repair-point");
+require("chrono-build-tower");
