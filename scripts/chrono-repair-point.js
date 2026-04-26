@@ -77,7 +77,7 @@ chronoRepairPoint.buildType = prov(() => extend(Building, {
             if (Angles.within(this.rotation, angle, chronoRepairPoint.shootCone)) {
                 let amount = chronoRepairPoint.repairSpeed * this.edelta();
                 this.target.heal(amount);
-                this.target.recentlyHealed();
+                if (typeof this.target.recentlyHealed === "function") this.target.recentlyHealed();
                 active = true;
 
                 if (!this.target.damaged()) this.target = this.findTarget();
