@@ -1,3 +1,5 @@
+const lib = require("lib");
+
 const cfg = {
     size: 1,
     health: 40,
