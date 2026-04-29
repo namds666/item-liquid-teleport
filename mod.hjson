@@ -2,9 +2,9 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code",
-  subtitle: "v1.2.45: fix large chrono configs",
+  subtitle: "v1.2.46: add chrono booster",
   description: "Makes item and liquid teleport globally! 4 cheat-grade 1x1 transport blocks.
-  Update: fix large chrono link configs crashing sector saves.",
-  version: "1.2.45",
+  Update: add chrono booster.",
+  version: "1.2.46",
   minGameVersion: "146"
 }

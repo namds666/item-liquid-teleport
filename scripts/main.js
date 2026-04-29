@@ -7,3 +7,4 @@ require("chrono-core");
 require("chrono-mender");
 require("chrono-repair-point");
 require("chrono-build-tower");
+require("chrono-booster");

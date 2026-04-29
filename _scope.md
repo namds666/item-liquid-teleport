@@ -52,6 +52,14 @@ A standalone Mindustry mod providing 4 cheat-grade, 1×1 transport blocks for in
 - **Requirements:** None (free to place).
 - **Size:** 1×1, health 610.
 
+### Chrono Booster (`chrono-booster`)
+- **Category:** Effect
+- **Function:** 1×1 overdrive dome variant. Copies Overdrive Dome cost, power draw, base range, base speed boost, use time, mandatory phase fabric + silicon operation, ambient sound volume, and sprite, with health fixed to the vanilla dome value.
+- **Base stats:** 25-block range, +150% speed, 10 power units/tick, consumes 1 phase fabric + 1 silicon every 5 seconds.
+- **Additive boosts:** Plastanium 1/sec, thorium 10/sec, copper 10/sec, and lead 10/sec each add +10 blocks range and +50% speed. Pyratite 1/sec and blast compound 1/sec each add +50 blocks range and +250% speed.
+- **Requirements:** Same as Overdrive Dome: 200 lead, 130 titanium, 130 silicon, 80 plastanium, 120 surge alloy.
+- **Size:** 1×1, health 485.
+
 ## Shared lib.js Infrastructure
 
 All four transport blocks share the same plumbing from `lib.js`:
@@ -107,6 +115,7 @@ item-liquid-teleport/
 │   ├── chrono-liquid-pusher.js
 │   ├── chrono-core.js
 │   ├── chrono-mender.js
+│   ├── chrono-booster.js
 │   └── chrono-build-tower.js
 ├── edgeCase/                   known edge-case notes
 └── sprites/
