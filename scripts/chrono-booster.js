@@ -7,33 +7,37 @@ const BASE_RANGE = 200;
 const BASE_SPEED = 2.5;
 const BASE_USE_TIME = 300;
 const BOOST_DURATION = 65;
-const NORMAL_RANGE = 10 * TILE;
-const NORMAL_SPEED = 0.5;
-const STRONG_RANGE = 50 * TILE;
-const STRONG_SPEED = 2.5;
 
 const itemBoosters = [
-    { item: Items.plastanium, amount: 1, range: NORMAL_RANGE, speed: NORMAL_SPEED },
-    { item: Items.thorium, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
-    { item: Items.copper, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
-    { item: Items.lead, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
-    { item: Items.pyratite, amount: 1, range: STRONG_RANGE, speed: STRONG_SPEED },
-    { item: Items.blastCompound, amount: 1, range: STRONG_RANGE, speed: STRONG_SPEED },
-    { item: Items.scrap, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
-    { item: Items.sand, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
-    { item: Items.coal, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
-    { item: Items.titanium, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
-    { item: Items.sporePod, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
-    { item: Items.metaglass, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
-    { item: Items.graphite, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
-    { item: Items.surgeAlloy, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
+    { item: Items.copper, amount: 40, range: 3 * TILE, speed: 0.3 },
+    { item: Items.lead, amount: 40, range: 3 * TILE, speed: 0.3 },
+    { item: Items.metaglass, amount: 25, range: 6 * TILE, speed: 0.6 },
+    { item: Items.graphite, amount: 20, range: 7 * TILE, speed: 0.7 },
+    { item: Items.sand, amount: 50, range: 2.5 * TILE, speed: 0.2 },
+    { item: Items.coal, amount: 35, range: 4 * TILE, speed: 0.4 },
+    { item: Items.titanium, amount: 25, range: 6 * TILE, speed: 0.6 },
+    { item: Items.thorium, amount: 12, range: 10 * TILE, speed: 1 },
+    { item: Items.scrap, amount: 50, range: 2.5 * TILE, speed: 0.2 },
+    { item: Items.plastanium, amount: 8, range: 12 * TILE, speed: 1.25 },
+    { item: Items.sporePod, amount: 20, range: 7 * TILE, speed: 0.7 },
+    { item: Items.surgeAlloy, amount: 4, range: 16 * TILE, speed: 1.75 },
+    { item: Items.pyratite, amount: 3, range: 18 * TILE, speed: 2 },
+    { item: Items.blastCompound, amount: 1, range: 25 * TILE, speed: 2.5 },
+];
+const oldItemBoostOrder = [
+    Items.plastanium,
+    Items.thorium,
+    Items.copper,
+    Items.lead,
+    Items.pyratite,
+    Items.blastCompound,
 ];
 
 const liquidBoosters = [
-    { liquid: Liquids.water, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
-    { liquid: Liquids.cryofluid, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
-    { liquid: Liquids.oil, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
-    { liquid: Liquids.slag, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
+    { liquid: Liquids.water, amount: 120, range: 2.5 * TILE, speed: 0.2 },
+    { liquid: Liquids.slag, amount: 90, range: 5 * TILE, speed: 0.5 },
+    { liquid: Liquids.oil, amount: 100, range: 4 * TILE, speed: 0.4 },
+    { liquid: Liquids.cryofluid, amount: 60, range: 12 * TILE, speed: 1.25 },
 ];
 
 function maxBoostSpeed() {
@@ -56,6 +60,13 @@ function acceptsBoostLiquid(liquid) {
         if (liquid == liquidBoosters[i].liquid) return true;
     }
     return false;
+}
+
+function itemBoosterIndex(item) {
+    for (let i = 0; i < itemBoosters.length; i++) {
+        if (itemBoosters[i].item == item) return i;
+    }
+    return -1;
 }
 
 function addItemBoosterStat(stats, booster) {
@@ -127,7 +138,7 @@ blockType.ambientSoundVolume = 0.12;
 blockType.hasBoost = false;
 blockType.hasLiquids = true;
 blockType.itemCapacity = 10;
-blockType.liquidCapacity = 30;
+blockType.liquidCapacity = 120;
 lib.enableAllEnvironments(blockType);
 blockType.consumePower(10);
 blockType.consumeItems(ItemStack.with(Items.phaseFabric, 1, Items.silicon, 1));
@@ -269,9 +280,14 @@ blockType.buildType = prov(() => {
         read(read, revision) {
             this.super$read(read, revision);
             boostTimer = read.f();
-            for (let i = 0; i < Math.min(6, activeItems.length); i++) activeItems[i] = read.f();
-            if (revision >= 1) {
-                for (let i = 6; i < activeItems.length; i++) activeItems[i] = read.f();
+            if (revision < 1) {
+                for (let i = 0; i < oldItemBoostOrder.length; i++) {
+                    let idx = itemBoosterIndex(oldItemBoostOrder[i]);
+                    let value = read.f();
+                    if (idx >= 0) activeItems[idx] = value;
+                }
+            } else {
+                for (let i = 0; i < activeItems.length; i++) activeItems[i] = read.f();
                 for (let i = 0; i < activeLiquids.length; i++) activeLiquids[i] = read.f();
             }
         },

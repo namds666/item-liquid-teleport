@@ -2,9 +2,9 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code",
-  subtitle: "v1.2.49: expand booster inputs",
+  subtitle: "v1.2.50: balance booster inputs",
   description: "Makes item and liquid teleport globally! 4 cheat-grade 1x1 transport blocks.
-  Update: add more chrono booster item and liquid enhancements.",
-  version: "1.2.49",
+  Update: balance chrono booster item and liquid enhancements.",
+  version: "1.2.50",
   minGameVersion: "146"
 }
