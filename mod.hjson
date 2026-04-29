@@ -2,9 +2,9 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code & Codex",
-  subtitle: "v1.2.52: add chrono debuffer",
+  subtitle: "v1.2.53: fix chrono mender",
   description: "Makes item and liquid teleport globally! 4 cheat-grade 1x1 transport blocks.
-  Update: add chrono debuffer enemy unit status support.",
-  version: "1.2.52",
+  Update: fix chrono mender lag and targeting.",
+  version: "1.2.53",
   minGameVersion: "146"
 }
