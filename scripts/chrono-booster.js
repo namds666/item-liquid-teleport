@@ -30,8 +30,8 @@ const blockType = extend(OverdriveProjectorClass, "chrono-booster", {
     load() {
         this.super$load();
         if (Vars.headless) return;
-        this.region = Core.atlas.find("overdrive-dome");
-        this.topRegion = Core.atlas.find("overdrive-dome-top");
+        this.region = lib.loadRegion("chrono-booster");
+        this.topRegion = lib.loadRegion("chrono-booster-top");
     },
 
     drawPlace(x, y, rotation, valid) {
@@ -149,7 +149,9 @@ blockType.buildType = prov(() => {
         drawSelect() {
             let realRange = this.realRange();
             Vars.indexer.eachBlock(this, realRange, boolf(other => other.block.canOverdrive), cons(other => {
-                Drawf.selected(other, Tmp.c1.set(blockType.baseColor).a(Mathf.absin(4, 1)));
+                Tmp.c1.set(blockType.baseColor);
+                Tmp.c1.a = Mathf.absin(4, 1);
+                Drawf.selected(other, Tmp.c1);
             }));
             Drawf.dashCircle(this.x, this.y, realRange, blockType.baseColor);
         },
