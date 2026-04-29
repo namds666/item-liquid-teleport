@@ -70,8 +70,13 @@ Returns a stateful scan job called from `updateTile` every tick. Flow:
 4. At scan end: calls `batchApply(toAdd, toRemove)` to flush the final batch, then fires one `configure(config())` sync to propagate to other clients.
 5. Chrono blocks themselves are excluded via `CHRONO_NAMES` check; `ConstructBuild`s (buildings under construction) are excluded via `getSimpleName() === "ConstructBuild"` — their `.block` resolves to the real block so they pass category checks, but their `.liquids` is null, causing crashes.
 
+### Config serialization
+Small link snapshots serialize as the legacy `IntSeq` format. Because Mindustry save plan IO reads `IntSeq` configs with a 200-element limit, this path is capped at 96 links (`selected + count + 96*2 offsets + 6 flags = 200`).
+
+Large link snapshots serialize as a compact `ctl1` string (`selected;flags;count;dx,dy...`) so sector saves, rebuild plans, copy/paste, and schematic transforms do not hit `TypeIO.writeObject`'s `IntSeq` array limit.
+
 ### Batch apply (`makeBatchApply`)
-Mutates the `links` Seq directly (add/remove) without going through `configure()` per-entry. Deferred to scan end to avoid mid-scan cap truncation (serialization cap is 2000 links).
+Mutates the `links` Seq directly (add/remove) without going through `configure()` per-entry. Deferred to scan end so auto-scan can apply a single full config sync after the batch.
 
 ### Auto-connect buttons (`addAutoConnectButtons`)
 Renders 6 checkbox+button pairs for categories: Misc (effect), Turret, Factory (crafting), Power, Unit, Drill (production). Checkboxes toggle `autoFlags[i]` for continuous auto-scan; buttons trigger a one-shot `autoConnect` scan for their category.
@@ -82,7 +87,7 @@ Renders 6 checkbox+button pairs for categories: Misc (effect), Turret, Factory (
 | Size | 1×1 |
 | Range | Global (no distance limit) |
 | Max links (runtime) | Unlimited |
-| Max links (serialized) | 2000 (capped in `config()` to avoid `TypeIO.writeObject` crash) |
+| Max links (serialized) | Unlimited for large string configs; legacy `IntSeq` configs are capped at 96 links |
 | Transfer rate | Items: 500/link/5-tick; Liquid unloader: 500/link/5-tick; Liquid pusher: 20/link/5-tick |
 | Requirements | None (free to place) |
 | Research | None |

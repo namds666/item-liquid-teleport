@@ -1,6 +1,88 @@
 exports.modName = "item-liquid-teleport";
 
 const CHRONO_NAMES = ["chrono-pusher", "chrono-unloader", "chrono-liquid-pusher", "chrono-liquid-unloader"].map(n => exports.modName + "-" + n);
+const STRING_CONFIG_PREFIX = "ctl1";
+const MAX_INTSEQ_CONFIG_LINKS = 96;
+
+exports.isStringConfig = config => {
+    try {
+        return typeof config === "string" || java.lang.String.__javaObject__.isInstance(config);
+    } catch (e) {
+        return typeof config === "string";
+    }
+};
+exports.transportConfig = (selectedId, links, tileX, tileY, autoFlags) => {
+    let selected = selectedId == null ? -1 : selectedId;
+    if (links.size <= MAX_INTSEQ_CONFIG_LINKS) {
+        let seq = new IntSeq(links.size*2 + 8);
+        seq.add(selected);
+        seq.add(links.size);
+        for (let i = 0; i < links.size; i++) {
+            let p = Point2.unpack(links.get(i)).sub(tileX, tileY);
+            seq.add(p.x, p.y);
+        }
+        for (let i = 0; i < 6; i++) seq.add(autoFlags[i] ? 1 : 0);
+        return seq;
+    }
+
+    let flags = 0;
+    for (let i = 0; i < 6; i++) if (autoFlags[i]) flags |= (1 << i);
+
+    let parts = [STRING_CONFIG_PREFIX, String(selected), String(flags), String(links.size)];
+    for (let i = 0; i < links.size; i++) {
+        let p = Point2.unpack(links.get(i)).sub(tileX, tileY);
+        parts.push(p.x + "," + p.y);
+    }
+    return parts.join(";");
+};
+exports.readTransportConfig = (config, tileX, tileY) => {
+    if (!exports.isStringConfig(config)) return null;
+    let parts = String(config).split(";");
+    if (parts.length < 4 || parts[0] !== STRING_CONFIG_PREFIX) return null;
+
+    let selectedId = parseInt(parts[1], 10);
+    let flags = parseInt(parts[2], 10);
+    let count = parseInt(parts[3], 10);
+    if (isNaN(selectedId)) selectedId = -1;
+    if (isNaN(flags)) flags = 0;
+    if (isNaN(count)) count = Math.max(0, parts.length - 4);
+
+    let links = new Seq(java.lang.Integer);
+    for (let i = 0; i < count && 4 + i < parts.length; i++) {
+        let xy = parts[4 + i].split(",");
+        if (xy.length !== 2) continue;
+        let dx = parseInt(xy[0], 10), dy = parseInt(xy[1], 10);
+        if (isNaN(dx) || isNaN(dy)) continue;
+        links.add(exports.int(Point2.pack(dx + tileX, dy + tileY)));
+    }
+
+    let autoFlags = [];
+    for (let i = 0; i < 6; i++) autoFlags[i] = (flags & (1 << i)) !== 0;
+    return { selectedId: selectedId, links: links, autoFlags: autoFlags };
+};
+exports.pointTransportConfig = (config, transformer) => {
+    if (!exports.isStringConfig(config)) return config;
+    let parts = String(config).split(";");
+    if (parts.length < 4 || parts[0] !== STRING_CONFIG_PREFIX) return config;
+
+    let count = parseInt(parts[3], 10);
+    if (isNaN(count)) count = Math.max(0, parts.length - 4);
+
+    let out = [STRING_CONFIG_PREFIX, parts[1], parts[2], "0"];
+    let written = 0;
+    for (let i = 0; i < count && 4 + i < parts.length; i++) {
+        let xy = parts[4 + i].split(",");
+        if (xy.length !== 2) continue;
+        let dx = parseInt(xy[0], 10), dy = parseInt(xy[1], 10);
+        if (isNaN(dx) || isNaN(dy)) continue;
+        let p = new Point2(dx*2 - 1, dy*2 - 1);
+        transformer.get(p);
+        out.push(Math.floor((p.x + 1)/2) + "," + Math.floor((p.y + 1)/2));
+        written++;
+    }
+    out[3] = String(written);
+    return out.join(";");
+};
 const autoConnect = (the, getLinks, lvt, filter) => {
     let links = getLinks();
     Groups.build.each(cons(b => {

@@ -28,6 +28,7 @@ const blockType = extend(StorageBlock, "chrono-pusher", {
     },
     outputsItems() { return false; },
     pointConfig(config, transformer) {
+        if (lib.isStringConfig(config)) return lib.pointTransportConfig(config, transformer);
         if (!IntSeq.__javaObject__.isInstance(config)) return config;
         if (config.size < 1) return config;
         // v3 format is even-sized (2 + lc*2 + 6); all older formats are odd-sized (1 + lc*2 + autoFlagCount)
@@ -82,6 +83,13 @@ blockType.config(IntSeq, lib.cons2((tile, sq) => {
     let autoStart = linkStart + lc*2;
     if (sq.size >= autoStart + 6) tile.setAutoFlagsFromSeq(sq, autoStart);
 }));
+blockType.config(java.lang.String, lib.cons2((tile, text) => {
+    let cfg = lib.readTransportConfig(text, tile.tileX(), tile.tileY());
+    if (cfg == null) return;
+    tile.setSelectedItemId(cfg.selectedId);
+    tile.setLink(cfg.links);
+    tile.setAutoFlagsFromArray(cfg.autoFlags);
+}));
 blockType.config(java.lang.Integer, lib.cons2((tile, int) => { if (int < 0) tile.setSelectedItemId(-1); else tile.setOneLink(int); }));
 blockType.config(Item, lib.cons2((tile, item) => { tile.setSelectedItemId(item == null ? -1 : item.id); }));
 blockType.configClear(tile => { tile.setLink(new Seq(java.lang.Integer)); });
@@ -115,6 +123,7 @@ blockType.buildType = prov(() => {
             if (!links.remove(boolf(i => i == int))) links.add(int);
         },
         setAutoFlagsFromSeq(seq, offset) { for (let i = 0; i < 6; i++) autoFlags[i] = seq.get(offset + i) > 0; },
+        setAutoFlagsFromArray(values) { for (let i = 0; i < 6; i++) autoFlags[i] = !!values[i]; },
         setSelectedItemId(v) { selectedItem = (v == null || v < 0) ? null : Vars.content.items().get(v); },
         deadLink(v) {
             if (Vars.net.client()) return;
@@ -229,15 +238,7 @@ blockType.buildType = prov(() => {
             })).row();
         },
         config() {
-            // TypeIO.writeObject has an array size limit; cap serialized links to avoid crash on save.
-            const MAX_CONFIG_LINKS = 2000;
-            let sz = Math.min(links.size, MAX_CONFIG_LINKS);
-            let out = new IntSeq(sz*2 + 9);
-            out.add(selectedItem == null ? -1 : selectedItem.id);
-            out.add(sz);
-            for (let i = 0; i < sz; i++) { let p = Point2.unpack(links.get(i)).sub(this.tile.x, this.tile.y); out.add(p.x, p.y); }
-            for (let i = 0; i < 6; i++) out.add(autoFlags[i] ? 1 : 0);
-            return out;
+            return lib.transportConfig(selectedItem == null ? -1 : selectedItem.id, links, this.tile.x, this.tile.y, autoFlags);
         },
         acceptStack(item, amount, source) {
             return this.linkedCore == null ? this.super$acceptStack(item, amount, source) : this.linkedCore.acceptStack(item, amount, source);

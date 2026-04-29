@@ -28,6 +28,7 @@ const blockType = extend(Block, "chrono-liquid-unloader", {
         )));
     },
     pointConfig(config, transformer) {
+        if (lib.isStringConfig(config)) return lib.pointTransportConfig(config, transformer);
         if (!IntSeq.__javaObject__.isInstance(config)) return config;
         if (config.size < 2) return config;
         let lc = Math.max(0, Math.min(config.get(1), Math.floor((config.size - 2) / 2)));
@@ -69,6 +70,13 @@ blockType.config(IntSeq, lib.cons2((tile, seq) => {
     tile.setLiquidTypeId(seq.get(0)); tile.setLinks(nl);
     if (seq.size >= 2 + lc*2 + 6) tile.setAutoFlagsFromSeq(seq, 2 + lc*2);
 }));
+blockType.config(java.lang.String, lib.cons2((tile, text) => {
+    let cfg = lib.readTransportConfig(text, tile.tileX(), tile.tileY());
+    if (cfg == null) return;
+    tile.setLiquidTypeId(cfg.selectedId);
+    tile.setLinks(cfg.links);
+    tile.setAutoFlagsFromArray(cfg.autoFlags);
+}));
 blockType.config(java.lang.Integer, lib.cons2((tile, int) => { tile.setOneLink(int); }));
 blockType.config(Liquid, lib.cons2((tile, liquid) => { tile.setLiquidTypeId(liquid == null ? -1 : liquid.id); }));
 blockType.configClear(tile => { tile.setLiquidTypeId(-1); });
@@ -102,6 +110,7 @@ blockType.buildType = prov(() => {
             if (!links.remove(boolf(i => i == int))) links.add(int);
         },
         setAutoFlagsFromSeq(seq, offset) { for (let i = 0; i < 6; i++) autoFlags[i] = (offset + i < seq.size) && seq.get(offset + i) > 0; },
+        setAutoFlagsFromArray(values) { for (let i = 0; i < 6; i++) autoFlags[i] = !!values[i]; },
         deadLink(v) {
             if (Vars.net.client()) return;
             let int = new java.lang.Integer(v);
@@ -183,14 +192,7 @@ blockType.buildType = prov(() => {
             })).row();
         },
         config() {
-            // TypeIO.writeObject has an array size limit; cap serialized links to avoid crash on save.
-            const MAX_CONFIG_LINKS = 2000;
-            let sz = Math.min(links.size, MAX_CONFIG_LINKS);
-            let seq = new IntSeq(sz*2+8);
-            seq.add(liquidType == null ? -1 : liquidType.id); seq.add(sz);
-            for (let i = 0; i < sz; i++) { let p = Point2.unpack(links.get(i)).sub(this.tile.x, this.tile.y); seq.add(p.x, p.y); }
-            for (let i = 0; i < 6; i++) seq.add(autoFlags[i] ? 1 : 0);
-            return seq;
+            return lib.transportConfig(liquidType == null ? -1 : liquidType.id, links, this.tile.x, this.tile.y, autoFlags);
         },
         acceptLiquid(source, liquid) { return liquidType != null && liquid == liquidType; },
         outputsLiquid() { return true; },

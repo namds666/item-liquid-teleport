@@ -35,6 +35,7 @@ const blockType = extend(Block, "chrono-liquid-pusher", {
         }));
     },
     pointConfig(config, transformer) {
+        if (lib.isStringConfig(config)) return lib.pointTransportConfig(config, transformer);
         if (!IntSeq.__javaObject__.isInstance(config)) return config;
         if (config.size < 2) return config;
         let selectedId = config.get(0);
@@ -83,6 +84,13 @@ blockType.config(IntSeq, lib.cons2((tile, sq) => {
     let autoStart = 2 + lc*2;
     if (sq.size >= autoStart + 6) tile.setAutoFlagsFromSeq(sq, autoStart);
 }));
+blockType.config(java.lang.String, lib.cons2((tile, text) => {
+    let cfg = lib.readTransportConfig(text, tile.tileX(), tile.tileY());
+    if (cfg == null) return;
+    tile.setSelectedLiquidId(cfg.selectedId);
+    tile.setLink(cfg.links);
+    tile.setAutoFlagsFromArray(cfg.autoFlags);
+}));
 blockType.config(java.lang.Integer, lib.cons2((tile, int) => { tile.setOneLink(int); }));
 blockType.config(Liquid, lib.cons2((tile, liquid) => { tile.setSelectedLiquidId(liquid == null ? -1 : liquid.id); }));
 
@@ -114,6 +122,7 @@ blockType.buildType = prov(() => {
             if (!links.remove(boolf(i => i == int))) links.add(int);
         },
         setAutoFlagsFromSeq(seq, offset) { for (let i = 0; i < 6; i++) autoFlags[i] = (offset + i < seq.size) && seq.get(offset + i) > 0; },
+        setAutoFlagsFromArray(values) { for (let i = 0; i < 6; i++) autoFlags[i] = !!values[i]; },
         setSelectedLiquidId(v) {
             let liquids = Vars.content.liquids();
             selectedLiquid = (v == null || v < 0 || v >= liquids.size) ? null : liquids.get(v);
@@ -237,15 +246,7 @@ blockType.buildType = prov(() => {
             })).row();
         },
         config() {
-            // TypeIO.writeObject has an array size limit; cap serialized links to avoid crash on save.
-            const MAX_CONFIG_LINKS = 2000;
-            let sz = Math.min(links.size, MAX_CONFIG_LINKS);
-            let out = new IntSeq(sz*2 + 9);
-            out.add(selectedLiquid == null ? -1 : selectedLiquid.id);
-            out.add(sz);
-            for (let i = 0; i < sz; i++) { let p = Point2.unpack(links.get(i)).sub(this.tile.x, this.tile.y); out.add(p.x, p.y); }
-            for (let i = 0; i < 6; i++) out.add(autoFlags[i] ? 1 : 0);
-            return out;
+            return lib.transportConfig(selectedLiquid == null ? -1 : selectedLiquid.id, links, this.tile.x, this.tile.y, autoFlags);
         },
         acceptLiquid(source, _liquid) { return true; },
         add() { if (this.added) return; rdcGroup.add(this); this.super$add(); },

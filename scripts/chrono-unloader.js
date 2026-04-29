@@ -29,6 +29,7 @@ const blockType = extend(StorageBlock, "chrono-unloader", {
     },
     outputsItems() { return true; },
     pointConfig(config, transformer) {
+        if (lib.isStringConfig(config)) return lib.pointTransportConfig(config, transformer);
         if (!IntSeq.__javaObject__.isInstance(config)) return config;
         let ns = new IntSeq(config.size);
         ns.add(config.get(0)); ns.add(config.get(1));
@@ -63,6 +64,13 @@ blockType.config(IntSeq, lib.cons2((tile, seq) => {
     tile.setItemTypeId(seq.get(0)); tile.setLinks(nl);
     if (seq.size >= 2 + lc*2 + 6) tile.setAutoFlagsFromSeq(seq, 2 + lc*2);
 }));
+blockType.config(java.lang.String, lib.cons2((tile, text) => {
+    let cfg = lib.readTransportConfig(text, tile.tileX(), tile.tileY());
+    if (cfg == null) return;
+    tile.setItemTypeId(cfg.selectedId);
+    tile.setLinks(cfg.links);
+    tile.setAutoFlagsFromArray(cfg.autoFlags);
+}));
 blockType.config(java.lang.Integer, lib.cons2((tile, int) => { tile.setOneLink(int); }));
 blockType.config(Item, lib.cons2((tile, item) => { tile.setItemTypeId(item.id); }));
 blockType.configClear(tile => { tile.setItemTypeId(null); });
@@ -95,6 +103,7 @@ blockType.buildType = prov(() => {
             if (!links.remove(boolf(i => i == int))) links.add(int);
         },
         setAutoFlagsFromSeq(seq, offset) { for (let i = 0; i < 6; i++) autoFlags[i] = (offset + i < seq.size) && seq.get(offset + i) > 0; },
+        setAutoFlagsFromArray(values) { for (let i = 0; i < 6; i++) autoFlags[i] = !!values[i]; },
         deadLink(v) {
             if (Vars.net.client()) return;
             let int = new java.lang.Integer(v);
@@ -191,14 +200,7 @@ blockType.buildType = prov(() => {
             })).row();
         },
         config() {
-            // TypeIO.writeObject has an array size limit; cap serialized links to avoid crash on save.
-            const MAX_CONFIG_LINKS = 2000;
-            let sz = Math.min(links.size, MAX_CONFIG_LINKS);
-            let seq = new IntSeq(sz*2+8);
-            seq.add(itemType == null ? -1 : itemType.id); seq.add(sz);
-            for (let i = 0; i < sz; i++) { let p = Point2.unpack(links.get(i)).sub(this.tile.x, this.tile.y); seq.add(p.x, p.y); }
-            for (let i = 0; i < 6; i++) seq.add(autoFlags[i] ? 1 : 0);
-            return seq;
+            return lib.transportConfig(itemType == null ? -1 : itemType.id, links, this.tile.x, this.tile.y, autoFlags);
         },
         outputsItems() { return true; },
         add() { if (this.added) return; theGroup.add(this); this.super$add(); },
