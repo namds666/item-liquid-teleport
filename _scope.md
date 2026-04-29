@@ -60,6 +60,15 @@ A standalone Mindustry mod providing 4 cheat-grade, 1×1 transport blocks for in
 - **Requirements:** Same as Overdrive Dome: 200 lead, 130 titanium, 130 silicon, 80 plastanium, 120 surge alloy.
 - **Size:** 1×1, health 485.
 
+### Chrono Buffer (`chrono-buffer`)
+- **Category:** Unit
+- **Function:** Applies Overdrive, Overclock, Guardian (`StatusEffects.boss`), and Fast to allied units in range.
+- **Sprites:** Cloned from the Chrono Booster base/top PNG and PSD assets, then loaded as `chrono-buffer` and `chrono-buffer-top` so the art can diverge later.
+- **Base stats:** 25-block range, +150% status duration, 10 power units/tick, consumes 1 phase fabric + 1 silicon every 5 seconds.
+- **Additive boosts:** Uses the same item/liquid boost table as Chrono Booster. Extra boosters increase radius and status duration.
+- **Requirements:** Same as Chrono Booster: 200 lead, 130 titanium, 130 silicon, 80 plastanium, 120 surge alloy.
+- **Size:** 1x1, health 485.
+
 ## Shared lib.js Infrastructure
 
 All four transport blocks share the same plumbing from `lib.js`:
@@ -127,4 +136,4 @@ item-liquid-teleport/
 - Item blocks extend `StorageBlock` (JavaAdapter over `StorageBlock.StorageBuild`); liquid blocks extend `Block` (plain `extend(Building, ...)`).
 - The center dot on all four blocks reuses the vanilla `"unloader-center"` sprite, tinted to the selected filter color (or dominant held liquid/item color) at render time.
 - Config serialization uses relative tile offsets (delta from block's own tile) so configs survive copy-paste and schematic placement (`pointConfig` transforms them back).
-- Save/load versioned via `version()`: unloader v4, pusher v3, liquid-unloader v3, liquid-pusher v5, chrono-booster v1. Older revisions handled in `read()`.
+- Save/load versioned via `version()`: unloader v4, pusher v3, liquid-unloader v3, liquid-pusher v5, chrono-booster v1, chrono-buffer v1. Older revisions handled in `read()`.

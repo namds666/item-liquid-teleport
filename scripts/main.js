@@ -8,3 +8,4 @@ require("chrono-mender");
 require("chrono-repair-point");
 require("chrono-build-tower");
 require("chrono-booster");
+require("chrono-buffer");

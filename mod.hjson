@@ -1,10 +1,10 @@
 {
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
-  author: "namds666 & Claude Code",
-  subtitle: "v1.2.50: balance booster inputs",
+  author: "namds666 & Claude Code & Codex",
+  subtitle: "v1.2.51: add chrono buffer",
   description: "Makes item and liquid teleport globally! 4 cheat-grade 1x1 transport blocks.
-  Update: balance chrono booster item and liquid enhancements.",
-  version: "1.2.50",
+  Update: add chrono buffer allied unit status support.",
+  version: "1.2.51",
   minGameVersion: "146"
 }
