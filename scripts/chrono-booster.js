@@ -6,27 +6,59 @@ const TILE = Vars.tilesize;
 const BASE_RANGE = 200;
 const BASE_SPEED = 2.5;
 const BASE_USE_TIME = 300;
-const MAX_BOOST_SPEED = BASE_SPEED + 0.5 * 4 + 2.5 * 2;
 const BOOST_DURATION = 65;
+const NORMAL_RANGE = 10 * TILE;
+const NORMAL_SPEED = 0.5;
+const STRONG_RANGE = 50 * TILE;
+const STRONG_SPEED = 2.5;
 
-const boosters = [
-    { item: Items.plastanium, amount: 1, range: 10 * TILE, speed: 0.5 },
-    { item: Items.thorium, amount: 10, range: 10 * TILE, speed: 0.5 },
-    { item: Items.copper, amount: 10, range: 10 * TILE, speed: 0.5 },
-    { item: Items.lead, amount: 10, range: 10 * TILE, speed: 0.5 },
-    { item: Items.pyratite, amount: 1, range: 50 * TILE, speed: 2.5 },
-    { item: Items.blastCompound, amount: 1, range: 50 * TILE, speed: 2.5 },
+const itemBoosters = [
+    { item: Items.plastanium, amount: 1, range: NORMAL_RANGE, speed: NORMAL_SPEED },
+    { item: Items.thorium, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
+    { item: Items.copper, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
+    { item: Items.lead, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
+    { item: Items.pyratite, amount: 1, range: STRONG_RANGE, speed: STRONG_SPEED },
+    { item: Items.blastCompound, amount: 1, range: STRONG_RANGE, speed: STRONG_SPEED },
+    { item: Items.scrap, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
+    { item: Items.sand, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
+    { item: Items.coal, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
+    { item: Items.titanium, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
+    { item: Items.sporePod, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
+    { item: Items.metaglass, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
+    { item: Items.graphite, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
+    { item: Items.surgeAlloy, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
 ];
+
+const liquidBoosters = [
+    { liquid: Liquids.water, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
+    { liquid: Liquids.cryofluid, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
+    { liquid: Liquids.oil, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
+    { liquid: Liquids.slag, amount: 10, range: NORMAL_RANGE, speed: NORMAL_SPEED },
+];
+
+function maxBoostSpeed() {
+    let out = BASE_SPEED;
+    for (let i = 0; i < itemBoosters.length; i++) out += itemBoosters[i].speed;
+    for (let i = 0; i < liquidBoosters.length; i++) out += liquidBoosters[i].speed;
+    return out;
+}
 
 function acceptsBoostItem(item) {
     if (item == Items.phaseFabric || item == Items.silicon) return true;
-    for (let i = 0; i < boosters.length; i++) {
-        if (item == boosters[i].item) return true;
+    for (let i = 0; i < itemBoosters.length; i++) {
+        if (item == itemBoosters[i].item) return true;
     }
     return false;
 }
 
-function addBoosterStat(stats, booster) {
+function acceptsBoostLiquid(liquid) {
+    for (let i = 0; i < liquidBoosters.length; i++) {
+        if (liquid == liquidBoosters[i].liquid) return true;
+    }
+    return false;
+}
+
+function addItemBoosterStat(stats, booster) {
     stats.add(Stat.booster, StatValues.itemBoosters(
         "+{0}%",
         60,
@@ -34,6 +66,23 @@ function addBoosterStat(stats, booster) {
         booster.range,
         ItemStack.with(booster.item, booster.amount)
     ));
+}
+
+function addLiquidBoosterStat(stats, booster) {
+    stats.add(Stat.booster, new StatValue({ display: table => {
+        table.row();
+        table.table(cons(c => {
+            c.table(Styles.grayPanel, cons(b => {
+                b.add(StatValues.displayLiquid(booster.liquid, booster.amount, true)).pad(10).padLeft(15).left();
+                b.table(cons(bt => {
+                    bt.right().defaults().padRight(3).left();
+                    bt.add("[lightgray]+[stat]" + Strings.autoFixed(booster.range / TILE, 2) + "[lightgray] " + StatUnit.blocks.localized()).row();
+                    bt.add("[lightgray]+[stat]" + Strings.autoFixed(booster.speed * 100, 2) + "[lightgray]%");
+                })).right().top().grow().pad(10).padRight(15);
+            })).growX().pad(5).padBottom(-5).row();
+        })).growX().colspan(table.getColumns());
+        table.row();
+    }}));
 }
 
 const blockType = extend(OverdriveProjectorClass, "chrono-booster", {
@@ -51,7 +100,8 @@ const blockType = extend(OverdriveProjectorClass, "chrono-booster", {
     setStats() {
         this.super$setStats();
         try { this.stats.remove(Stat.booster); } catch (e) {}
-        for (let i = 0; i < boosters.length; i++) addBoosterStat(this.stats, boosters[i]);
+        for (let i = 0; i < itemBoosters.length; i++) addItemBoosterStat(this.stats, itemBoosters[i]);
+        for (let i = 0; i < liquidBoosters.length; i++) addLiquidBoosterStat(this.stats, liquidBoosters[i]);
     },
 
     setBars() {
@@ -59,7 +109,7 @@ const blockType = extend(OverdriveProjectorClass, "chrono-booster", {
         this.addBar("boost", lib.func(ent => new Bar(
             prov(() => Core.bundle.format("bar.boost", Mathf.round(Math.max(ent.realBoost() * 100 - 100, 0)))),
             prov(() => Pal.accent),
-            floatp(() => ent.realBoost() / MAX_BOOST_SPEED)
+            floatp(() => ent.realBoost() / maxBoostSpeed())
         )));
     }
 });
@@ -75,38 +125,58 @@ blockType.speedBoost = BASE_SPEED;
 blockType.useTime = BASE_USE_TIME;
 blockType.ambientSoundVolume = 0.12;
 blockType.hasBoost = false;
+blockType.hasLiquids = true;
 blockType.itemCapacity = 10;
+blockType.liquidCapacity = 30;
 lib.enableAllEnvironments(blockType);
 blockType.consumePower(10);
 blockType.consumeItems(ItemStack.with(Items.phaseFabric, 1, Items.silicon, 1));
 
 blockType.buildType = prov(() => {
     let boostTimer = 60;
-    let active = [0, 0, 0, 0, 0, 0];
+    let activeItems = [];
+    let activeLiquids = [];
+    for (let i = 0; i < itemBoosters.length; i++) activeItems[i] = 0;
+    for (let i = 0; i < liquidBoosters.length; i++) activeLiquids[i] = 0;
 
     return new JavaAdapter(OverdriveProjectorClass.OverdriveBuild, {
+        version() { return 1; },
+
         realRange() {
             let out = blockType.range;
-            for (let i = 0; i < boosters.length; i++) {
-                if (active[i] > 0) out += boosters[i].range;
+            for (let i = 0; i < itemBoosters.length; i++) {
+                if (activeItems[i] > 0) out += itemBoosters[i].range;
+            }
+            for (let i = 0; i < liquidBoosters.length; i++) {
+                if (activeLiquids[i] > 0) out += liquidBoosters[i].range;
             }
             return out;
         },
 
         boosterSpeed() {
             let out = 0;
-            for (let i = 0; i < boosters.length; i++) {
-                if (active[i] > 0) out += boosters[i].speed;
+            for (let i = 0; i < itemBoosters.length; i++) {
+                if (activeItems[i] > 0) out += itemBoosters[i].speed;
+            }
+            for (let i = 0; i < liquidBoosters.length; i++) {
+                if (activeLiquids[i] > 0) out += liquidBoosters[i].speed;
             }
             return out;
         },
 
         consumeBoosters() {
-            for (let i = 0; i < boosters.length; i++) {
-                let b = boosters[i];
+            for (let i = 0; i < itemBoosters.length; i++) {
+                let b = itemBoosters[i];
                 if (this.items != null && this.items.get(b.item) >= b.amount) {
                     this.items.remove(b.item, b.amount);
-                    active[i] = BOOST_DURATION;
+                    activeItems[i] = BOOST_DURATION;
+                }
+            }
+            for (let i = 0; i < liquidBoosters.length; i++) {
+                let b = liquidBoosters[i];
+                if (this.liquids != null && this.liquids.get(b.liquid) >= b.amount) {
+                    this.liquids.remove(b.liquid, b.amount);
+                    activeLiquids[i] = BOOST_DURATION;
                 }
             }
         },
@@ -120,7 +190,8 @@ blockType.buildType = prov(() => {
             this.heat = Mathf.lerpDelta(this.heat, this.efficiency > 0 ? 1 : 0, 0.08);
             this.charge += this.heat * Time.delta;
 
-            for (let i = 0; i < active.length; i++) active[i] = Math.max(0, active[i] - Time.delta);
+            for (let i = 0; i < activeItems.length; i++) activeItems[i] = Math.max(0, activeItems[i] - Time.delta);
+            for (let i = 0; i < activeLiquids.length; i++) activeLiquids[i] = Math.max(0, activeLiquids[i] - Time.delta);
 
             if (this.efficiency > 0) {
                 boostTimer += Time.delta;
@@ -131,7 +202,7 @@ blockType.buildType = prov(() => {
             }
 
             let boostSpeed = this.boosterSpeed();
-            this.phaseHeat = Mathf.lerpDelta(this.phaseHeat, boostSpeed / (MAX_BOOST_SPEED - BASE_SPEED), 0.1);
+            this.phaseHeat = Mathf.lerpDelta(this.phaseHeat, boostSpeed / (maxBoostSpeed() - BASE_SPEED), 0.1);
 
             if (this.charge >= blockType.reload) {
                 this.charge = 0;
@@ -184,16 +255,25 @@ blockType.buildType = prov(() => {
             return acceptsBoostItem(item) && this.items != null ? Math.min(amount, blockType.itemCapacity - this.items.get(item)) : 0;
         },
 
+        acceptLiquid(source, liquid) {
+            return acceptsBoostLiquid(liquid) && this.liquids != null && this.liquids.get(liquid) < blockType.liquidCapacity;
+        },
+
         write(write) {
             this.super$write(write);
             write.f(boostTimer);
-            for (let i = 0; i < active.length; i++) write.f(active[i]);
+            for (let i = 0; i < activeItems.length; i++) write.f(activeItems[i]);
+            for (let i = 0; i < activeLiquids.length; i++) write.f(activeLiquids[i]);
         },
 
         read(read, revision) {
             this.super$read(read, revision);
             boostTimer = read.f();
-            for (let i = 0; i < active.length; i++) active[i] = read.f();
+            for (let i = 0; i < Math.min(6, activeItems.length); i++) activeItems[i] = read.f();
+            if (revision >= 1) {
+                for (let i = 6; i < activeItems.length; i++) activeItems[i] = read.f();
+                for (let i = 0; i < activeLiquids.length; i++) activeLiquids[i] = read.f();
+            }
         },
     }, blockType);
 });

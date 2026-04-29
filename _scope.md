@@ -56,7 +56,7 @@ A standalone Mindustry mod providing 4 cheat-grade, 1×1 transport blocks for in
 - **Category:** Effect
 - **Function:** 1×1 overdrive dome variant. Copies Overdrive Dome cost, power draw, base range, base speed boost, use time, mandatory phase fabric + silicon operation, ambient sound volume, and sprite, with health fixed to the vanilla dome value.
 - **Base stats:** 25-block range, +150% speed, 10 power units/tick, consumes 1 phase fabric + 1 silicon every 5 seconds.
-- **Additive boosts:** Plastanium 1/sec, thorium 10/sec, copper 10/sec, and lead 10/sec each add +10 blocks range and +50% speed. Pyratite 1/sec and blast compound 1/sec each add +50 blocks range and +250% speed.
+- **Additive boosts:** Plastanium 1/sec, thorium 10/sec, copper 10/sec, lead 10/sec, scrap 10/sec, sand 10/sec, coal 10/sec, titanium 10/sec, spore pod 10/sec, metaglass 10/sec, graphite 10/sec, surge alloy 10/sec, water 10/sec, cryofluid 10/sec, oil 10/sec, and slag 10/sec each add +10 blocks range and +50% speed. Pyratite 1/sec and blast compound 1/sec each add +50 blocks range and +250% speed.
 - **Requirements:** Same as Overdrive Dome: 200 lead, 130 titanium, 130 silicon, 80 plastanium, 120 surge alloy.
 - **Size:** 1×1, health 485.
 
@@ -127,4 +127,4 @@ item-liquid-teleport/
 - Item blocks extend `StorageBlock` (JavaAdapter over `StorageBlock.StorageBuild`); liquid blocks extend `Block` (plain `extend(Building, ...)`).
 - The center dot on all four blocks reuses the vanilla `"unloader-center"` sprite, tinted to the selected filter color (or dominant held liquid/item color) at render time.
 - Config serialization uses relative tile offsets (delta from block's own tile) so configs survive copy-paste and schematic placement (`pointConfig` transforms them back).
-- Save/load versioned via `version()`: unloader v4, pusher v3, liquid-unloader v3, liquid-pusher v5. Older revisions handled in `read()`.
+- Save/load versioned via `version()`: unloader v4, pusher v3, liquid-unloader v3, liquid-pusher v5, chrono-booster v1. Older revisions handled in `read()`.
