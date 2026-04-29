@@ -26,6 +26,16 @@ function acceptsBoostItem(item) {
     return false;
 }
 
+function addBoosterStat(stats, booster) {
+    stats.add(Stat.booster, StatValues.itemBoosters(
+        "+{0}%",
+        60,
+        booster.speed * 100,
+        booster.range,
+        ItemStack.with(booster.item, booster.amount)
+    ));
+}
+
 const blockType = extend(OverdriveProjectorClass, "chrono-booster", {
     load() {
         this.super$load();
@@ -40,12 +50,8 @@ const blockType = extend(OverdriveProjectorClass, "chrono-booster", {
 
     setStats() {
         this.super$setStats();
-        this.stats.add(Stat.booster, "Plastanium: 1/sec, +50% speed, +10 range");
-        this.stats.add(Stat.booster, "Thorium: 10/sec, +50% speed, +10 range");
-        this.stats.add(Stat.booster, "Copper: 10/sec, +50% speed, +10 range");
-        this.stats.add(Stat.booster, "Lead: 10/sec, +50% speed, +10 range");
-        this.stats.add(Stat.booster, "Pyratite: 1/sec, +250% speed, +50 range");
-        this.stats.add(Stat.booster, "Blast Compound: 1/sec, +250% speed, +50 range");
+        try { this.stats.remove(Stat.booster); } catch (e) {}
+        for (let i = 0; i < boosters.length; i++) addBoosterStat(this.stats, boosters[i]);
     },
 
     setBars() {
