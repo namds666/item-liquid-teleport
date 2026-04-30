@@ -9,35 +9,66 @@ const BASE_USE_TIME = 300;
 const BOOST_DURATION = 65;
 const APPLY_RELOAD = 60;
 
+function makeStatus(name, color, multipliers) {
+    const status = extend(StatusEffect, name, {});
+    status.color = Color.valueOf(color);
+    status.effect = Fx.overdriven;
+    status.effectChance = 0.08;
+    status.applyEffect = Fx.overdriven;
+    status.applyColor = status.color;
+    if (multipliers.speed != null) status.speedMultiplier = multipliers.speed;
+    if (multipliers.damage != null) status.damageMultiplier = multipliers.damage;
+    if (multipliers.reload != null) status.reloadMultiplier = multipliers.reload;
+    if (multipliers.health != null) status.healthMultiplier = multipliers.health;
+    return status;
+}
+
+const chronoStatuses = {
+    conductive: makeStatus("chrono-conductive", "f3c36b", { speed: 1.10 }),
+    dense: makeStatus("chrono-dense", "8b8fa3", { health: 1.15 }),
+    focus: makeStatus("chrono-focus", "a8d8ff", { damage: 1.20 }),
+    precision: makeStatus("chrono-precision", "9da3ad", { reload: 1.20 }),
+    slip: makeStatus("chrono-slip", "e4c98a", { speed: 1.08 }),
+    ignite: makeStatus("chrono-ignite", "4a3a33", { damage: 1.25 }),
+    alloyed: makeStatus("chrono-alloyed", "8aa8ff", { health: 1.30 }),
+    jagged: makeStatus("chrono-jagged", "c2b7a1", { damage: 1.10 }),
+    elastic: makeStatus("chrono-elastic", "d887ff", { health: 1.60 }),
+    surge: makeStatus("chrono-surge", "ffe66d", { reload: 1.65 }),
+    pyro: makeStatus("chrono-pyro", "ff8a3d", { damage: 1.85 }),
+    blast: makeStatus("chrono-blast", "ff5d5d", { damage: 2.50 }),
+    cooled: makeStatus("chrono-cooled", "6aa7ff", { reload: 1.20 }),
+    molten: makeStatus("chrono-molten", "ffb45d", { damage: 1.45 }),
+    lubed: makeStatus("chrono-lubed", "303030", { speed: 1.30 }),
+    cryo: makeStatus("chrono-cryo", "7fefff", { reload: 1.80 }),
+};
+
+const requiredItemStatuses = [
+    { item: Items.phaseFabric, amount: 1, status: StatusEffects.overdrive },
+    { item: Items.silicon, amount: 1, status: StatusEffects.overclock },
+];
+
 const itemBoosters = [
-    { item: Items.copper, amount: 40, range: 3 * TILE, effect: 0.3 },
-    { item: Items.lead, amount: 40, range: 3 * TILE, effect: 0.3 },
-    { item: Items.metaglass, amount: 25, range: 6 * TILE, effect: 0.6 },
-    { item: Items.graphite, amount: 20, range: 7 * TILE, effect: 0.7 },
-    { item: Items.sand, amount: 50, range: 2.5 * TILE, effect: 0.2 },
-    { item: Items.coal, amount: 35, range: 4 * TILE, effect: 0.4 },
-    { item: Items.titanium, amount: 25, range: 6 * TILE, effect: 0.6 },
-    { item: Items.thorium, amount: 12, range: 10 * TILE, effect: 1 },
-    { item: Items.scrap, amount: 50, range: 2.5 * TILE, effect: 0.2 },
-    { item: Items.plastanium, amount: 8, range: 12 * TILE, effect: 1.25 },
-    { item: Items.sporePod, amount: 20, range: 7 * TILE, effect: 0.7 },
-    { item: Items.surgeAlloy, amount: 4, range: 16 * TILE, effect: 1.75 },
-    { item: Items.pyratite, amount: 3, range: 18 * TILE, effect: 2 },
-    { item: Items.blastCompound, amount: 1, range: 25 * TILE, effect: 2.5 },
+    { item: Items.copper, amount: 40, range: 3 * TILE, effect: 0.3, status: chronoStatuses.conductive },
+    { item: Items.lead, amount: 40, range: 3 * TILE, effect: 0.3, status: chronoStatuses.dense },
+    { item: Items.metaglass, amount: 25, range: 6 * TILE, effect: 0.6, status: chronoStatuses.focus },
+    { item: Items.graphite, amount: 20, range: 7 * TILE, effect: 0.7, status: chronoStatuses.precision },
+    { item: Items.sand, amount: 50, range: 2.5 * TILE, effect: 0.2, status: chronoStatuses.slip },
+    { item: Items.coal, amount: 35, range: 4 * TILE, effect: 0.4, status: chronoStatuses.ignite },
+    { item: Items.titanium, amount: 25, range: 6 * TILE, effect: 0.6, status: chronoStatuses.alloyed },
+    { item: Items.thorium, amount: 12, range: 10 * TILE, effect: 1, status: StatusEffects.boss },
+    { item: Items.scrap, amount: 50, range: 2.5 * TILE, effect: 0.2, status: chronoStatuses.jagged },
+    { item: Items.plastanium, amount: 8, range: 12 * TILE, effect: 1.25, status: chronoStatuses.elastic },
+    { item: Items.sporePod, amount: 20, range: 7 * TILE, effect: 0.7, status: StatusEffects.fast },
+    { item: Items.surgeAlloy, amount: 4, range: 16 * TILE, effect: 1.75, status: chronoStatuses.surge },
+    { item: Items.pyratite, amount: 3, range: 18 * TILE, effect: 2, status: chronoStatuses.pyro },
+    { item: Items.blastCompound, amount: 1, range: 25 * TILE, effect: 2.5, status: chronoStatuses.blast },
 ];
 
 const liquidBoosters = [
-    { liquid: Liquids.water, amount: 120, range: 2.5 * TILE, effect: 0.2 },
-    { liquid: Liquids.slag, amount: 90, range: 5 * TILE, effect: 0.5 },
-    { liquid: Liquids.oil, amount: 100, range: 4 * TILE, effect: 0.4 },
-    { liquid: Liquids.cryofluid, amount: 60, range: 12 * TILE, effect: 1.25 },
-];
-
-const appliedStatuses = [
-    { name: "Overdrive", effect: StatusEffects.overdrive },
-    { name: "Overclock", effect: StatusEffects.overclock },
-    { name: "Guardian", effect: StatusEffects.boss },
-    { name: "Fast", effect: StatusEffects.fast },
+    { liquid: Liquids.water, amount: 120, range: 2.5 * TILE, effect: 0.2, status: chronoStatuses.cooled },
+    { liquid: Liquids.slag, amount: 90, range: 5 * TILE, effect: 0.5, status: chronoStatuses.molten },
+    { liquid: Liquids.oil, amount: 100, range: 4 * TILE, effect: 0.4, status: chronoStatuses.lubed },
+    { liquid: Liquids.cryofluid, amount: 60, range: 12 * TILE, effect: 1.25, status: chronoStatuses.cryo },
 ];
 
 function maxEffectBoost() {
@@ -110,7 +141,7 @@ const blockType = extend(OverdriveProjectorClass, "chrono-buffer", {
     setStats() {
         this.super$setStats();
         try { this.stats.remove(Stat.booster); } catch (e) {}
-        this.stats.add(Stat.abilities, "Applies Overdrive, Overclock, Guardian, and Fast to allied units.");
+        this.stats.add(Stat.abilities, "Each accepted item or liquid unlocks one allied unit status. Extra boosters increase radius and status duration.");
         for (let i = 0; i < itemBoosters.length; i++) addItemBoosterStat(this.stats, itemBoosters[i]);
         for (let i = 0; i < liquidBoosters.length; i++) addLiquidBoosterStat(this.stats, liquidBoosters[i]);
     },
@@ -203,8 +234,21 @@ blockType.buildType = prov(() => {
             let duration = Math.max(APPLY_RELOAD + 1, APPLY_RELOAD * this.realEffect());
             Groups.unit.each(cons(u => {
                 if (!u || u.team != this.team || !u.isValid() || this.dst2(u) > range2) return;
-                for (let i = 0; i < appliedStatuses.length; i++) {
-                    if (appliedStatuses[i].effect != null) u.apply(appliedStatuses[i].effect, duration);
+                for (let i = 0; i < requiredItemStatuses.length; i++) {
+                    let b = requiredItemStatuses[i];
+                    if (this.items != null && this.items.get(b.item) >= b.amount && b.status != null) {
+                        u.apply(b.status, duration);
+                    }
+                }
+                for (let i = 0; i < itemBoosters.length; i++) {
+                    if (activeItems[i] > 0 && itemBoosters[i].status != null) {
+                        u.apply(itemBoosters[i].status, duration);
+                    }
+                }
+                for (let i = 0; i < liquidBoosters.length; i++) {
+                    if (activeLiquids[i] > 0 && liquidBoosters[i].status != null) {
+                        u.apply(liquidBoosters[i].status, duration);
+                    }
                 }
             }));
         },
