@@ -52,6 +52,7 @@ const blockType = extend(StorageBlock, "chrono-pusher", {
 });
 blockType.buildVisibility = BuildVisibility.shown;
 blockType.alwaysUnlocked  = true;
+blockType.category        = Category.distribution;
 blockType.health          = 2147483647;
 blockType.buildCost       = 0.001;
 blockType.update          = true;
