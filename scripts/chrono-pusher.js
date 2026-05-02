@@ -97,7 +97,7 @@ blockType.configClear(tile => { tile.setLink(new Seq(java.lang.Integer)); });
 
 const rdcGroup = new EntityGroup(Building, false, false);
 blockType.buildType = prov(() => {
-    const MAX_LOOP = 50, FRAME_DELAY = 5;
+    const MAX_LOOP = 100, FRAME_DELAY = 5;
     const timer = new Interval(6);
     let links = new Seq(java.lang.Integer), deadLinks = new Seq(java.lang.Integer);
     let autoFlags = [false, false, false, false, false, false];
