@@ -29,13 +29,13 @@ A standalone Mindustry cheat mod providing compact 1x1 Chrono blocks for global 
 - **Config:** Tap to toggle individual links. UI: auto-connect buttons + optional liquid filter.
 
 ### Chrono Heat Unloader (`chrono-heat-unloader`)
-- **Category:** Crafting - extends `Block` / `Building` and implements `HeatBlock`
+- **Category:** Crafting - extends vanilla `HeatProducer` / `HeatProducerBuild`
 - **Visibility:** All environments, matching the item/liquid Chrono transport blocks.
 - **Function:** Pulls heat from every linked `HeatBlock`, sums all linked `heat()` values without cap or scaling, and outputs that total locally through vanilla directional heat adjacency.
 - **Config:** Tap to toggle individual heat-source links. UI: auto-connect buttons.
 
 ### Chrono Heat Pusher (`chrono-heat-pusher`)
-- **Category:** Crafting - extends `Block` / `Building` and implements `HeatBlock`
+- **Category:** Crafting - extends vanilla `HeatProducer` / `HeatProducerBuild`
 - **Visibility:** All environments, matching the item/liquid Chrono transport blocks.
 - **Function:** Reads adjacent vanilla heat via `calculateHeat(sideHeat)` and pushes the full sampled value to linked Chrono heat output blocks. Linked receivers output the pushed total locally through vanilla directional heat adjacency.
 - **Config:** Tap to toggle linked Chrono heat receiver/output blocks.

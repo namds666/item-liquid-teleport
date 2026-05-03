@@ -1,5 +1,6 @@
 const lib = require("lib");
 const warmupSpeed = 0.05, VISUAL_MAX_HEAT = 150;
+const HeatProducer = Packages.mindustry.world.blocks.heat.HeatProducer;
 const HeatBlock = Packages.mindustry.world.blocks.heat.HeatBlock;
 let topRegion, bottomRegion, rotatorRegion;
 const HEAT = Color.valueOf("#ff7a38");
@@ -21,7 +22,7 @@ function isHeatBlock(build) {
     }
 }
 
-const blockType = extend(Block, "chrono-heat-unloader", {
+const blockType = extend(HeatProducer, "chrono-heat-unloader", {
     load() {
         this.super$load();
         this.region = lib.loadRegion("chrono-heat-unloader");
@@ -66,6 +67,7 @@ blockType.solid = true;
 blockType.rotate = true;
 blockType.rotateDraw = false;
 blockType.drawArrow = true;
+blockType.heatOutput = VISUAL_MAX_HEAT;
 blockType.configurable = true;
 blockType.saveConfig = false;
 blockType.noUpdateDisabled = true;
@@ -108,7 +110,7 @@ blockType.buildType = prov(() => {
     const clearFn = () => lib.transportConfig(-1, new Seq(java.lang.Integer), 0, 0, autoFlags);
     const scanJob = lib.makeScanJob(autoFlags, 50);
     const batchApply = lib.makeBatchApply(() => links);
-    return new JavaAdapter(Building, HeatBlock, {
+    return new JavaAdapter(HeatProducer.HeatProducerBuild, {
         get outputHeat() { return outputHeat; },
         getLinks() { return links; },
         setLinks(v) {
@@ -226,7 +228,7 @@ blockType.buildType = prov(() => {
             let sz = read.s(); for (let i = 0; i < sz; i++) links.add(new java.lang.Integer(read.i()));
             if (revision >= 1) { autoFlags[0] = read.bool(); autoFlags[1] = read.bool(); autoFlags[2] = read.bool(); autoFlags[3] = read.bool(); autoFlags[4] = read.bool(); autoFlags[5] = read.bool(); }
         },
-    });
+    }, blockType);
 });
 Events.on(BlockBuildEndEvent, cons(e => {
     if (!e.breaking) theGroup.each(cons(cen => { cen.tryResumeDeadLink(e.tile.pos()); }));
