@@ -1,6 +1,6 @@
 
 const lib = require("lib");
-const warmupSpeed = 0.05, TRANSFER_RATE = 500;
+const warmupSpeed = 0.05, TRANSFER_RATE = 5000;
 let topRegion, bottomRegion, rotatorRegion;
 const TEAL = Color.valueOf("#00c8c8");
 const outEffect = lib.newEffect(38, e => {

@@ -1,6 +1,6 @@
 
 const lib = require("lib");
-const warmupSpeed = 0.05, TRANSFER_RATE = 500;
+const warmupSpeed = 0.05, TRANSFER_RATE = 5000;
 let topRegion, bottomRegion, rotatorRegion;
 const GREEN = Color.valueOf("#00e070");
 const inEffect = lib.newEffect(38, e => {
@@ -96,7 +96,7 @@ blockType.config(Liquid, lib.cons2((tile, liquid) => { tile.setSelectedLiquidId(
 
 const rdcGroup = new EntityGroup(Building, false, false);
 blockType.buildType = prov(() => {
-    const MAX_LOOP = 50, FRAME_DELAY = 5;
+    const MAX_LOOP = 100, FRAME_DELAY = 5;
     const timer = new Interval(3);
     let links = new Seq(java.lang.Integer), deadLinks = new Seq(java.lang.Integer);
     let autoFlags = [false, false, false, false, false, false];
