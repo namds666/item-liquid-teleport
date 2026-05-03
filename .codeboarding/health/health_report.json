@@ -1,0 +1,324 @@
+{
+  "repository_name": "snapshot-worktree",
+  "timestamp": "2026-05-03T14:04:27.876975+00:00",
+  "overall_score": 0.9806392694063927,
+  "check_summaries": [
+    {
+      "check_name": "function_size",
+      "description": "Checks that functions/methods do not exceed line count thresholds",
+      "check_type": "standard",
+      "total_entities_checked": 243,
+      "findings_count": 5,
+      "warning_count": 5,
+      "score": 0.9794238683127572,
+      "finding_groups": [
+        {
+          "severity": "warning",
+          "threshold": 150,
+          "description": "Functions exceeding 150.0 lines",
+          "entities": [
+            {
+              "entity_name": "scripts.chrono-liquid-pusher.prov() callback",
+              "file_path": "scripts\\chrono-liquid-pusher.js",
+              "line_start": 98,
+              "line_end": 272,
+              "metric_value": 174
+            },
+            {
+              "entity_name": "scripts.chrono-pusher.prov() callback",
+              "file_path": "scripts\\chrono-pusher.js",
+              "line_start": 98,
+              "line_end": 265,
+              "metric_value": 167
+            },
+            {
+              "entity_name": "scripts.chrono-buffer.prov() callback",
+              "file_path": "scripts\\chrono-buffer.js",
+              "line_start": 147,
+              "line_end": 302,
+              "metric_value": 155
+            },
+            {
+              "entity_name": "scripts.chrono-debuffer.prov() callback",
+              "file_path": "scripts\\chrono-debuffer.js",
+              "line_start": 154,
+              "line_end": 309,
+              "metric_value": 155
+            },
+            {
+              "entity_name": "scripts.chrono-unloader.prov() callback",
+              "file_path": "scripts\\chrono-unloader.js",
+              "line_start": 79,
+              "line_end": 230,
+              "metric_value": 151
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "check_name": "fan_out",
+      "description": "Checks efferent coupling: how many other functions each function calls",
+      "check_type": "standard",
+      "total_entities_checked": 404,
+      "findings_count": 0,
+      "warning_count": 0,
+      "score": 1.0,
+      "finding_groups": []
+    },
+    {
+      "check_name": "fan_in",
+      "description": "Checks afferent coupling: how many other functions call each function",
+      "check_type": "standard",
+      "total_entities_checked": 404,
+      "findings_count": 0,
+      "warning_count": 0,
+      "score": 1.0,
+      "finding_groups": []
+    },
+    {
+      "check_name": "god_class",
+      "description": "Detects classes with too many methods, too much code, or too many outgoing dependencies",
+      "check_type": "standard",
+      "total_entities_checked": 11,
+      "findings_count": 0,
+      "warning_count": 0,
+      "score": 1.0,
+      "finding_groups": []
+    },
+    {
+      "check_name": "circular_dependencies",
+      "description": "Detects circular dependencies between packages",
+      "check_type": "circular_dependencies",
+      "cycles": [],
+      "packages_checked": 1,
+      "packages_in_cycles": 0
+    },
+    {
+      "check_name": "package_instability",
+      "description": "Computes Martin's instability metric (I = Ce / (Ca + Ce)) per package",
+      "check_type": "standard",
+      "total_entities_checked": 0,
+      "findings_count": 0,
+      "warning_count": 0,
+      "score": 1.0,
+      "finding_groups": []
+    },
+    {
+      "check_name": "component_cohesion",
+      "description": "Measures internal vs external edge ratio per component/cluster",
+      "check_type": "standard",
+      "total_entities_checked": 15,
+      "findings_count": 0,
+      "warning_count": 0,
+      "score": 1.0,
+      "finding_groups": []
+    },
+    {
+      "check_name": "unused_code_diagnostics",
+      "description": "Detects unused imports, variables, functions, and dead code via LSP diagnostics",
+      "check_type": "standard",
+      "total_entities_checked": 18,
+      "findings_count": 18,
+      "warning_count": 0,
+      "score": 0.09999999999999998,
+      "finding_groups": [
+        {
+          "severity": "info",
+          "threshold": 0,
+          "description": "Variables declared but never used",
+          "entities": [
+            {
+              "entity_name": "[unused_variable] 'source' is declared but its value is never read.",
+              "file_path": "scripts\\chrono-booster.js",
+              "line_start": 261,
+              "line_end": 261,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'source' is declared but its value is never read.",
+              "file_path": "scripts\\chrono-booster.js",
+              "line_start": 265,
+              "line_end": 265,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'source' is declared but its value is never read.",
+              "file_path": "scripts\\chrono-booster.js",
+              "line_start": 269,
+              "line_end": 269,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'source' is declared but its value is never read.",
+              "file_path": "scripts\\chrono-buffer.js",
+              "line_start": 276,
+              "line_end": 276,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'source' is declared but its value is never read.",
+              "file_path": "scripts\\chrono-buffer.js",
+              "line_start": 280,
+              "line_end": 280,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'source' is declared but its value is never read.",
+              "file_path": "scripts\\chrono-buffer.js",
+              "line_start": 284,
+              "line_end": 284,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'x' is declared but its value is never read.",
+              "file_path": "scripts\\chrono-build-tower.js",
+              "line_start": 23,
+              "line_end": 23,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'tile' is declared but its value is never read.",
+              "file_path": "scripts\\chrono-core.js",
+              "line_start": 9,
+              "line_end": 9,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'tile' is declared but its value is never read.",
+              "file_path": "scripts\\chrono-core.js",
+              "line_start": 10,
+              "line_end": 10,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'tile' is declared but its value is never read.",
+              "file_path": "scripts\\chrono-core.js",
+              "line_start": 11,
+              "line_end": 11,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'source' is declared but its value is never read.",
+              "file_path": "scripts\\chrono-debuffer.js",
+              "line_start": 283,
+              "line_end": 283,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'source' is declared but its value is never read.",
+              "file_path": "scripts\\chrono-debuffer.js",
+              "line_start": 287,
+              "line_end": 287,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'source' is declared but its value is never read.",
+              "file_path": "scripts\\chrono-debuffer.js",
+              "line_start": 291,
+              "line_end": 291,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'source' is declared but its value is never read.",
+              "file_path": "scripts\\chrono-liquid-pusher.js",
+              "line_start": 251,
+              "line_end": 251,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'source' is declared but its value is never read.",
+              "file_path": "scripts\\chrono-liquid-unloader.js",
+              "line_start": 197,
+              "line_end": 197,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'item' is declared but its value is never read.",
+              "file_path": "scripts\\chrono-unloader.js",
+              "line_start": 209,
+              "line_end": 209,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'source' is declared but its value is never read.",
+              "file_path": "scripts\\chrono-unloader.js",
+              "line_start": 210,
+              "line_end": 210,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] 'clearFn' is declared but its value is never read.",
+              "file_path": "scripts\\lib.js",
+              "line_start": 107,
+              "line_end": 107,
+              "metric_value": 0.0
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "file_summaries": [
+    {
+      "file_path": "scripts\\chrono-buffer.js",
+      "total_findings": 4,
+      "warning_findings": 1,
+      "composite_risk_score": 45.0
+    },
+    {
+      "file_path": "scripts\\chrono-debuffer.js",
+      "total_findings": 4,
+      "warning_findings": 1,
+      "composite_risk_score": 45.0
+    },
+    {
+      "file_path": "scripts\\chrono-unloader.js",
+      "total_findings": 3,
+      "warning_findings": 1,
+      "composite_risk_score": 35.0
+    },
+    {
+      "file_path": "scripts\\chrono-booster.js",
+      "total_findings": 3,
+      "warning_findings": 0,
+      "composite_risk_score": 30.0
+    },
+    {
+      "file_path": "scripts\\chrono-core.js",
+      "total_findings": 3,
+      "warning_findings": 0,
+      "composite_risk_score": 30.0
+    },
+    {
+      "file_path": "scripts\\chrono-liquid-pusher.js",
+      "total_findings": 2,
+      "warning_findings": 1,
+      "composite_risk_score": 25.0
+    },
+    {
+      "file_path": "scripts\\chrono-pusher.js",
+      "total_findings": 1,
+      "warning_findings": 1,
+      "composite_risk_score": 15.0
+    },
+    {
+      "file_path": "scripts\\chrono-build-tower.js",
+      "total_findings": 1,
+      "warning_findings": 0,
+      "composite_risk_score": 10.0
+    },
+    {
+      "file_path": "scripts\\chrono-liquid-unloader.js",
+      "total_findings": 1,
+      "warning_findings": 0,
+      "composite_risk_score": 10.0
+    },
+    {
+      "file_path": "scripts\\lib.js",
+      "total_findings": 1,
+      "warning_findings": 0,
+      "composite_risk_score": 10.0
+    }
+  ]
+}

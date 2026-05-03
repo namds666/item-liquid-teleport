@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "generated_at": "2026-05-03T14:06:23.156771+00:00",
+  "analyzed_files": [
+    "scripts\\chrono-booster.js",
+    "scripts\\chrono-buffer.js",
+    "scripts\\chrono-build-tower.js",
+    "scripts\\chrono-core.js",
+    "scripts\\chrono-debuffer.js",
+    "scripts\\chrono-liquid-pusher.js",
+    "scripts\\chrono-liquid-unloader.js",
+    "scripts\\chrono-mender.js",
+    "scripts\\chrono-pusher.js",
+    "scripts\\chrono-repair-point.js",
+    "scripts\\chrono-unloader.js",
+    "scripts\\lib.js",
+    "scripts\\main.js"
+  ],
+  "not_analyzed_files": [
+    {
+      "path": "_scope.md",
+      "reason": "other"
+    },
+    {
+      "path": "edgeCase\\construct-build-link.md",
+      "reason": "other"
+    },
+    {
+      "path": "README.md",
+      "reason": "other"
+    }
+  ],
+  "summary": {
+    "total_files": 16,
+    "analyzed": 13,
+    "not_analyzed": 3,
+    "not_analyzed_by_reason": {
+      "other": 3
+    }
+  }
+}
