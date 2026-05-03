@@ -2,9 +2,9 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code & Codex",
-  subtitle: "v1.2.57: faster chrono transport",
-  description: "Makes item and liquid teleport globally! 4 cheat-grade 1x1 transport blocks.
-  Update: fix chrono pusher missing from iOS build menu.",
-  version: "1.2.57",
+  subtitle: "v1.2.58: docs refresh",
+  description: "Adds cheat-grade 1x1 Chrono blocks for global item and liquid transport, repair, construction, overdrive, unit buffs, unit debuffs, and core placement.
+  Update: expanded documentation and metadata for the full Chrono block set.",
+  version: "1.2.58",
   minGameVersion: "146"
 }
