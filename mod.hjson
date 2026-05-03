@@ -2,9 +2,9 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code & Codex",
-  subtitle: "v1.2.60: buffer crash fix",
-  description: "Adds cheat-grade 1x1 Chrono blocks for global item and liquid transport, repair, construction, overdrive, unit buffs, unit debuffs, and core placement.
+  subtitle: "v1.2.61: heat transport",
+  description: "Adds cheat-grade 1x1 Chrono blocks for global item, liquid, and heat transport, repair, construction, overdrive, unit buffs, unit debuffs, and core placement.
   Update: expanded documentation and metadata for the full Chrono block set.",
-  version: "1.2.60",
+  version: "1.2.61",
   minGameVersion: "146"
 }

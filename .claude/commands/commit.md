@@ -1,5 +1,3 @@
-Stage all changes and create a commit on the current branch.
-
 Steps:
 1. Run `git status` and `git diff` to review what has changed
 2. Run `git log -5 --oneline` to match the existing commit message style

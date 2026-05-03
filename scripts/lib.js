@@ -1,6 +1,6 @@
 exports.modName = "item-liquid-teleport";
 
-const CHRONO_NAMES = ["chrono-pusher", "chrono-unloader", "chrono-liquid-pusher", "chrono-liquid-unloader"].map(n => exports.modName + "-" + n);
+const CHRONO_NAMES = ["chrono-pusher", "chrono-unloader", "chrono-liquid-pusher", "chrono-liquid-unloader", "chrono-heat-pusher", "chrono-heat-unloader"].map(n => exports.modName + "-" + n);
 const STRING_CONFIG_PREFIX = "ctl1";
 const MAX_INTSEQ_CONFIG_LINKS = 96;
 
@@ -226,5 +226,16 @@ exports.enableAllEnvironments = (block) => {
         block.envEnabled = Packages.mindustry.type.Env.any;
         block.envDisabled = Packages.mindustry.type.Env.none;
         block.envRequired = Packages.mindustry.type.Env.none;
+    } catch (e) {}
+};
+exports.enableErekirOnly = (block) => {
+    try {
+        const Env = Packages.mindustry.world.meta.Env;
+        block.envEnabled = Env.any;
+        block.envDisabled = Env.none;
+        block.envRequired = Env.scorching;
+    } catch (e) {}
+    try {
+        block.shownPlanets = Seq.with(Planets.erekir);
     } catch (e) {}
 };

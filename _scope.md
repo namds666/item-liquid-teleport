@@ -2,7 +2,7 @@
 
 ## Overview
 
-A standalone Mindustry cheat mod providing compact 1x1 Chrono blocks for global item/liquid transport, repair, construction, overdrive, core placement, and unit status control.
+A standalone Mindustry cheat mod providing compact 1x1 Chrono blocks for global item/liquid/heat transport, repair, construction, overdrive, core placement, and unit status control.
 
 ## Blocks
 
@@ -27,6 +27,18 @@ A standalone Mindustry cheat mod providing compact 1x1 Chrono blocks for global 
 - **Category:** Liquid - extends `Block` / `Building`
 - **Function:** Receives liquid from adjacent pipes (10,000-unit capacity), then pushes it into every linked building (up to 20/link per 5-tick batch). Optionally filtered to a single liquid; without a filter it pushes all held liquids in sequence.
 - **Config:** Tap to toggle individual links. UI: auto-connect buttons + optional liquid filter.
+
+### Chrono Heat Unloader (`chrono-heat-unloader`)
+- **Category:** Crafting - extends `Block` / `Building` and implements `HeatBlock`
+- **Visibility:** Erekir/scorching environments only.
+- **Function:** Pulls heat from every linked `HeatBlock`, sums all linked `heat()` values without cap or scaling, and outputs that total locally through vanilla directional heat adjacency.
+- **Config:** Tap to toggle individual heat-source links. UI: auto-connect buttons.
+
+### Chrono Heat Pusher (`chrono-heat-pusher`)
+- **Category:** Crafting - extends `Block` / `Building` and implements `HeatBlock`
+- **Visibility:** Erekir/scorching environments only.
+- **Function:** Reads adjacent vanilla heat via `calculateHeat(sideHeat)` and pushes the full sampled value to linked Chrono heat output blocks. Linked receivers output the pushed total locally through vanilla directional heat adjacency.
+- **Config:** Tap to toggle linked Chrono heat receiver/output blocks.
 
 ### Chrono Core (`chrono-core`)
 - **Category:** Effect
@@ -134,6 +146,8 @@ item-liquid-teleport/
 |   +-- chrono-pusher.js
 |   +-- chrono-liquid-unloader.js
 |   +-- chrono-liquid-pusher.js
+|   +-- chrono-heat-unloader.js
+|   +-- chrono-heat-pusher.js
 |   +-- chrono-core.js
 |   +-- chrono-mender.js
 |   +-- chrono-repair-point.js
