@@ -24,10 +24,10 @@ function isHeatBlock(build) {
 const blockType = extend(Block, "chrono-heat-unloader", {
     load() {
         this.super$load();
-        this.region = lib.loadRegion("chrono-liquid-unloader");
-        topRegion = lib.loadRegion("chrono-liquid-unloader-top");
-        bottomRegion = lib.loadRegion("chrono-liquid-unloader-bottom");
-        rotatorRegion = lib.loadRegion("chrono-liquid-unloader-rotator");
+        this.region = lib.loadRegion("chrono-heat-unloader");
+        topRegion = lib.loadRegion("chrono-heat-unloader-top");
+        bottomRegion = lib.loadRegion("chrono-heat-unloader-bottom");
+        rotatorRegion = lib.loadRegion("chrono-heat-unloader-rotator");
     },
     setBars() {
         this.super$setBars();

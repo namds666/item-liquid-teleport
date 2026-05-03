@@ -26,10 +26,10 @@ function newFloatArray(size) {
 const blockType = extend(Block, "chrono-heat-pusher", {
     load() {
         this.super$load();
-        this.region = lib.loadRegion("chrono-liquid-pusher");
-        topRegion = lib.loadRegion("chrono-liquid-pusher-top");
-        bottomRegion = lib.loadRegion("chrono-liquid-pusher-bottom");
-        rotatorRegion = lib.loadRegion("chrono-liquid-pusher-rotator");
+        this.region = lib.loadRegion("chrono-heat-pusher");
+        topRegion = lib.loadRegion("chrono-heat-pusher-top");
+        bottomRegion = lib.loadRegion("chrono-heat-pusher-bottom");
+        rotatorRegion = lib.loadRegion("chrono-heat-pusher-rotator");
     },
     setBars() {
         this.super$setBars();

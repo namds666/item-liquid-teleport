@@ -236,6 +236,6 @@ exports.enableErekirOnly = (block) => {
         block.envRequired = Env.scorching;
     } catch (e) {}
     try {
-        block.shownPlanets = Seq.with(Planets.erekir);
+        block.shownPlanets.add(Packages.mindustry.content.Planets.erekir);
     } catch (e) {}
 };

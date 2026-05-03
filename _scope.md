@@ -159,6 +159,7 @@ item-liquid-teleport/
 +-- sprites/
     +-- blocks/distribution/        item transport blocks
     +-- blocks/liquid/              liquid transport blocks
+    +-- blocks/crafting/            heat transport blocks
     +-- blocks/defense/             mender/build tower sprites
     +-- blocks/effect/              core/booster/buffer/debuffer sprites
     +-- blocks/units/               repair point sprites
