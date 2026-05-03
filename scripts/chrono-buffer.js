@@ -290,12 +290,12 @@ blockType.buildType = prov(() => {
                     }
                 }
                 for (let i = 0; i < itemBoosters.length; i++) {
-                    if (activeItems[i] > 0 && itemBoosters[i].status != null) {
+                    if (boostState.activeItems[i] > 0 && itemBoosters[i].status != null) {
                         u.apply(itemBoosters[i].status, duration);
                     }
                 }
                 for (let i = 0; i < liquidBoosters.length; i++) {
-                    if (activeLiquids[i] > 0 && liquidBoosters[i].status != null) {
+                    if (boostState.activeLiquids[i] > 0 && liquidBoosters[i].status != null) {
                         u.apply(liquidBoosters[i].status, duration);
                     }
                 }
