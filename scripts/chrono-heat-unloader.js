@@ -70,7 +70,7 @@ blockType.configurable = true;
 blockType.saveConfig = false;
 blockType.noUpdateDisabled = true;
 blockType.requirements = ItemStack.with();
-lib.enableErekirOnly(blockType);
+lib.enableAllEnvironments(blockType);
 
 blockType.config(IntSeq, lib.cons2((tile, seq) => {
     if (seq.size == 0) { tile.setLinks(new Seq(java.lang.Integer)); return; }

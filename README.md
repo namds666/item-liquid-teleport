@@ -10,8 +10,8 @@ This mod started from the teleporter item logic in [abomb4/super-cheat](https://
 - **Chrono Pusher**: receives items from conveyors and pushes them into linked buildings globally, with an optional item filter.
 - **Chrono Liquid Unloader**: pulls a selected liquid from linked buildings globally and outputs it to adjacent pipes.
 - **Chrono Liquid Pusher**: receives liquids from pipes and pushes them into linked buildings globally, with an optional liquid filter.
-- **Chrono Heat Unloader**: pulls the summed heat from linked heat blocks globally and outputs it locally on Erekir.
-- **Chrono Heat Pusher**: reads adjacent heat and pushes the full amount to linked Chrono heat output blocks globally on Erekir.
+- **Chrono Heat Unloader**: pulls the summed heat from linked heat blocks globally and outputs it locally.
+- **Chrono Heat Pusher**: reads adjacent heat and pushes the full amount to linked Chrono heat output blocks globally.
 - **Chrono Core**: a 1x1 always-unlocked core that produces gamma units.
 - **Chrono Mender**: heals damaged friendly buildings globally.
 - **Chrono Repair Point**: repairs damaged friendly units globally with a continuous beam.

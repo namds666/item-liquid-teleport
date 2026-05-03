@@ -228,14 +228,3 @@ exports.enableAllEnvironments = (block) => {
         block.envRequired = Packages.mindustry.type.Env.none;
     } catch (e) {}
 };
-exports.enableErekirOnly = (block) => {
-    try {
-        const Env = Packages.mindustry.world.meta.Env;
-        block.envEnabled = Env.any;
-        block.envDisabled = Env.none;
-        block.envRequired = Env.scorching;
-    } catch (e) {}
-    try {
-        block.shownPlanets.add(Packages.mindustry.content.Planets.erekir);
-    } catch (e) {}
-};
