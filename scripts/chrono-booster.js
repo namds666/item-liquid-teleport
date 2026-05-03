@@ -258,15 +258,15 @@ blockType.buildType = prov(() => {
             Draw.reset();
         },
 
-        acceptItem(source, item) {
+        acceptItem(_source, item) {
             return acceptsBoostItem(item) && this.items != null && this.items.get(item) < blockType.itemCapacity;
         },
 
-        acceptStack(item, amount, source) {
+        acceptStack(item, amount, _source) {
             return acceptsBoostItem(item) && this.items != null ? Math.min(amount, blockType.itemCapacity - this.items.get(item)) : 0;
         },
 
-        acceptLiquid(source, liquid) {
+        acceptLiquid(_source, liquid) {
             return acceptsBoostLiquid(liquid) && this.liquids != null && this.liquids.get(liquid) < blockType.liquidCapacity;
         },
 

@@ -151,53 +151,102 @@ lib.enableAllEnvironments(blockType);
 blockType.consumePower(10);
 blockType.consumeItems(ItemStack.with(Items.phaseFabric, 1, Items.silicon, 1));
 
+function createBoostState() {
+    let state = { boostTimer: APPLY_RELOAD, activeItems: [], activeLiquids: [] };
+    for (let i = 0; i < itemBoosters.length; i++) state.activeItems[i] = 0;
+    for (let i = 0; i < liquidBoosters.length; i++) state.activeLiquids[i] = 0;
+    return state;
+}
+
+function activeRange(state, baseRange) {
+    let out = baseRange;
+    for (let i = 0; i < itemBoosters.length; i++) if (state.activeItems[i] > 0) out += itemBoosters[i].range;
+    for (let i = 0; i < liquidBoosters.length; i++) if (state.activeLiquids[i] > 0) out += liquidBoosters[i].range;
+    return out;
+}
+
+function activeBoosterEffect(state) {
+    let out = 0;
+    for (let i = 0; i < itemBoosters.length; i++) if (state.activeItems[i] > 0) out += itemBoosters[i].effect;
+    for (let i = 0; i < liquidBoosters.length; i++) if (state.activeLiquids[i] > 0) out += liquidBoosters[i].effect;
+    return out;
+}
+
+function consumeActiveBoosters(build, state) {
+    for (let i = 0; i < itemBoosters.length; i++) {
+        let b = itemBoosters[i];
+        if (build.items != null && build.items.get(b.item) >= b.amount) {
+            build.items.remove(b.item, b.amount);
+            state.activeItems[i] = BOOST_DURATION;
+        }
+    }
+    for (let i = 0; i < liquidBoosters.length; i++) {
+        let b = liquidBoosters[i];
+        if (build.liquids != null && build.liquids.get(b.liquid) >= b.amount) {
+            build.liquids.remove(b.liquid, b.amount);
+            state.activeLiquids[i] = BOOST_DURATION;
+        }
+    }
+}
+
+function tickBoostDurations(state) {
+    for (let i = 0; i < state.activeItems.length; i++) state.activeItems[i] = Math.max(0, state.activeItems[i] - Time.delta);
+    for (let i = 0; i < state.activeLiquids.length; i++) state.activeLiquids[i] = Math.max(0, state.activeLiquids[i] - Time.delta);
+}
+
+function updateBoostState(build, state) {
+    tickBoostDurations(state);
+    if (build.efficiency <= 0) return;
+
+    state.boostTimer += Time.delta;
+    if (state.boostTimer >= APPLY_RELOAD) {
+        consumeActiveBoosters(build, state);
+        state.boostTimer %= APPLY_RELOAD;
+    }
+}
+
+function updateProjectorBase(build) {
+    build.smoothEfficiency = Mathf.lerpDelta(build.smoothEfficiency, build.efficiency, 0.08);
+    build.heat = Mathf.lerpDelta(build.heat, build.efficiency > 0 ? 1 : 0, 0.08);
+    build.charge += build.heat * Time.delta;
+}
+
+function updateUseProgress(build) {
+    if (build.efficiency > 0) build.useProgress += build.delta();
+    if (build.useProgress >= blockType.useTime) {
+        build.consume();
+        build.useProgress %= blockType.useTime;
+    }
+}
+
+function writeBoostState(state, write) {
+    write.f(state.boostTimer);
+    for (let i = 0; i < state.activeItems.length; i++) write.f(state.activeItems[i]);
+    for (let i = 0; i < state.activeLiquids.length; i++) write.f(state.activeLiquids[i]);
+}
+
+function readBoostState(state, read) {
+    state.boostTimer = read.f();
+    for (let i = 0; i < state.activeItems.length; i++) state.activeItems[i] = read.f();
+    for (let i = 0; i < state.activeLiquids.length; i++) state.activeLiquids[i] = read.f();
+}
+
 blockType.buildType = prov(() => {
-    let boostTimer = APPLY_RELOAD;
-    let activeItems = [];
-    let activeLiquids = [];
-    for (let i = 0; i < itemBoosters.length; i++) activeItems[i] = 0;
-    for (let i = 0; i < liquidBoosters.length; i++) activeLiquids[i] = 0;
+    let boostState = createBoostState();
 
     return new JavaAdapter(OverdriveProjectorClass.OverdriveBuild, {
         version() { return 1; },
 
         realRange() {
-            let out = blockType.range;
-            for (let i = 0; i < itemBoosters.length; i++) {
-                if (activeItems[i] > 0) out += itemBoosters[i].range;
-            }
-            for (let i = 0; i < liquidBoosters.length; i++) {
-                if (activeLiquids[i] > 0) out += liquidBoosters[i].range;
-            }
-            return out;
+            return activeRange(boostState, blockType.range);
         },
 
         boosterEffect() {
-            let out = 0;
-            for (let i = 0; i < itemBoosters.length; i++) {
-                if (activeItems[i] > 0) out += itemBoosters[i].effect;
-            }
-            for (let i = 0; i < liquidBoosters.length; i++) {
-                if (activeLiquids[i] > 0) out += liquidBoosters[i].effect;
-            }
-            return out;
+            return activeBoosterEffect(boostState);
         },
 
         consumeBoosters() {
-            for (let i = 0; i < itemBoosters.length; i++) {
-                let b = itemBoosters[i];
-                if (this.items != null && this.items.get(b.item) >= b.amount) {
-                    this.items.remove(b.item, b.amount);
-                    activeItems[i] = BOOST_DURATION;
-                }
-            }
-            for (let i = 0; i < liquidBoosters.length; i++) {
-                let b = liquidBoosters[i];
-                if (this.liquids != null && this.liquids.get(b.liquid) >= b.amount) {
-                    this.liquids.remove(b.liquid, b.amount);
-                    activeLiquids[i] = BOOST_DURATION;
-                }
-            }
+            consumeActiveBoosters(this, boostState);
         },
 
         range() {
@@ -217,21 +266,8 @@ blockType.buildType = prov(() => {
         },
 
         updateTile() {
-            this.smoothEfficiency = Mathf.lerpDelta(this.smoothEfficiency, this.efficiency, 0.08);
-            this.heat = Mathf.lerpDelta(this.heat, this.efficiency > 0 ? 1 : 0, 0.08);
-            this.charge += this.heat * Time.delta;
-
-            for (let i = 0; i < activeItems.length; i++) activeItems[i] = Math.max(0, activeItems[i] - Time.delta);
-            for (let i = 0; i < activeLiquids.length; i++) activeLiquids[i] = Math.max(0, activeLiquids[i] - Time.delta);
-
-            if (this.efficiency > 0) {
-                boostTimer += Time.delta;
-                if (boostTimer >= APPLY_RELOAD) {
-                    this.consumeBoosters();
-                    boostTimer %= APPLY_RELOAD;
-                }
-            }
-
+            updateProjectorBase(this);
+            updateBoostState(this, boostState);
             let boostEffect = this.boosterEffect();
             this.phaseHeat = Mathf.lerpDelta(this.phaseHeat, boostEffect / (maxEffectBoost() - BASE_EFFECT), 0.1);
 
@@ -240,12 +276,7 @@ blockType.buildType = prov(() => {
                 if (this.efficiency > 0) this.applyStatuses();
             }
 
-            if (this.efficiency > 0) this.useProgress += this.delta();
-
-            if (this.useProgress >= blockType.useTime) {
-                this.consume();
-                this.useProgress %= blockType.useTime;
-            }
+            updateUseProgress(this);
         },
 
         realEffect() {
@@ -280,30 +311,26 @@ blockType.buildType = prov(() => {
             Draw.reset();
         },
 
-        acceptItem(source, item) {
+        acceptItem(_source, item) {
             return acceptsBoostItem(item) && this.items != null && this.items.get(item) < blockType.itemCapacity;
         },
 
-        acceptStack(item, amount, source) {
+        acceptStack(item, amount, _source) {
             return acceptsBoostItem(item) && this.items != null ? Math.min(amount, blockType.itemCapacity - this.items.get(item)) : 0;
         },
 
-        acceptLiquid(source, liquid) {
+        acceptLiquid(_source, liquid) {
             return acceptsBoostLiquid(liquid) && this.liquids != null && this.liquids.get(liquid) < blockType.liquidCapacity;
         },
 
         write(write) {
             this.super$write(write);
-            write.f(boostTimer);
-            for (let i = 0; i < activeItems.length; i++) write.f(activeItems[i]);
-            for (let i = 0; i < activeLiquids.length; i++) write.f(activeLiquids[i]);
+            writeBoostState(boostState, write);
         },
 
         read(read, revision) {
             this.super$read(read, revision);
-            boostTimer = read.f();
-            for (let i = 0; i < activeItems.length; i++) activeItems[i] = read.f();
-            for (let i = 0; i < activeLiquids.length; i++) activeLiquids[i] = read.f();
+            readBoostState(boostState, read);
         },
     }, blockType);
 });

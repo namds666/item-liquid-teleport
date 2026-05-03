@@ -194,7 +194,7 @@ blockType.buildType = prov(() => {
         config() {
             return lib.transportConfig(liquidType == null ? -1 : liquidType.id, links, this.tile.x, this.tile.y, autoFlags);
         },
-        acceptLiquid(source, liquid) { return liquidType != null && liquid == liquidType; },
+        acceptLiquid(_source, liquid) { return liquidType != null && liquid == liquidType; },
         outputsLiquid() { return true; },
         add() { if (this.added) return; theGroup.add(this); this.super$add(); },
         remove() { if (!this.added) return; theGroup.remove(this); this.super$remove(); },

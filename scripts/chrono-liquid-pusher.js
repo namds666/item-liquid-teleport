@@ -248,7 +248,7 @@ blockType.buildType = prov(() => {
         config() {
             return lib.transportConfig(selectedLiquid == null ? -1 : selectedLiquid.id, links, this.tile.x, this.tile.y, autoFlags);
         },
-        acceptLiquid(source, _liquid) { return true; },
+        acceptLiquid(_source, _liquid) { return true; },
         add() { if (this.added) return; rdcGroup.add(this); this.super$add(); },
         remove() { if (!this.added) return; rdcGroup.remove(this); this.super$remove(); },
         version() { return 5; },

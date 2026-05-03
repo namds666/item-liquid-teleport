@@ -207,7 +207,7 @@ blockType.buildType = prov(() => {
         remove() { if (!this.added) return; theGroup.remove(this); this.super$remove(); },
         version() { return 4; },
         canDump(to, item) { return this.linkedCore == null && !links.contains(boolf(pos => { return to == Vars.world.build(pos); })); },
-        acceptItem(source, item) { return this.linkedCore != null; },
+        acceptItem(_source, _item) { return this.linkedCore != null; },
         acceptStack(item, amount, source) {
             if (this.linkedCore != null) return this.linkedCore.acceptStack(item, amount, source);
             return (source == null || source.team == this.team) ? Math.min(this.getMaximumAccepted(item) - this.items.get(item), amount) : 0;
