@@ -1,37 +1,15 @@
 const lib = require("lib");
+const boostRules = require("chrono-boost-rules");
 
 const OverdriveProjectorClass = Packages.mindustry.world.blocks.defense.OverdriveProjector;
 
-const TILE = Vars.tilesize;
-const BASE_RANGE = 200;
+const TILE = boostRules.TILE;
+const BASE_RANGE = boostRules.BASE_RANGE;
 const BASE_EFFECT = 2.5;
 const BASE_USE_TIME = 300;
-const BOOST_DURATION = 65;
-const APPLY_RELOAD = 60;
-
-const itemBoosters = [
-    { item: Items.copper, amount: 40, range: 3 * TILE, effect: 0.3 },
-    { item: Items.lead, amount: 40, range: 3 * TILE, effect: 0.3 },
-    { item: Items.metaglass, amount: 25, range: 6 * TILE, effect: 0.6 },
-    { item: Items.graphite, amount: 20, range: 7 * TILE, effect: 0.7 },
-    { item: Items.sand, amount: 50, range: 2.5 * TILE, effect: 0.2 },
-    { item: Items.coal, amount: 35, range: 4 * TILE, effect: 0.4 },
-    { item: Items.titanium, amount: 25, range: 6 * TILE, effect: 0.6 },
-    { item: Items.thorium, amount: 12, range: 10 * TILE, effect: 1 },
-    { item: Items.scrap, amount: 50, range: 2.5 * TILE, effect: 0.2 },
-    { item: Items.plastanium, amount: 8, range: 12 * TILE, effect: 1.25 },
-    { item: Items.sporePod, amount: 20, range: 7 * TILE, effect: 0.7 },
-    { item: Items.surgeAlloy, amount: 4, range: 16 * TILE, effect: 1.75 },
-    { item: Items.pyratite, amount: 3, range: 18 * TILE, effect: 2 },
-    { item: Items.blastCompound, amount: 1, range: 25 * TILE, effect: 2.5 },
-];
-
-const liquidBoosters = [
-    { liquid: Liquids.water, amount: 120, range: 2.5 * TILE, effect: 0.2 },
-    { liquid: Liquids.slag, amount: 90, range: 5 * TILE, effect: 0.5 },
-    { liquid: Liquids.oil, amount: 100, range: 4 * TILE, effect: 0.4 },
-    { liquid: Liquids.cryofluid, amount: 60, range: 12 * TILE, effect: 1.25 },
-];
+const APPLY_RELOAD = boostRules.APPLY_RELOAD;
+const itemBoosters = boostRules.itemBoosters;
+const liquidBoosters = boostRules.liquidBoosters;
 
 const appliedStatuses = [
     { name: "Burning", effect: StatusEffects.burning },
@@ -48,58 +26,7 @@ const appliedStatuses = [
 ];
 
 function maxEffectBoost() {
-    let out = BASE_EFFECT;
-    for (let i = 0; i < itemBoosters.length; i++) out += itemBoosters[i].effect;
-    for (let i = 0; i < liquidBoosters.length; i++) out += liquidBoosters[i].effect;
-    return out;
-}
-
-function maxItemCapacity() {
-    let out = 10;
-    for (let i = 0; i < itemBoosters.length; i++) out = Math.max(out, itemBoosters[i].amount);
-    return out;
-}
-
-function acceptsBoostItem(item) {
-    if (item == Items.phaseFabric || item == Items.silicon) return true;
-    for (let i = 0; i < itemBoosters.length; i++) {
-        if (item == itemBoosters[i].item) return true;
-    }
-    return false;
-}
-
-function acceptsBoostLiquid(liquid) {
-    for (let i = 0; i < liquidBoosters.length; i++) {
-        if (liquid == liquidBoosters[i].liquid) return true;
-    }
-    return false;
-}
-
-function addItemBoosterStat(stats, booster) {
-    stats.add(Stat.booster, StatValues.itemBoosters(
-        "+{0}%",
-        APPLY_RELOAD,
-        booster.effect * 100,
-        booster.range,
-        ItemStack.with(booster.item, booster.amount)
-    ));
-}
-
-function addLiquidBoosterStat(stats, booster) {
-    stats.add(Stat.booster, new StatValue({ display: table => {
-        table.row();
-        table.table(cons(c => {
-            c.table(Styles.grayPanel, cons(b => {
-                b.add(StatValues.displayLiquid(booster.liquid, booster.amount, true)).pad(10).padLeft(15).left();
-                b.table(cons(bt => {
-                    bt.right().defaults().padRight(3).left();
-                    bt.add("[lightgray]+[stat]" + Strings.autoFixed(booster.range / TILE, 2) + "[lightgray] " + StatUnit.blocks.localized()).row();
-                    bt.add("[lightgray]+[stat]" + Strings.autoFixed(booster.effect * 100, 2) + "[lightgray]% duration");
-                })).right().top().grow().pad(10).padRight(15);
-            })).growX().pad(5).padBottom(-5).row();
-        })).growX().colspan(table.getColumns());
-        table.row();
-    }}));
+    return boostRules.maxBoost(BASE_EFFECT);
 }
 
 const blockType = extend(OverdriveProjectorClass, "chrono-debuffer", {
@@ -118,8 +45,7 @@ const blockType = extend(OverdriveProjectorClass, "chrono-debuffer", {
         this.super$setStats();
         try { this.stats.remove(Stat.booster); } catch (e) {}
         this.stats.add(Stat.abilities, "Applies Burning, Electrified, Spore Slowed, Tarred, Shocked, Blasted, Corroded, Freezing, Wet, Melting, and Sapped to enemy units.");
-        for (let i = 0; i < itemBoosters.length; i++) addItemBoosterStat(this.stats, itemBoosters[i]);
-        for (let i = 0; i < liquidBoosters.length; i++) addLiquidBoosterStat(this.stats, liquidBoosters[i]);
+        boostRules.addBoosterStats(this.stats, "+{0}% duration", " duration");
     },
 
     setBars() {
@@ -145,7 +71,7 @@ blockType.reload = APPLY_RELOAD;
 blockType.ambientSoundVolume = 0.12;
 blockType.hasBoost = false;
 blockType.hasLiquids = true;
-blockType.itemCapacity = maxItemCapacity();
+blockType.itemCapacity = boostRules.maxItemCapacity();
 blockType.liquidCapacity = 120;
 lib.enableAllEnvironments(blockType);
 blockType.consumePower(10);
@@ -162,42 +88,15 @@ blockType.buildType = prov(() => {
         version() { return 1; },
 
         realRange() {
-            let out = blockType.range;
-            for (let i = 0; i < itemBoosters.length; i++) {
-                if (activeItems[i] > 0) out += itemBoosters[i].range;
-            }
-            for (let i = 0; i < liquidBoosters.length; i++) {
-                if (activeLiquids[i] > 0) out += liquidBoosters[i].range;
-            }
-            return out;
+            return boostRules.realRange(blockType.range, activeItems, activeLiquids);
         },
 
         boosterEffect() {
-            let out = 0;
-            for (let i = 0; i < itemBoosters.length; i++) {
-                if (activeItems[i] > 0) out += itemBoosters[i].effect;
-            }
-            for (let i = 0; i < liquidBoosters.length; i++) {
-                if (activeLiquids[i] > 0) out += liquidBoosters[i].effect;
-            }
-            return out;
+            return boostRules.activeBoost(activeItems, activeLiquids);
         },
 
         consumeBoosters() {
-            for (let i = 0; i < itemBoosters.length; i++) {
-                let b = itemBoosters[i];
-                if (this.items != null && this.items.get(b.item) >= b.amount) {
-                    this.items.remove(b.item, b.amount);
-                    activeItems[i] = BOOST_DURATION;
-                }
-            }
-            for (let i = 0; i < liquidBoosters.length; i++) {
-                let b = liquidBoosters[i];
-                if (this.liquids != null && this.liquids.get(b.liquid) >= b.amount) {
-                    this.liquids.remove(b.liquid, b.amount);
-                    activeLiquids[i] = BOOST_DURATION;
-                }
-            }
+            boostRules.consumeBoosters(this, activeItems, activeLiquids);
         },
 
         range() {
@@ -281,15 +180,15 @@ blockType.buildType = prov(() => {
         },
 
         acceptItem(source, item) {
-            return acceptsBoostItem(item) && this.items != null && this.items.get(item) < blockType.itemCapacity;
+            return boostRules.acceptsBoostItem(item) && this.items != null && this.items.get(item) < blockType.itemCapacity;
         },
 
         acceptStack(item, amount, source) {
-            return acceptsBoostItem(item) && this.items != null ? Math.min(amount, blockType.itemCapacity - this.items.get(item)) : 0;
+            return boostRules.acceptsBoostItem(item) && this.items != null ? Math.min(amount, blockType.itemCapacity - this.items.get(item)) : 0;
         },
 
         acceptLiquid(source, liquid) {
-            return acceptsBoostLiquid(liquid) && this.liquids != null && this.liquids.get(liquid) < blockType.liquidCapacity;
+            return boostRules.acceptsBoostLiquid(liquid) && this.liquids != null && this.liquids.get(liquid) < blockType.liquidCapacity;
         },
 
         write(write) {

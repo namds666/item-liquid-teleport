@@ -8,6 +8,7 @@ const optionalScripts = [
     "chrono-mender",
     "chrono-repair-point",
     "chrono-build-tower",
+    "chrono-boost-rules",
     "chrono-booster",
     "chrono-buffer",
     "chrono-debuffer"
