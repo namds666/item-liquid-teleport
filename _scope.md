@@ -30,8 +30,9 @@ A standalone Mindustry cheat mod providing compact Chrono blocks for global item
 
 ### Chrono Item Converter (`chrono-item-converter`)
 - **Category:** Crafting - extends `StorageBlock` / `StorageBuild`
-- **Function:** Converts a configured input item into a configured output item every 30 ticks. Conversion ratio and dynamic power draw are derived from item rarity weights.
-- **Config:** Two item picker tables serialize as an `IntSeq` of `[inputItemId, outputItemId]`; same-item or incomplete recipes are invalid.
+- **Function:** Converts a configured input item into a configured output item. Base craft time is 30 ticks before speed selection. Conversion ratio and dynamic power draw are derived from item rarity weights.
+- **Rate:** User-selectable speed levels: 1x, 2x, 4x, 8x, 16x, 32x, 64x, 128x. Default is 2x. Power scales above linearly with speed to keep high rates expensive.
+- **Config:** Two item picker tables and speed buttons serialize as an `IntSeq` of `[inputItemId, outputItemId, speed]`; old two-entry configs load at the 2x default. Same-item or incomplete recipes are invalid.
 - **Behavior:** Accepts only the configured input item, buffers up to 200 items per item type, dumps only the configured output item, and draws no power when the recipe cannot run because input is missing or output storage is full.
 - **Size:** 2x2, health 2147483647.
 
@@ -165,4 +166,4 @@ item-liquid-teleport/
 - Item transport/converter blocks extend `StorageBlock` (JavaAdapter over `StorageBlock.StorageBuild`); liquid blocks extend `Block` (plain `extend(Building, ...)`).
 - The center dot on all four transport blocks reuses the vanilla `"unloader-center"` sprite, tinted to the selected filter color (or dominant held liquid/item color) at render time.
 - Config serialization uses relative tile offsets (delta from block's own tile) so configs survive copy-paste and schematic placement (`pointConfig` transforms them back).
-- Save/load versioned via `version()`: unloader v4, pusher v3, liquid-unloader v3, liquid-pusher v5, item-converter v1, chrono-booster v1, chrono-buffer v1, chrono-debuffer v1. Older revisions are handled in `read()`.
+- Save/load versioned via `version()`: unloader v4, pusher v3, liquid-unloader v3, liquid-pusher v5, item-converter v2, chrono-booster v1, chrono-buffer v1, chrono-debuffer v1. Older revisions are handled in `read()`.

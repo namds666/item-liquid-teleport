@@ -2,6 +2,8 @@ const lib = require("lib");
 
 const CRAFT_TIME = 30;
 const MAX_OUTPUT_PER_CYCLE = 50;
+const DEFAULT_SPEED = 2;
+const SPEED_LEVELS = [1, 2, 4, 8, 16, 32, 64, 128];
 const BASE_POWER = 0.4;
 const OUTPUT_POWER_SCALE = 0.25;
 const UPGRADE_POWER_SCALE = 0.6;
@@ -71,10 +73,23 @@ function conversion(inputItem, outputItem) {
     };
 }
 
-function converterConfig(inputId, outputId) {
-    let seq = new IntSeq(2);
+function validSpeed(speed) {
+    for (let i = 0; i < SPEED_LEVELS.length; i++) {
+        if (SPEED_LEVELS[i] == speed) return speed;
+    }
+    return DEFAULT_SPEED;
+}
+
+function speedPowerMultiplier(speed) {
+    let level = Math.log(speed) / Math.log(2);
+    return speed * (1 + level * 0.35);
+}
+
+function converterConfig(inputId, outputId, speed) {
+    let seq = new IntSeq(3);
     seq.add(inputId == null ? -1 : inputId);
     seq.add(outputId == null ? -1 : outputId);
+    seq.add(validSpeed(speed));
     return seq;
 }
 
@@ -123,9 +138,9 @@ blockType.requirements = ItemStack.with();
 lib.enableAllEnvironments(blockType);
 
 blockType.config(IntSeq, lib.cons2((tile, seq) => {
-    tile.setRecipeIds(seq.size > 0 ? seq.get(0) : -1, seq.size > 1 ? seq.get(1) : -1);
+    tile.setRecipeConfig(seq.size > 0 ? seq.get(0) : -1, seq.size > 1 ? seq.get(1) : -1, seq.size > 2 ? seq.get(2) : DEFAULT_SPEED);
 }));
-blockType.configClear(tile => { tile.setRecipeIds(-1, -1); });
+blockType.configClear(tile => { tile.setRecipeConfig(-1, -1, DEFAULT_SPEED); });
 blockType.consumePowerDynamic(new Floatf({ get: b => {
     try {
         return b.dynamicPowerUse();
@@ -137,12 +152,14 @@ blockType.consumePowerDynamic(new Floatf({ get: b => {
 blockType.buildType = prov(() => {
     let inputItem = null;
     let outputItem = null;
+    let speed = DEFAULT_SPEED;
     let progress = 0;
 
     return new JavaAdapter(StorageBlock.StorageBuild, {
-        setRecipeIds(inputId, outputId) {
+        setRecipeConfig(inputId, outputId, speedValue) {
             inputItem = inputId == null || inputId < 0 ? null : Vars.content.items().get(inputId);
             outputItem = outputId == null || outputId < 0 ? null : Vars.content.items().get(outputId);
+            speed = validSpeed(speedValue);
             progress = 0;
         },
 
@@ -155,18 +172,22 @@ blockType.buildType = prov(() => {
         },
 
         progressFrac() {
-            return Mathf.clamp(progress / CRAFT_TIME);
+            return Mathf.clamp(progress / this.craftTime());
+        },
+
+        craftTime() {
+            return CRAFT_TIME / speed;
         },
 
         dynamicPowerUse() {
             let recipe = this.recipe();
-            return this.canConvert(recipe) ? recipe.powerUse : 0;
+            return this.canConvert(recipe) ? recipe.powerUse * speedPowerMultiplier(speed) : 0;
         },
 
         recipeText() {
             let recipe = this.recipe();
             if (!recipe.valid) return "Select input -> output";
-            return recipe.inputAmount + " " + inputItem.localizedName + " -> " + recipe.outputAmount + " " + outputItem.localizedName;
+            return speed + "x: " + recipe.inputAmount + " " + inputItem.localizedName + " -> " + recipe.outputAmount + " " + outputItem.localizedName;
         },
 
         canConvert(recipe) {
@@ -186,12 +207,13 @@ blockType.buildType = prov(() => {
         updateTile() {
             let recipe = this.recipe();
             let active = this.canConvert(recipe) && this.efficiency > 0.001;
+            let craftTime = this.craftTime();
 
             if (active) {
                 progress += this.edelta();
-                while (progress >= CRAFT_TIME) {
+                while (progress >= craftTime) {
                     if (!this.convertOnce(recipe)) break;
-                    progress -= CRAFT_TIME;
+                    progress -= craftTime;
                 }
             } else if (!recipe.valid || !this.canConvert(recipe)) {
                 progress = 0;
@@ -224,19 +246,29 @@ blockType.buildType = prov(() => {
             table.table(cons(t => {
                 t.add("Input").left().row();
                 ItemSelection.buildTable(t, Vars.content.items(), prov(() => inputItem), cons(v => {
-                    this.configure(converterConfig(v == null ? -1 : v.id, outputItem == null ? -1 : outputItem.id));
+                    this.configure(converterConfig(v == null ? -1 : v.id, outputItem == null ? -1 : outputItem.id, speed));
                 }));
             })).row();
             table.table(cons(t => {
                 t.add("Output").left().row();
                 ItemSelection.buildTable(t, Vars.content.items(), prov(() => outputItem), cons(v => {
-                    this.configure(converterConfig(inputItem == null ? -1 : inputItem.id, v == null ? -1 : v.id));
+                    this.configure(converterConfig(inputItem == null ? -1 : inputItem.id, v == null ? -1 : v.id, speed));
                 }));
+            })).row();
+            table.table(cons(t => {
+                t.add("Speed").left().row();
+                for (let i = 0; i < SPEED_LEVELS.length; i++) {
+                    let level = SPEED_LEVELS[i];
+                    t.button(level + "x", run(() => {
+                        this.configure(converterConfig(inputItem == null ? -1 : inputItem.id, outputItem == null ? -1 : outputItem.id, level));
+                    })).size(58, 40).pad(2);
+                    if (i == 3) t.row();
+                }
             })).row();
         },
 
         config() {
-            return converterConfig(inputItem == null ? -1 : inputItem.id, outputItem == null ? -1 : outputItem.id);
+            return converterConfig(inputItem == null ? -1 : inputItem.id, outputItem == null ? -1 : outputItem.id, speed);
         },
 
         outputsItems() {
@@ -257,13 +289,14 @@ blockType.buildType = prov(() => {
         },
 
         version() {
-            return 1;
+            return 2;
         },
 
         write(write) {
             this.super$write(write);
             write.s(inputItem == null ? -1 : inputItem.id);
             write.s(outputItem == null ? -1 : outputItem.id);
+            write.s(speed);
             write.f(progress);
         },
 
@@ -273,6 +306,7 @@ blockType.buildType = prov(() => {
             let outputId = read.s();
             inputItem = inputId < 0 ? null : Vars.content.items().get(inputId);
             outputItem = outputId < 0 ? null : Vars.content.items().get(outputId);
+            speed = revision >= 2 ? validSpeed(read.s()) : DEFAULT_SPEED;
             progress = read.f();
         }
     }, blockType);
