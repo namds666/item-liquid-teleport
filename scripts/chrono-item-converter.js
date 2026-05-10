@@ -6,6 +6,7 @@ const BASE_POWER = 0.4;
 const OUTPUT_POWER_SCALE = 0.25;
 const UPGRADE_POWER_SCALE = 0.6;
 const DIFFERENCE_POWER_SCALE = 0.15;
+let stringInRegion, stringOutRegion, itemInRegion, itemOutRegion;
 
 const ITEM_VALUES = {
     "copper": 1,
@@ -81,6 +82,10 @@ const blockType = extend(StorageBlock, "chrono-item-converter", {
     load() {
         this.super$load();
         this.region = lib.loadRegion("chrono-item-converter");
+        stringInRegion = lib.loadRegion("chrono-item-converter-string-in");
+        stringOutRegion = lib.loadRegion("chrono-item-converter-string-out");
+        itemInRegion = lib.loadRegion("chrono-item-converter-item-in");
+        itemOutRegion = lib.loadRegion("chrono-item-converter-item-out");
     },
 
     outputsItems() { return true; },
@@ -133,7 +138,6 @@ blockType.buildType = prov(() => {
     let inputItem = null;
     let outputItem = null;
     let progress = 0;
-    let warmup = 0;
 
     return new JavaAdapter(StorageBlock.StorageBuild, {
         setRecipeIds(inputId, outputId) {
@@ -193,7 +197,6 @@ blockType.buildType = prov(() => {
                 progress = 0;
             }
 
-            warmup = Mathf.lerpDelta(warmup, active ? 1 : 0, 0.08);
             if (outputItem != null) {
                 for (let i = 0; i < 3; i++) this.dump(outputItem);
             }
@@ -201,18 +204,19 @@ blockType.buildType = prov(() => {
 
         draw() {
             this.super$draw();
+            let drawSize = blockType.size * Vars.tilesize;
             if (inputItem != null) {
                 Draw.color(inputItem.color);
-                Fill.square(this.x - 2.2, this.y, 1.45, 45);
+                Draw.rect(stringInRegion, this.x, this.y, drawSize, drawSize);
+                let scale = 1 + Mathf.absin(Time.time, 8, 0.08);
+                Draw.rect(itemInRegion, this.x, this.y, drawSize * scale, drawSize * scale);
             }
             if (outputItem != null) {
                 Draw.color(outputItem.color);
-                Fill.square(this.x + 2.2, this.y, 1.45, 45);
+                Draw.rect(stringOutRegion, this.x, this.y, drawSize, drawSize);
+                let scale = 1 + Mathf.absin(Time.time + 4, 8, 0.08);
+                Draw.rect(itemOutRegion, this.x, this.y, drawSize * scale, drawSize * scale);
             }
-            Draw.color(Pal.accent);
-            Draw.alpha(warmup);
-            Lines.stroke(1.2);
-            Lines.square(this.x, this.y, 3.1);
             Draw.reset();
         },
 
