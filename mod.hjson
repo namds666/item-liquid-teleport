@@ -2,9 +2,9 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code & Codex",
-  subtitle: "v1.2.59: shared boost rules",
-  description: "Adds cheat-grade 1x1 Chrono blocks for global item and liquid transport, repair, construction, overdrive, unit buffs, unit debuffs, and core placement.
+  subtitle: "v1.2.60: chrono item converter",
+  description: "Adds cheat-grade 1x1 Chrono blocks for global item and liquid transport, item conversion, repair, construction, overdrive, unit buffs, unit debuffs, and core placement.
   Update: expanded documentation and metadata for the full Chrono block set.",
-  version: "1.2.59",
+  version: "1.2.60",
   minGameVersion: "146"
 }

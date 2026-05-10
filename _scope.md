@@ -2,7 +2,7 @@
 
 ## Overview
 
-A standalone Mindustry cheat mod providing compact 1x1 Chrono blocks for global item/liquid transport, repair, construction, overdrive, core placement, and unit status control.
+A standalone Mindustry cheat mod providing compact 1x1 Chrono blocks for global item/liquid transport, item conversion, repair, construction, overdrive, core placement, and unit status control.
 
 ## Blocks
 
@@ -27,6 +27,13 @@ A standalone Mindustry cheat mod providing compact 1x1 Chrono blocks for global 
 - **Category:** Liquid - extends `Block` / `Building`
 - **Function:** Receives liquid from adjacent pipes (10,000-unit capacity), then pushes it into every linked building (up to 20/link per 5-tick batch). Optionally filtered to a single liquid; without a filter it pushes all held liquids in sequence.
 - **Config:** Tap to toggle individual links. UI: auto-connect buttons + optional liquid filter.
+
+### Chrono Item Converter (`chrono-item-converter`)
+- **Category:** Crafting - extends `StorageBlock` / `StorageBuild`
+- **Function:** Converts a configured input item into a configured output item every 30 ticks. Conversion ratio and dynamic power draw are derived from item rarity weights.
+- **Config:** Two item picker tables serialize as an `IntSeq` of `[inputItemId, outputItemId]`; same-item or incomplete recipes are invalid.
+- **Behavior:** Accepts only the configured input item, buffers up to 200 items per item type, dumps only the configured output item, and draws no power when the recipe cannot run because input is missing or output storage is full.
+- **Size:** 1x1, health 2147483647.
 
 ### Chrono Core (`chrono-core`)
 - **Category:** Effect
@@ -134,6 +141,7 @@ item-liquid-teleport/
 |   +-- chrono-pusher.js
 |   +-- chrono-liquid-unloader.js
 |   +-- chrono-liquid-pusher.js
+|   +-- chrono-item-converter.js
 |   +-- chrono-core.js
 |   +-- chrono-mender.js
 |   +-- chrono-repair-point.js
@@ -144,6 +152,7 @@ item-liquid-teleport/
 +-- edgeCase/                       known edge-case notes
 +-- sprites/
     +-- blocks/distribution/        item transport blocks
+    +-- blocks/crafting/            item converter sprites
     +-- blocks/liquid/              liquid transport blocks
     +-- blocks/defense/             mender/build tower sprites
     +-- blocks/effect/              core/booster/buffer/debuffer sprites
@@ -153,7 +162,7 @@ item-liquid-teleport/
 
 ## Notes
 
-- Item blocks extend `StorageBlock` (JavaAdapter over `StorageBlock.StorageBuild`); liquid blocks extend `Block` (plain `extend(Building, ...)`).
+- Item transport/converter blocks extend `StorageBlock` (JavaAdapter over `StorageBlock.StorageBuild`); liquid blocks extend `Block` (plain `extend(Building, ...)`).
 - The center dot on all four transport blocks reuses the vanilla `"unloader-center"` sprite, tinted to the selected filter color (or dominant held liquid/item color) at render time.
 - Config serialization uses relative tile offsets (delta from block's own tile) so configs survive copy-paste and schematic placement (`pointConfig` transforms them back).
-- Save/load versioned via `version()`: unloader v4, pusher v3, liquid-unloader v3, liquid-pusher v5, chrono-booster v1, chrono-buffer v1, chrono-debuffer v1. Older revisions are handled in `read()`.
+- Save/load versioned via `version()`: unloader v4, pusher v3, liquid-unloader v3, liquid-pusher v5, item-converter v1, chrono-booster v1, chrono-buffer v1, chrono-debuffer v1. Older revisions are handled in `read()`.

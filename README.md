@@ -1,6 +1,6 @@
 # Item Liquid Teleport
 
-A standalone Mindustry cheat mod with compact 1x1 Chrono blocks for global logistics, repair, construction, core placement, overdrive, and unit status control.
+A standalone Mindustry cheat mod with compact 1x1 Chrono blocks for global logistics, item conversion, repair, construction, core placement, overdrive, and unit status control.
 
 This mod started from the teleporter item logic in [abomb4/super-cheat](https://github.com/abomb4/super-cheat), then grew into a broader Chrono utility pack.
 
@@ -10,6 +10,7 @@ This mod started from the teleporter item logic in [abomb4/super-cheat](https://
 - **Chrono Pusher**: receives items from conveyors and pushes them into linked buildings globally, with an optional item filter.
 - **Chrono Liquid Unloader**: pulls a selected liquid from linked buildings globally and outputs it to adjacent pipes.
 - **Chrono Liquid Pusher**: receives liquids from pipes and pushes them into linked buildings globally, with an optional liquid filter.
+- **Chrono Item Converter**: converts a selected input item into a selected output item using rarity-based ratios and power draw.
 - **Chrono Core**: a 1x1 always-unlocked core that produces gamma units.
 - **Chrono Mender**: heals damaged friendly buildings globally.
 - **Chrono Repair Point**: repairs damaged friendly units globally with a continuous beam.

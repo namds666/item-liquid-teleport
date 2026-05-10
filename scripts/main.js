@@ -4,6 +4,7 @@ const optionalScripts = [
     "chrono-pusher",
     "chrono-liquid-unloader",
     "chrono-liquid-pusher",
+    "chrono-item-converter",
     "chrono-core",
     "chrono-mender",
     "chrono-repair-point",
