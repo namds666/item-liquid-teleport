@@ -2,7 +2,7 @@
 
 ## Overview
 
-A standalone Mindustry cheat mod providing compact 1x1 Chrono blocks for global item/liquid transport, item conversion, repair, construction, overdrive, core placement, and unit status control.
+A standalone Mindustry cheat mod providing compact Chrono blocks for global item/liquid transport, item conversion, repair, construction, overdrive, core placement, and unit status control.
 
 ## Blocks
 
@@ -33,7 +33,7 @@ A standalone Mindustry cheat mod providing compact 1x1 Chrono blocks for global 
 - **Function:** Converts a configured input item into a configured output item every 30 ticks. Conversion ratio and dynamic power draw are derived from item rarity weights.
 - **Config:** Two item picker tables serialize as an `IntSeq` of `[inputItemId, outputItemId]`; same-item or incomplete recipes are invalid.
 - **Behavior:** Accepts only the configured input item, buffers up to 200 items per item type, dumps only the configured output item, and draws no power when the recipe cannot run because input is missing or output storage is full.
-- **Size:** 1x1, health 2147483647.
+- **Size:** 2x2, health 2147483647.
 
 ### Chrono Core (`chrono-core`)
 - **Category:** Effect
@@ -119,7 +119,7 @@ Renders 6 checkbox+button pairs for categories: Misc (effect), Turret, Factory (
 
 | Property | Value |
 |---|---|
-| Size | 1x1 |
+| Size | Mostly 1x1; Chrono Item Converter is 2x2 |
 | Range | Global for transport/repair/build blocks; 25-block base range for booster/buffer/debuffer |
 | Max links (runtime) | Unlimited |
 | Max links (serialized) | Unlimited for large string configs; legacy `IntSeq` configs are capped at 96 links |
