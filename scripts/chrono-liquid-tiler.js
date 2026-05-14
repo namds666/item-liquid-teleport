@@ -140,9 +140,6 @@ blockType.buildType = prov(() => {
     let paintedDelay = 0;
 
     return extend(Building, {
-        get radius() { return radius; },
-        get intervalTicks() { return intervalTicks; },
-
         radiusValue() {
             return radius;
         },
