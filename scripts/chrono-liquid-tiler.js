@@ -108,14 +108,13 @@ blockType.buildCost = 0.001;
 blockType.update = true;
 blockType.solid = true;
 blockType.hasLiquids = true;
-blockType.hasPower = true;
+blockType.hasPower = false;
 blockType.configurable = true;
 blockType.saveConfig = true;
 blockType.liquidCapacity = 10000;
 blockType.noUpdateDisabled = true;
 blockType.requirements = ItemStack.with();
 lib.enableAllEnvironments(blockType);
-blockType.consumePower(10);
 
 blockType.config(IntSeq, lib.cons2((tile, seq) => {
     tile.setTilerConfig(
@@ -166,7 +165,18 @@ blockType.buildType = prov(() => {
         },
 
         active() {
-            return this.efficiency > 0.001 && selectedLiquid != null && this.selectedFloor() != null && this.selectedCost() > 0;
+            return this.enabled && selectedLiquid != null && this.selectedFloor() != null && this.selectedCost() > 0;
+        },
+
+        autoSelectLiquid() {
+            if (selectedLiquid != null || this.liquids == null) return;
+            for (let i = 0; i < boostRules.liquidBoosters.length; i++) {
+                let liquid = boostRules.liquidBoosters[i].liquid;
+                if (liquidFloor(liquid) != null && this.liquids.get(liquid) > 0.001) {
+                    selectedLiquid = liquid;
+                    return;
+                }
+            }
         },
 
         nextTile() {
@@ -203,6 +213,7 @@ blockType.buildType = prov(() => {
         },
 
         updateTile() {
+            this.autoSelectLiquid();
             let active = this.active();
             if (active) {
                 progress += this.edelta();

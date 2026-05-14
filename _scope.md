@@ -32,7 +32,7 @@ A standalone Mindustry cheat mod providing compact Chrono blocks for global item
 - **Category:** Liquid - extends `Block` / `Building`
 - **Function:** Converts terrain within a configurable radius into the selected liquid floor one tile at a time, progressing counter-clockwise from the block. Supported floors follow the shared boost liquid table: water -> shallow water, slag -> molten slag, oil -> tar, cryofluid -> pooled cryofluid.
 - **Rate:** Configurable interval of 0.5s, 1s, 2s, 5s, or 10s per tile. Default is 2s.
-- **Cost:** Each converted tile consumes 1 unit of the selected liquid from `chrono-boost-rules`. Requires 10 power units/tick while active.
+- **Cost:** Each converted tile consumes 1 unit of the selected liquid from `chrono-boost-rules`.
 - **Config:** Liquid picker + radius buttons (2, 4, 6, 8, 12, 16, 24, 32 blocks) + interval buttons. Config serializes as an `IntSeq` of `[selectedLiquidId, radius, intervalTicks]`.
 - **Size:** 1x1, health 2147483647.
 
