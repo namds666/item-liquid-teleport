@@ -2,9 +2,9 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code & Codex",
-  subtitle: "v1.2.63: tune chrono feeding",
-  description: "Adds cheat-grade Chrono blocks for global item and liquid transport, item conversion, repair, construction, overdrive, unit buffs, unit debuffs, and core placement.
+  subtitle: "v1.2.64: add liquid tiler",
+  description: "Adds cheat-grade Chrono blocks for global item and liquid transport, liquid terrain conversion, item conversion, repair, construction, overdrive, unit buffs, unit debuffs, and core placement.
   Update: expanded documentation and metadata for the full Chrono block set.",
-  version: "1.2.63",
+  version: "1.2.64",
   minGameVersion: "146"
 }

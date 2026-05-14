@@ -2,7 +2,7 @@
 
 ## Overview
 
-A standalone Mindustry cheat mod providing compact Chrono blocks for global item/liquid transport, item conversion, repair, construction, overdrive, core placement, and unit status control.
+A standalone Mindustry cheat mod providing compact Chrono blocks for global item/liquid transport, liquid terrain conversion, item conversion, repair, construction, overdrive, core placement, and unit status control.
 
 ## Blocks
 
@@ -27,6 +27,14 @@ A standalone Mindustry cheat mod providing compact Chrono blocks for global item
 - **Category:** Liquid - extends `Block` / `Building`
 - **Function:** Receives liquid from adjacent pipes (10,000-unit capacity), then pushes it into every linked building (up to 20/link per 5-tick batch). Optionally filtered to a single liquid; without a filter it pushes all held liquids in sequence.
 - **Config:** Tap to toggle individual links. UI: auto-connect buttons + optional liquid filter.
+
+### Chrono Liquid Tiler (`chrono-liquid-tiler`)
+- **Category:** Liquid - extends `Block` / `Building`
+- **Function:** Converts terrain within a configurable radius into the selected liquid floor one tile at a time, progressing counter-clockwise from the block. Supported floors follow the shared boost liquid table: water -> shallow water, slag -> molten slag, oil -> tar, cryofluid -> pooled cryofluid.
+- **Rate:** Configurable interval of 0.5s, 1s, 2s, 5s, or 10s per tile. Default is 2s.
+- **Cost:** Each converted tile consumes the selected liquid amount from `chrono-boost-rules`: 120 water, 90 slag, 100 oil, or 60 cryofluid. Requires 10 power units/tick while active.
+- **Config:** Liquid picker + radius buttons (2, 4, 6, 8, 12, 16, 24, 32 blocks) + interval buttons. Config serializes as an `IntSeq` of `[selectedLiquidId, radius, intervalTicks]`.
+- **Size:** 1x1, health 2147483647.
 
 ### Chrono Item Converter (`chrono-item-converter`)
 - **Category:** Crafting - extends `StorageBlock` / `StorageBuild`
@@ -142,6 +150,7 @@ item-liquid-teleport/
 |   +-- chrono-pusher.js
 |   +-- chrono-liquid-unloader.js
 |   +-- chrono-liquid-pusher.js
+|   +-- chrono-liquid-tiler.js
 |   +-- chrono-item-converter.js
 |   +-- chrono-core.js
 |   +-- chrono-mender.js
