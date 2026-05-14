@@ -4,20 +4,20 @@ const BOOST_DURATION = 125;
 const APPLY_RELOAD = 120;
 
 const itemBoosters = [
-    { item: Items.copper, amount: 40, rangeFlat: 6 * TILE, rangeMul: 1, boost: 0.3 },
-    { item: Items.lead, amount: 40, rangeFlat: 6 * TILE, rangeMul: 1, boost: 0.3 },
-    { item: Items.metaglass, amount: 25, rangeFlat: 9 * TILE, rangeMul: 1, boost: 0.6 },
-    { item: Items.graphite, amount: 20, rangeFlat: 10 * TILE, rangeMul: 1, boost: 0.7 },
-    { item: Items.sand, amount: 50, rangeFlat: 6 * TILE, rangeMul: 1, boost: 0.2 },
-    { item: Items.coal, amount: 35, rangeFlat: 8 * TILE, rangeMul: 1, boost: 0.4 },
-    { item: Items.titanium, amount: 25, rangeFlat: 10 * TILE, rangeMul: 1, boost: 0.6 },
-    { item: Items.thorium, amount: 12, rangeFlat: 12 * TILE, rangeMul: 1, boost: 1 },
-    { item: Items.scrap, amount: 50, rangeFlat: 6 * TILE, rangeMul: 1, boost: 0.2 },
-    { item: Items.plastanium, amount: 8, rangeFlat: 12 * TILE, rangeMul: 1, boost: 1.25 },
-    { item: Items.sporePod, amount: 20, rangeFlat: 10 * TILE, rangeMul: 1, boost: 0.7 },
-    { item: Items.surgeAlloy, amount: 4, rangeFlat: 16 * TILE, rangeMul: 1, boost: 1.75 },
-    { item: Items.pyratite, amount: 3, rangeFlat: 18 * TILE, rangeMul: 1, boost: 2 },
-    { item: Items.blastCompound, amount: 1, rangeFlat: 25 * TILE, rangeMul: 1, boost: 2.5 },
+    { item: Items.copper, amount: 1, rangeFlat: 6 * TILE, rangeMul: 1.02, boost: 0.3 },
+    { item: Items.lead, amount: 1, rangeFlat: 6 * TILE, rangeMul: 1.02, boost: 0.3 },
+    { item: Items.metaglass, amount: 1, rangeFlat: 9 * TILE, rangeMul: 1.04, boost: 0.6 },
+    { item: Items.graphite, amount: 1, rangeFlat: 10 * TILE, rangeMul: 1.05, boost: 0.7 },
+    { item: Items.sand, amount: 1, rangeFlat: 6 * TILE, rangeMul: 1.01, boost: 0.2 },
+    { item: Items.coal, amount: 1, rangeFlat: 8 * TILE, rangeMul: 1.03, boost: 0.4 },
+    { item: Items.titanium, amount: 1, rangeFlat: 10 * TILE, rangeMul: 1.06, boost: 0.6 },
+    { item: Items.thorium, amount: 1, rangeFlat: 12 * TILE, rangeMul: 1.1, boost: 1 },
+    { item: Items.scrap, amount: 1, rangeFlat: 6 * TILE, rangeMul: 1.01, boost: 0.2 },
+    { item: Items.plastanium, amount: 1, rangeFlat: 12 * TILE, rangeMul: 1.12, boost: 1.25 },
+    { item: Items.sporePod, amount: 1, rangeFlat: 10 * TILE, rangeMul: 1.05, boost: 0.7 },
+    { item: Items.surgeAlloy, amount: 1, rangeFlat: 16 * TILE, rangeMul: 1.18, boost: 1.75 },
+    { item: Items.pyratite, amount: 1, rangeFlat: 18 * TILE, rangeMul: 1.2, boost: 2 },
+    { item: Items.blastCompound, amount: 1, rangeFlat: 25 * TILE, rangeMul: 1.25, boost: 2.5 },
 ];
 
 const oldItemBoostOrder = [
@@ -30,10 +30,10 @@ const oldItemBoostOrder = [
 ];
 
 const liquidBoosters = [
-    { liquid: Liquids.water, amount: 120, rangeFlat: 2.5 * TILE, rangeMul: 1, boost: 0.2 },
-    { liquid: Liquids.slag, amount: 90, rangeFlat: 5 * TILE, rangeMul: 1, boost: 0.5 },
-    { liquid: Liquids.oil, amount: 100, rangeFlat: 4 * TILE, rangeMul: 1, boost: 0.4 },
-    { liquid: Liquids.cryofluid, amount: 60, rangeFlat: 12 * TILE, rangeMul: 1, boost: 1.25 },
+    { liquid: Liquids.water, amount: 1, rangeFlat: 2.5 * TILE, rangeMul: 1.01, boost: 0.2 },
+    { liquid: Liquids.slag, amount: 1, rangeFlat: 5 * TILE, rangeMul: 1.05, boost: 0.5 },
+    { liquid: Liquids.oil, amount: 1, rangeFlat: 4 * TILE, rangeMul: 1.04, boost: 0.4 },
+    { liquid: Liquids.cryofluid, amount: 1, rangeFlat: 12 * TILE, rangeMul: 1.12, boost: 1.25 },
 ];
 
 function boosterRangeFlat(booster) {

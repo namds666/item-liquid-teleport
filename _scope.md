@@ -32,7 +32,7 @@ A standalone Mindustry cheat mod providing compact Chrono blocks for global item
 - **Category:** Liquid - extends `Block` / `Building`
 - **Function:** Converts terrain within a configurable radius into the selected liquid floor one tile at a time, progressing counter-clockwise from the block. Supported floors follow the shared boost liquid table: water -> shallow water, slag -> molten slag, oil -> tar, cryofluid -> pooled cryofluid.
 - **Rate:** Configurable interval of 0.5s, 1s, 2s, 5s, or 10s per tile. Default is 2s.
-- **Cost:** Each converted tile consumes the selected liquid amount from `chrono-boost-rules`: 120 water, 90 slag, 100 oil, or 60 cryofluid. Requires 10 power units/tick while active.
+- **Cost:** Each converted tile consumes 1 unit of the selected liquid from `chrono-boost-rules`. Requires 10 power units/tick while active.
 - **Config:** Liquid picker + radius buttons (2, 4, 6, 8, 12, 16, 24, 32 blocks) + interval buttons. Config serializes as an `IntSeq` of `[selectedLiquidId, radius, intervalTicks]`.
 - **Size:** 1x1, health 2147483647.
 
@@ -73,7 +73,7 @@ A standalone Mindustry cheat mod providing compact Chrono blocks for global item
 - **Category:** Effect
 - **Function:** 1x1 overdrive dome variant. Copies Overdrive Dome cost, power draw, base range, base speed boost, use time, mandatory phase fabric + silicon operation, ambient sound volume, and sprite, with health fixed to the vanilla dome value.
 - **Base stats:** 25-block range, +150% speed, 10 power units/tick, consumes 1 phase fabric + 1 silicon every 10 seconds.
-- **Shared boosts:** Balanced by resource rarity. Scrap/sand start at 50 items per 2 seconds for +6 flat blocks and +20% speed; water starts at 120 liquid per 2 seconds for +2.5 flat blocks and +20% speed; blast compound ends at 1 per 2 seconds for +25 flat blocks and +250% speed. Early item boosters have stronger flat radius than before. Radius uses `final = (base + active flat range) * active range multipliers`. Liquids use 60-120 per 2 seconds.
+- **Shared boosts:** Every accepted booster item or liquid consumes 1 unit per 2 seconds while active. Boosters add flat radius and apply tiered radius multipliers from x1.01 to x1.25. Radius uses `final = (base + active flat range) * active range multipliers`.
 - **Requirements:** Same as Overdrive Dome: 200 lead, 130 titanium, 130 silicon, 80 plastanium, 120 surge alloy.
 - **Size:** 1x1, health 485.
 
