@@ -1,5 +1,4 @@
 const lib = require("lib");
-const boostRules = require("chrono-boost-rules");
 
 const DEFAULT_RADIUS = 8;
 const TILE_INTERVAL = 30;
@@ -7,20 +6,26 @@ const RADIUS_LEVELS = [2, 4, 6, 8, 12, 16, 24, 32];
 
 let topRegion, bottomRegion, rotatorRegion;
 
-function liquidFloor(liquid) {
-    if (liquid == Liquids.water) return Blocks.water;
-    if (liquid == Liquids.slag) return Blocks.slag;
-    if (liquid == Liquids.oil) return Blocks.tar;
-    if (liquid == Liquids.cryofluid) return Blocks.cryofluid;
+function itemOverlay(item) {
+    if (item == Items.copper) return Blocks.oreCopper;
+    if (item == Items.lead) return Blocks.oreLead;
+    if (item == Items.scrap) return Blocks.oreScrap;
+    if (item == Items.coal) return Blocks.oreCoal;
+    if (item == Items.titanium) return Blocks.oreTitanium;
+    if (item == Items.thorium) return Blocks.oreThorium;
+    if (item == Items.beryllium) return Blocks.oreBeryllium;
+    if (item == Items.tungsten) return Blocks.oreTungsten;
     return null;
 }
 
-function liquidCost(liquid) {
-    for (let i = 0; i < boostRules.liquidBoosters.length; i++) {
-        let b = boostRules.liquidBoosters[i];
-        if (b.liquid == liquid) return b.amount;
+function supportedItems() {
+    let seq = new Seq();
+    let items = Vars.content.items();
+    for (let i = 0; i < items.size; i++) {
+        let item = items.get(i);
+        if (itemOverlay(item) != null) seq.add(item);
     }
-    return 0;
+    return seq;
 }
 
 function validRadius(value) {
@@ -29,9 +34,9 @@ function validRadius(value) {
     return Math.max(1, Math.min(64, out));
 }
 
-function tilerConfig(liquidId, radius) {
+function tilerConfig(itemId, radius) {
     let seq = new IntSeq(2);
-    seq.add(liquidId == null ? -1 : liquidId);
+    seq.add(itemId == null ? -1 : itemId);
     seq.add(validRadius(radius));
     return seq;
 }
@@ -61,13 +66,13 @@ function ringOffsets(radius) {
     return out;
 }
 
-const blockType = extend(Block, "chrono-liquid-tiler", {
+const blockType = extend(StorageBlock, "chrono-item-tiler", {
     load() {
         this.super$load();
-        this.region = lib.loadRegion("chrono-liquid-tiler");
-        topRegion = lib.loadRegion("chrono-liquid-tiler-top");
-        bottomRegion = lib.loadRegion("chrono-liquid-tiler-bottom");
-        rotatorRegion = lib.loadRegion("chrono-liquid-tiler-rotator");
+        this.region = lib.loadRegion("chrono-item-tiler");
+        topRegion = lib.loadRegion("chrono-item-tiler-top");
+        bottomRegion = lib.loadRegion("chrono-item-tiler-bottom");
+        rotatorRegion = lib.loadRegion("chrono-item-tiler-rotator");
     },
 
     setStats() {
@@ -78,10 +83,10 @@ const blockType = extend(Block, "chrono-liquid-tiler", {
 
     setBars() {
         this.super$setBars();
-        this.barMap.put("liquid", lib.func(e => new Bar(
-            prov(() => e.liquidName()),
-            prov(() => e.selectedLiquidColor()),
-            floatp(() => e.liquidProgress())
+        this.addBar("item", lib.func(e => new Bar(
+            prov(() => e.itemName()),
+            prov(() => e.selectedItemColor()),
+            floatp(() => e.itemProgress())
         )));
         this.addBar("progress", lib.func(e => new Bar(
             prov(() => Core.bundle.get("bar.progress")),
@@ -99,11 +104,10 @@ blockType.health = 2147483647;
 blockType.buildCost = 0.001;
 blockType.update = true;
 blockType.solid = true;
-blockType.hasLiquids = true;
-blockType.hasPower = false;
+blockType.hasItems = true;
 blockType.configurable = true;
 blockType.saveConfig = true;
-blockType.liquidCapacity = 10000;
+blockType.itemCapacity = 10000;
 blockType.noUpdateDisabled = true;
 blockType.requirements = ItemStack.with();
 lib.enableAllEnvironments(blockType);
@@ -114,13 +118,13 @@ blockType.config(IntSeq, lib.cons2((tile, seq) => {
         seq.size > 1 ? seq.get(1) : DEFAULT_RADIUS
     );
 }));
-blockType.config(Liquid, lib.cons2((tile, liquid) => {
-    tile.setTilerConfig(liquid == null ? -1 : liquid.id, tile.radiusValue());
+blockType.config(Item, lib.cons2((tile, item) => {
+    tile.setTilerConfig(item == null ? -1 : item.id, tile.radiusValue());
 }));
 blockType.configClear(tile => { tile.setTilerConfig(-1, DEFAULT_RADIUS); });
 
 blockType.buildType = prov(() => {
-    let selectedLiquid = null;
+    let selectedItem = null;
     let radius = DEFAULT_RADIUS;
     let progress = 0;
     let cursor = 0;
@@ -128,37 +132,34 @@ blockType.buildType = prov(() => {
     let rotateDeg = 0;
     let paintedDelay = 0;
 
-    return extend(Building, {
+    return new JavaAdapter(StorageBlock.StorageBuild, {
         radiusValue() {
             return radius;
         },
 
-        setTilerConfig(liquidId, radiusValue) {
-            let liquids = Vars.content.liquids();
-            selectedLiquid = (liquidId == null || liquidId < 0 || liquidId >= liquids.size) ? null : liquids.get(liquidId);
+        setTilerConfig(itemId, radiusValue) {
+            let items = Vars.content.items();
+            selectedItem = (itemId == null || itemId < 0 || itemId >= items.size) ? null : items.get(itemId);
             radius = validRadius(radiusValue);
             progress = 0;
             cursor = 0;
         },
 
-        selectedFloor() {
-            return liquidFloor(selectedLiquid);
-        },
-
-        selectedCost() {
-            return liquidCost(selectedLiquid);
+        selectedOverlay() {
+            return itemOverlay(selectedItem);
         },
 
         active() {
-            return this.enabled && selectedLiquid != null && this.selectedFloor() != null && this.selectedCost() > 0;
+            return this.enabled && selectedItem != null && this.selectedOverlay() != null;
         },
 
-        autoSelectLiquid() {
-            if (selectedLiquid != null || this.liquids == null) return;
-            for (let i = 0; i < boostRules.liquidBoosters.length; i++) {
-                let liquid = boostRules.liquidBoosters[i].liquid;
-                if (liquidFloor(liquid) != null && this.liquids.get(liquid) > 0.001) {
-                    selectedLiquid = liquid;
+        autoSelectItem() {
+            if (selectedItem != null || this.items == null) return;
+            let items = supportedItems();
+            for (let i = 0; i < items.size; i++) {
+                let item = items.get(i);
+                if (this.items.get(item) > 0) {
+                    selectedItem = item;
                     return;
                 }
             }
@@ -167,14 +168,14 @@ blockType.buildType = prov(() => {
         nextTile() {
             let offsets = ringOffsets(radius);
             if (offsets.length == 0) return null;
-            let floor = this.selectedFloor();
+            let overlay = this.selectedOverlay();
 
             for (let i = 0; i < offsets.length; i++) {
                 let idx = (cursor + i) % offsets.length;
                 let off = offsets[idx];
                 let tile = Vars.world.tile(this.tile.x + off.x, this.tile.y + off.y);
                 if (tile == null) continue;
-                if (tile.floor() == floor) continue;
+                if (tile.overlay() == overlay) continue;
                 cursor = (idx + 1) % offsets.length;
                 return tile;
             }
@@ -184,21 +185,20 @@ blockType.buildType = prov(() => {
 
         paintOne() {
             if (Vars.net.client()) return false;
-            if (!this.active() || this.liquids == null) return false;
-            let cost = this.selectedCost();
-            if (this.liquids.get(selectedLiquid) < cost) return false;
+            if (!this.active() || this.items == null) return false;
+            if (this.items.get(selectedItem) < 1) return false;
 
             let target = this.nextTile();
             if (target == null) return false;
 
-            this.liquids.remove(selectedLiquid, cost);
-            target.setFloorNet(this.selectedFloor());
+            this.items.remove(selectedItem, 1);
+            target.setOverlayNet(this.selectedOverlay());
             paintedDelay = 20;
             return true;
         },
 
         updateTile() {
-            this.autoSelectLiquid();
+            this.autoSelectItem();
             let active = this.active();
             if (active) {
                 progress += this.edelta();
@@ -222,23 +222,23 @@ blockType.buildType = prov(() => {
             this.super$draw();
             Draw.alpha(warmup);
             Draw.rect(bottomRegion, this.x, this.y);
-            Draw.color(selectedLiquid != null && selectedLiquid.color != null ? selectedLiquid.color : Color.clear);
+            Draw.color(selectedItem != null && selectedItem.color != null ? selectedItem.color : Color.clear);
             Draw.rect(rotatorRegion, this.x, this.y, rotateDeg);
             Draw.alpha(1);
             Draw.rect(topRegion, this.x, this.y);
-            Draw.color(selectedLiquid != null && selectedLiquid.color != null ? selectedLiquid.color : Color.clear);
+            Draw.color(selectedItem != null && selectedItem.color != null ? selectedItem.color : Color.clear);
             Draw.rect("unloader-center", this.x, this.y);
             Draw.reset();
         },
 
         drawSelect() {
-            Drawf.dashCircle(this.x, this.y, radius * Vars.tilesize, selectedLiquid != null && selectedLiquid.color != null ? selectedLiquid.color : Pal.accent);
+            Drawf.dashCircle(this.x, this.y, radius * Vars.tilesize, selectedItem != null && selectedItem.color != null ? selectedItem.color : Pal.accent);
         },
 
         buildConfiguration(table) {
             table.table(cons(t => {
-                t.add("Liquid").left().row();
-                ItemSelection.buildTable(t, Vars.content.liquids(), prov(() => selectedLiquid), cons(v => {
+                t.add("Item").left().row();
+                ItemSelection.buildTable(t, supportedItems(), prov(() => selectedItem), cons(v => {
                     this.configure(tilerConfig(v == null ? -1 : v.id, radius));
                 }));
             })).row();
@@ -248,7 +248,7 @@ blockType.buildType = prov(() => {
                 for (let i = 0; i < RADIUS_LEVELS.length; i++) {
                     let value = RADIUS_LEVELS[i];
                     t.button(value + "b", run(() => {
-                        this.configure(tilerConfig(selectedLiquid == null ? -1 : selectedLiquid.id, value));
+                        this.configure(tilerConfig(selectedItem == null ? -1 : selectedItem.id, value));
                     })).size(58, 40).pad(2);
                     if (i == 3) t.row();
                 }
@@ -256,39 +256,43 @@ blockType.buildType = prov(() => {
         },
 
         config() {
-            return tilerConfig(selectedLiquid == null ? -1 : selectedLiquid.id, radius);
+            return tilerConfig(selectedItem == null ? -1 : selectedItem.id, radius);
         },
 
-        acceptLiquid(source, liquid) {
-            if (selectedLiquid == null) return liquidFloor(liquid) != null;
-            return liquid == selectedLiquid && liquidFloor(liquid) != null;
+        itemName() {
+            return selectedItem == null ? Core.bundle.get("bar.items") : selectedItem.localizedName + " / tile";
         },
 
-        liquidName() {
-            return selectedLiquid == null ? Core.bundle.get("bar.liquid") : selectedLiquid.localizedName + " / tile";
+        selectedItemColor() {
+            return selectedItem == null ? Pal.gray : selectedItem.color;
         },
 
-        selectedLiquidColor() {
-            return selectedLiquid == null ? Pal.gray : (selectedLiquid.barColor != null ? selectedLiquid.barColor : selectedLiquid.color);
-        },
-
-        liquidProgress() {
-            let cost = this.selectedCost();
-            if (selectedLiquid == null || cost <= 0 || this.liquids == null) return 0;
-            return Mathf.clamp(this.liquids.get(selectedLiquid) / cost);
+        itemProgress() {
+            if (selectedItem == null || this.items == null) return 0;
+            return Mathf.clamp(this.items.get(selectedItem));
         },
 
         progressFrac() {
             return Mathf.clamp(progress / TILE_INTERVAL);
         },
 
+        acceptItem(source, item) {
+            if (selectedItem == null) return itemOverlay(item) != null;
+            return item == selectedItem && itemOverlay(item) != null;
+        },
+
+        acceptStack(item, amount, source) {
+            if (!this.acceptItem(source, item)) return 0;
+            return Math.min(amount, this.getMaximumAccepted(item) - this.items.get(item));
+        },
+
         version() {
-            return 2;
+            return 1;
         },
 
         write(write) {
             this.super$write(write);
-            write.s(selectedLiquid == null ? -1 : selectedLiquid.id);
+            write.s(selectedItem == null ? -1 : selectedItem.id);
             write.s(radius);
             write.f(progress);
             write.i(cursor);
@@ -296,13 +300,12 @@ blockType.buildType = prov(() => {
 
         read(read, revision) {
             this.super$read(read, revision);
-            let liquidId = read.s();
-            this.setTilerConfig(liquidId, read.s());
-            if (revision < 2) read.s();
+            let itemId = read.s();
+            this.setTilerConfig(itemId, read.s());
             progress = read.f();
             cursor = read.i();
         }
-    });
+    }, blockType);
 });
 
 module.exports = blockType;

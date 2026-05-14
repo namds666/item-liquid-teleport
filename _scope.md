@@ -2,7 +2,7 @@
 
 ## Overview
 
-A standalone Mindustry cheat mod providing compact Chrono blocks for global item/liquid transport, liquid terrain conversion, item conversion, repair, construction, overdrive, core placement, and unit status control.
+A standalone Mindustry cheat mod providing compact Chrono blocks for global item/liquid transport, terrain conversion, item conversion, repair, construction, overdrive, core placement, and unit status control.
 
 ## Blocks
 
@@ -29,11 +29,19 @@ A standalone Mindustry cheat mod providing compact Chrono blocks for global item
 - **Config:** Tap to toggle individual links. UI: auto-connect buttons + optional liquid filter.
 
 ### Chrono Liquid Tiler (`chrono-liquid-tiler`)
-- **Category:** Liquid - extends `Block` / `Building`
+- **Category:** Crafting - extends `Block` / `Building`
 - **Function:** Converts terrain within a configurable radius into the selected liquid floor one tile at a time, progressing counter-clockwise from the block. Supported floors follow the shared boost liquid table: water -> shallow water, slag -> molten slag, oil -> tar, cryofluid -> pooled cryofluid.
-- **Rate:** Configurable interval of 0.5s, 1s, 2s, 5s, or 10s per tile. Default is 2s.
+- **Rate:** Fixed 0.5s per tile.
 - **Cost:** Each converted tile consumes 1 unit of the selected liquid from `chrono-boost-rules`.
-- **Config:** Liquid picker + radius buttons (2, 4, 6, 8, 12, 16, 24, 32 blocks) + interval buttons. Config serializes as an `IntSeq` of `[selectedLiquidId, radius, intervalTicks]`.
+- **Config:** Liquid picker + radius buttons (2, 4, 6, 8, 12, 16, 24, 32 blocks). Config serializes as an `IntSeq` of `[selectedLiquidId, radius]`; old configs with an interval value load and discard the interval.
+- **Size:** 1x1, health 2147483647.
+
+### Chrono Item Tiler (`chrono-item-tiler`)
+- **Category:** Crafting - extends `StorageBlock` / `StorageBuild`
+- **Function:** Converts terrain within a configurable radius into the selected ore overlay one tile at a time, progressing counter-clockwise from the block. Supported ores are copper, lead, scrap, coal, titanium, thorium, beryllium, and tungsten.
+- **Rate:** Fixed 0.5s per tile.
+- **Cost:** Each converted tile consumes 1 item of the selected resource.
+- **Config:** Item picker + radius buttons (2, 4, 6, 8, 12, 16, 24, 32 blocks). Config serializes as an `IntSeq` of `[selectedItemId, radius]`.
 - **Size:** 1x1, health 2147483647.
 
 ### Chrono Item Converter (`chrono-item-converter`)
@@ -151,6 +159,7 @@ item-liquid-teleport/
 |   +-- chrono-liquid-unloader.js
 |   +-- chrono-liquid-pusher.js
 |   +-- chrono-liquid-tiler.js
+|   +-- chrono-item-tiler.js
 |   +-- chrono-item-converter.js
 |   +-- chrono-core.js
 |   +-- chrono-mender.js
@@ -162,7 +171,7 @@ item-liquid-teleport/
 +-- edgeCase/                       known edge-case notes
 +-- sprites/
     +-- blocks/distribution/        item transport blocks
-    +-- blocks/crafting/            item converter sprites
+    +-- blocks/crafting/            item converter and item tiler sprites
     +-- blocks/liquid/              liquid transport blocks
     +-- blocks/defense/             mender/build tower sprites
     +-- blocks/effect/              core/booster/buffer/debuffer sprites
@@ -172,7 +181,7 @@ item-liquid-teleport/
 
 ## Notes
 
-- Item transport/converter blocks extend `StorageBlock` (JavaAdapter over `StorageBlock.StorageBuild`); liquid blocks extend `Block` (plain `extend(Building, ...)`).
-- The center dot on all four transport blocks reuses the vanilla `"unloader-center"` sprite, tinted to the selected filter color (or dominant held liquid/item color) at render time.
+- Item transport/converter/item-tiler blocks extend `StorageBlock` (JavaAdapter over `StorageBlock.StorageBuild`); liquid blocks extend `Block` (plain `extend(Building, ...)`).
+- The center dot on transport and tiler blocks reuses the vanilla `"unloader-center"` sprite, tinted to the selected filter color (or dominant held liquid/item color) at render time.
 - Config serialization uses relative tile offsets (delta from block's own tile) so configs survive copy-paste and schematic placement (`pointConfig` transforms them back).
-- Save/load versioned via `version()`: unloader v4, pusher v3, liquid-unloader v3, liquid-pusher v5, item-converter v2, chrono-booster v1, chrono-buffer v1, chrono-debuffer v1. Older revisions are handled in `read()`.
+- Save/load versioned via `version()`: unloader v4, pusher v3, liquid-unloader v3, liquid-pusher v5, liquid-tiler v2, item-tiler v1, item-converter v2, chrono-booster v1, chrono-buffer v1, chrono-debuffer v1. Older revisions are handled in `read()`.

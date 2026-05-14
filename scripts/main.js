@@ -11,6 +11,7 @@ const optionalScripts = [
     "chrono-build-tower",
     "chrono-boost-rules",
     "chrono-liquid-tiler",
+    "chrono-item-tiler",
     "chrono-booster",
     "chrono-buffer",
     "chrono-debuffer"
