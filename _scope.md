@@ -64,8 +64,8 @@ A standalone Mindustry cheat mod providing compact Chrono blocks for global item
 ### Chrono Booster (`chrono-booster`)
 - **Category:** Effect
 - **Function:** 1x1 overdrive dome variant. Copies Overdrive Dome cost, power draw, base range, base speed boost, use time, mandatory phase fabric + silicon operation, ambient sound volume, and sprite, with health fixed to the vanilla dome value.
-- **Base stats:** 25-block range, +150% speed, 10 power units/tick, consumes 1 phase fabric + 1 silicon every 5 seconds.
-- **Shared boosts:** Balanced by resource rarity. Scrap/sand/water start at 50 item/sec or 120 liquid/sec for +2.5 flat blocks and +20% speed; blast compound ends at 1/sec for +25 flat blocks and +250% speed. Radius uses `final = (base + active flat range) * active range multipliers`. Liquids use 60-120/sec.
+- **Base stats:** 25-block range, +150% speed, 10 power units/tick, consumes 1 phase fabric + 1 silicon every 10 seconds.
+- **Shared boosts:** Balanced by resource rarity. Scrap/sand start at 50 items per 2 seconds for +6 flat blocks and +20% speed; water starts at 120 liquid per 2 seconds for +2.5 flat blocks and +20% speed; blast compound ends at 1 per 2 seconds for +25 flat blocks and +250% speed. Early item boosters have stronger flat radius than before. Radius uses `final = (base + active flat range) * active range multipliers`. Liquids use 60-120 per 2 seconds.
 - **Requirements:** Same as Overdrive Dome: 200 lead, 130 titanium, 130 silicon, 80 plastanium, 120 surge alloy.
 - **Size:** 1x1, health 485.
 
@@ -73,7 +73,7 @@ A standalone Mindustry cheat mod providing compact Chrono blocks for global item
 - **Category:** Unit
 - **Function:** Applies allied unit buffs in range. Phase fabric and silicon provide Overdrive and Overclock while present; consumed item/liquid boosters temporarily unlock additional vanilla and custom statuses such as Guardian, Fast, Chrono Conductive, Chrono Dense, Chrono Focus, Chrono Precision, and higher-tier resource buffs.
 - **Sprites:** Cloned from the Chrono Booster base/top PNG and PSD assets, then loaded as `chrono-buffer` and `chrono-buffer-top` so the art can diverge later.
-- **Base stats:** 25-block range, +150% status duration, 10 power units/tick, consumes 1 phase fabric + 1 silicon every 5 seconds.
+- **Base stats:** 25-block range, +150% status duration, 10 power units/tick, consumes 1 phase fabric + 1 silicon every 10 seconds.
 - **Shared boosts:** Uses the same item/liquid boost table and radius formula as Chrono Booster. Extra boosters increase radius, status duration, and the set of active buffs.
 - **Requirements:** Same as Chrono Booster: 200 lead, 130 titanium, 130 silicon, 80 plastanium, 120 surge alloy.
 - **Size:** 1x1, health 485.
@@ -82,7 +82,7 @@ A standalone Mindustry cheat mod providing compact Chrono blocks for global item
 - **Category:** Unit
 - **Function:** Applies Burning, Electrified, Spore Slowed, Tarred, Shocked, Blasted, Corroded, Freezing, Wet, Melting, and Sapped to enemy units in range.
 - **Sprites:** Cloned from the Chrono Booster base/top PNG and PSD assets, then loaded as `chrono-debuffer` and `chrono-debuffer-top` so the art can diverge later.
-- **Base stats:** 25-block range, +150% status duration, 10 power units/tick, consumes 1 phase fabric + 1 silicon every 5 seconds.
+- **Base stats:** 25-block range, +150% status duration, 10 power units/tick, consumes 1 phase fabric + 1 silicon every 10 seconds.
 - **Shared boosts:** Uses the same item/liquid boost table and radius formula as Chrono Booster. Extra boosters increase radius and status duration.
 - **Requirements:** Same as Chrono Booster: 200 lead, 130 titanium, 130 silicon, 80 plastanium, 120 surge alloy.
 - **Size:** 1x1, health 485.
