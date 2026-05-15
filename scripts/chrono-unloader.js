@@ -88,6 +88,26 @@ blockType.buildType = prov(() => {
     const clearFn = () => { let s = new IntSeq(2); s.add(itemType == null ? -1 : itemType.id); s.add(0); return s; };
     const scanJob = lib.makeScanJob(autoFlags, 50);
     const batchApply = lib.makeBatchApply(() => links);
+    function transferItem(the, source, item) {
+        let cnt = source.items.get(item);
+        let acc = Math.min(cnt, the.acceptStack(item, Math.min(cnt, 500), source));
+        if (acc <= 0) return false;
+        the.handleStack(item, acc, source);
+        source.removeStack(item, acc);
+        for (let t = acc; t > 0; t--) source.itemTaken(item);
+        for (let t = 0; t < FRAME_DELAY; t++) the.dump(item);
+        return true;
+    }
+    function dumpStored(the) {
+        if (itemType != null) {
+            the.dump(itemType);
+            return;
+        }
+        for (let i = 0; i < Vars.content.items().size; i++) {
+            let item = Vars.content.items().get(i);
+            if (the.items.get(item) > 0) the.dump(item);
+        }
+    }
     return new JavaAdapter(StorageBlock.StorageBuild, {
         getLinks() { return links; },
         getItemType() { return itemType; },
@@ -120,21 +140,21 @@ blockType.buildType = prov(() => {
         updateTile() {
             let hasItem = false;
             if (timer.get(1, FRAME_DELAY)) {
-                if (itemType != null && (consValid = this.efficiency > 0)) {
+                consValid = this.efficiency > 0;
+                if (consValid) {
                     let max = links.size;
                     for (let i = 0; i < Math.min(MAX_LOOP, max); i++) {
                         let idx = looper.next(max), pos = links.get(idx);
                         if (pos == null || pos == -1) { this.configure(lib.int(pos)); continue; }
                         let lt = Vars.world.build(pos);
                         if (!lvt(this, lt)) { this.deadLink(pos); if (--max <= 0) break; continue; }
-                        let cnt = lt.items.get(itemType);
-                        let acc = Math.min(cnt, this.acceptStack(itemType, Math.min(cnt, 500), lt));
-                        if (acc > 0) {
-                            this.handleStack(itemType, acc, lt);
-                            lt.removeStack(itemType, acc);
-                            for (let t = acc; t > 0; t--) lt.itemTaken(itemType);
-                            for (let t = 0; t < FRAME_DELAY; t++) this.dump();
-                            hasItem = true;
+                        if (itemType != null) {
+                            if (transferItem(this, lt, itemType)) hasItem = true;
+                        } else {
+                            for (let j = 0; j < Vars.content.items().size; j++) {
+                                let item = Vars.content.items().get(j);
+                                if (transferItem(this, lt, item)) hasItem = true;
+                            }
                         }
                     }
                 }
@@ -142,7 +162,7 @@ blockType.buildType = prov(() => {
                 else if (!consValid) slowdownDelay = 0;
                 if (this.enabled && rotateSpeed > 0.5 && Mathf.random(60) > 12)
                     Time.run(Mathf.random(10), run(() => { outEffect.at(this.x, this.y, 0); }));
-                for (let i = 0; i < FRAME_DELAY; i++) this.dump();
+                for (let i = 0; i < FRAME_DELAY; i++) dumpStored(this);
             }
             scanJob.tick(this, () => links, lvt, clearFn, batchApply);
             warmup = Mathf.lerpDelta(warmup, consValid ? 1 : 0, warmupSpeed);
