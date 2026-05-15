@@ -103,7 +103,7 @@ blockType.hasLiquids = true;
 blockType.hasPower = false;
 blockType.configurable = true;
 blockType.saveConfig = true;
-blockType.liquidCapacity = 10000;
+blockType.liquidCapacity = 10;
 blockType.noUpdateDisabled = true;
 blockType.requirements = ItemStack.with();
 lib.enableAllEnvironments(blockType);
@@ -260,6 +260,7 @@ blockType.buildType = prov(() => {
         },
 
         acceptLiquid(source, liquid) {
+            if (this.liquids == null || this.liquids.get(liquid) >= blockType.liquidCapacity - 0.001) return false;
             if (selectedLiquid == null) return liquidFloor(liquid) != null;
             return liquid == selectedLiquid && liquidFloor(liquid) != null;
         },

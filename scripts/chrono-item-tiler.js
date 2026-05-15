@@ -107,7 +107,7 @@ blockType.solid = true;
 blockType.hasItems = true;
 blockType.configurable = true;
 blockType.saveConfig = true;
-blockType.itemCapacity = 10000;
+blockType.itemCapacity = 10;
 blockType.noUpdateDisabled = true;
 blockType.requirements = ItemStack.with();
 lib.enableAllEnvironments(blockType);
@@ -277,6 +277,7 @@ blockType.buildType = prov(() => {
         },
 
         acceptItem(source, item) {
+            if (this.items == null || this.items.get(item) >= blockType.itemCapacity) return false;
             if (selectedItem == null) return itemOverlay(item) != null;
             return item == selectedItem && itemOverlay(item) != null;
         },
