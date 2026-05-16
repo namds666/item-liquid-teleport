@@ -132,6 +132,12 @@ blockType.buildType = prov(() => {
     let rotateDeg = 0;
     let paintedDelay = 0;
 
+    function acceptsTilerItem(the, item) {
+        if (the.items == null || the.items.get(item) >= blockType.itemCapacity) return false;
+        if (selectedItem == null) return itemOverlay(item) != null;
+        return item == selectedItem && itemOverlay(item) != null;
+    }
+
     return new JavaAdapter(StorageBlock.StorageBuild, {
         radiusValue() {
             return radius;
@@ -277,13 +283,11 @@ blockType.buildType = prov(() => {
         },
 
         acceptItem(source, item) {
-            if (this.items == null || this.items.get(item) >= blockType.itemCapacity) return false;
-            if (selectedItem == null) return itemOverlay(item) != null;
-            return item == selectedItem && itemOverlay(item) != null;
+            return acceptsTilerItem(this, item);
         },
 
         acceptStack(item, amount, source) {
-            if (!this.acceptItem(source, item)) return 0;
+            if (!acceptsTilerItem(this, item)) return 0;
             return Math.min(amount, this.getMaximumAccepted(item) - this.items.get(item));
         },
 
