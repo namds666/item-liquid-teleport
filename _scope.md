@@ -38,10 +38,10 @@ A standalone Mindustry cheat mod providing compact Chrono blocks for global item
 
 ### Chrono Item Tiler (`chrono-item-tiler`)
 - **Category:** Crafting - extends `StorageBlock` / `StorageBuild`
-- **Function:** Converts terrain within a configurable radius into the selected ore overlay one tile at a time, progressing counter-clockwise from the block. Supported ores are copper, lead, scrap, coal, titanium, thorium, beryllium, and tungsten.
+- **Function:** Converts terrain within a configurable radius into the selected item-backed tile one tile at a time, progressing counter-clockwise from the block. Supported ore overlays are copper, lead, scrap, coal, titanium, thorium, beryllium, and tungsten. Supported floor targets include sand, dark sand, spore moss, and metal floor 5.
 - **Rate:** Fixed 0.5s per tile.
 - **Cost:** Each converted tile consumes 1 item of the selected resource.
-- **Config:** Item picker + radius buttons (2, 4, 6, 8, 12, 16, 24, 32 blocks). Config serializes as an `IntSeq` of `[selectedItemId, radius]`.
+- **Config:** Item picker + optional target tile buttons + radius buttons (2, 4, 6, 8, 12, 16, 24, 32 blocks). Config serializes as an `IntSeq` of `[selectedItemId, radius, targetType, targetBlockId]`; old two-entry configs load with the default target for that item.
 - **Size:** 1x1, health 2147483647.
 
 ### Chrono Item Converter (`chrono-item-converter`)
@@ -184,4 +184,4 @@ item-liquid-teleport/
 - Item transport/converter/item-tiler blocks extend `StorageBlock` (JavaAdapter over `StorageBlock.StorageBuild`); liquid blocks extend `Block` (plain `extend(Building, ...)`).
 - The center dot on transport and tiler blocks reuses the vanilla `"unloader-center"` sprite, tinted to the selected filter color (or dominant held liquid/item color) at render time.
 - Config serialization uses relative tile offsets (delta from block's own tile) so configs survive copy-paste and schematic placement (`pointConfig` transforms them back).
-- Save/load versioned via `version()`: unloader v4, pusher v3, liquid-unloader v3, liquid-pusher v5, liquid-tiler v2, item-tiler v1, item-converter v2, chrono-booster v1, chrono-buffer v1, chrono-debuffer v1. Older revisions are handled in `read()`.
+- Save/load versioned via `version()`: unloader v4, pusher v3, liquid-unloader v3, liquid-pusher v5, liquid-tiler v2, item-tiler v2, item-converter v2, chrono-booster v1, chrono-buffer v1, chrono-debuffer v1. Older revisions are handled in `read()`.

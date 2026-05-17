@@ -3,19 +3,52 @@ const lib = require("lib");
 const DEFAULT_RADIUS = 8;
 const TILE_INTERVAL = 30;
 const RADIUS_LEVELS = [2, 4, 6, 8, 12, 16, 24, 32];
+const TARGET_OVERLAY = 0;
+const TARGET_FLOOR = 1;
 
 let topRegion, bottomRegion, rotatorRegion;
 
-function itemOverlay(item) {
-    if (item == Items.copper) return Blocks.oreCopper;
-    if (item == Items.lead) return Blocks.oreLead;
-    if (item == Items.scrap) return Blocks.oreScrap;
-    if (item == Items.coal) return Blocks.oreCoal;
-    if (item == Items.titanium) return Blocks.oreTitanium;
-    if (item == Items.thorium) return Blocks.oreThorium;
-    if (item == Items.beryllium) return Blocks.oreBeryllium;
-    if (item == Items.tungsten) return Blocks.oreTungsten;
+const tileTargets = [
+    { item: Items.copper, type: TARGET_OVERLAY, block: Blocks.oreCopper },
+    { item: Items.lead, type: TARGET_OVERLAY, block: Blocks.oreLead },
+    { item: Items.scrap, type: TARGET_OVERLAY, block: Blocks.oreScrap },
+    { item: Items.coal, type: TARGET_OVERLAY, block: Blocks.oreCoal },
+    { item: Items.titanium, type: TARGET_OVERLAY, block: Blocks.oreTitanium },
+    { item: Items.thorium, type: TARGET_OVERLAY, block: Blocks.oreThorium },
+    { item: Items.beryllium, type: TARGET_OVERLAY, block: Blocks.oreBeryllium },
+    { item: Items.tungsten, type: TARGET_OVERLAY, block: Blocks.oreTungsten },
+    { item: Items.sand, type: TARGET_FLOOR, block: Blocks.sand },
+    { item: Items.sand, type: TARGET_FLOOR, block: Blocks.darksand },
+    { item: Items.sporePod, type: TARGET_FLOOR, block: Blocks.sporeMoss },
+    { item: Items.surgeAlloy, type: TARGET_FLOOR, block: Blocks.metalFloor5 }
+];
+
+function targetAvailable(target) {
+    return target != null && target.item != null && target.block != null;
+}
+
+function itemTarget(item) {
+    for (let i = 0; i < tileTargets.length; i++) {
+        let target = tileTargets[i];
+        if (targetAvailable(target) && target.item == item) return target;
+    }
     return null;
+}
+
+function targetFromConfig(item, type, blockId) {
+    let fallback = null;
+    for (let i = 0; i < tileTargets.length; i++) {
+        let target = tileTargets[i];
+        if (!targetAvailable(target) || target.item != item) continue;
+        if (fallback == null) fallback = target;
+        if (type != null && blockId != null && target.type == type && target.block.id == blockId) return target;
+    }
+    return fallback;
+}
+
+function targetLabel(target) {
+    if (target == null || target.block == null) return Core.bundle.get("bar.items");
+    return target.block.localizedName;
 }
 
 function supportedItems() {
@@ -23,7 +56,7 @@ function supportedItems() {
     let items = Vars.content.items();
     for (let i = 0; i < items.size; i++) {
         let item = items.get(i);
-        if (itemOverlay(item) != null) seq.add(item);
+        if (itemTarget(item) != null) seq.add(item);
     }
     return seq;
 }
@@ -34,10 +67,12 @@ function validRadius(value) {
     return Math.max(1, Math.min(64, out));
 }
 
-function tilerConfig(itemId, radius) {
-    let seq = new IntSeq(2);
+function tilerConfig(itemId, radius, target) {
+    let seq = new IntSeq(4);
     seq.add(itemId == null ? -1 : itemId);
     seq.add(validRadius(radius));
+    seq.add(target == null ? -1 : target.type);
+    seq.add(target == null || target.block == null ? -1 : target.block.id);
     return seq;
 }
 
@@ -115,17 +150,20 @@ lib.enableAllEnvironments(blockType);
 blockType.config(IntSeq, lib.cons2((tile, seq) => {
     tile.setTilerConfig(
         seq.size > 0 ? seq.get(0) : -1,
-        seq.size > 1 ? seq.get(1) : DEFAULT_RADIUS
+        seq.size > 1 ? seq.get(1) : DEFAULT_RADIUS,
+        seq.size > 2 ? seq.get(2) : null,
+        seq.size > 3 ? seq.get(3) : null
     );
 }));
 blockType.config(Item, lib.cons2((tile, item) => {
-    tile.setTilerConfig(item == null ? -1 : item.id, tile.radiusValue());
+    tile.setTilerConfig(item == null ? -1 : item.id, tile.radiusValue(), null, null);
 }));
 blockType.configClear(tile => { tile.setTilerConfig(-1, DEFAULT_RADIUS); });
 
 blockType.buildType = prov(() => {
     let selectedItem = null;
     let radius = DEFAULT_RADIUS;
+    let selectedTarget = null;
     let progress = 0;
     let cursor = 0;
     let warmup = 0;
@@ -134,8 +172,8 @@ blockType.buildType = prov(() => {
 
     function acceptsTilerItem(the, item) {
         if (the.items == null || the.items.get(item) >= blockType.itemCapacity) return false;
-        if (selectedItem == null) return itemOverlay(item) != null;
-        return item == selectedItem && itemOverlay(item) != null;
+        if (selectedItem == null) return itemTarget(item) != null;
+        return item == selectedItem && selectedTarget != null;
     }
 
     return new JavaAdapter(StorageBlock.StorageBuild, {
@@ -143,20 +181,25 @@ blockType.buildType = prov(() => {
             return radius;
         },
 
-        setTilerConfig(itemId, radiusValue) {
+        setTilerConfig(itemId, radiusValue, targetType, targetBlockId) {
             let items = Vars.content.items();
             selectedItem = (itemId == null || itemId < 0 || itemId >= items.size) ? null : items.get(itemId);
             radius = validRadius(radiusValue);
+            selectedTarget = targetFromConfig(selectedItem, targetType, targetBlockId);
             progress = 0;
             cursor = 0;
         },
 
         selectedOverlay() {
-            return itemOverlay(selectedItem);
+            return selectedTarget != null && selectedTarget.type == TARGET_OVERLAY ? selectedTarget.block : null;
+        },
+
+        selectedFloor() {
+            return selectedTarget != null && selectedTarget.type == TARGET_FLOOR ? selectedTarget.block : null;
         },
 
         active() {
-            return this.enabled && selectedItem != null && this.selectedOverlay() != null;
+            return this.enabled && selectedItem != null && selectedTarget != null;
         },
 
         autoSelectItem() {
@@ -166,6 +209,7 @@ blockType.buildType = prov(() => {
                 let item = items.get(i);
                 if (this.items.get(item) > 0) {
                     selectedItem = item;
+                    selectedTarget = itemTarget(item);
                     return;
                 }
             }
@@ -175,13 +219,15 @@ blockType.buildType = prov(() => {
             let offsets = ringOffsets(radius);
             if (offsets.length == 0) return null;
             let overlay = this.selectedOverlay();
+            let floor = this.selectedFloor();
 
             for (let i = 0; i < offsets.length; i++) {
                 let idx = (cursor + i) % offsets.length;
                 let off = offsets[idx];
                 let tile = Vars.world.tile(this.tile.x + off.x, this.tile.y + off.y);
                 if (tile == null) continue;
-                if (tile.overlay() == overlay) continue;
+                if (overlay != null && tile.overlay() == overlay) continue;
+                if (floor != null && tile.floor() == floor) continue;
                 cursor = (idx + 1) % offsets.length;
                 return tile;
             }
@@ -198,7 +244,8 @@ blockType.buildType = prov(() => {
             if (target == null) return false;
 
             this.items.remove(selectedItem, 1);
-            target.setOverlayNet(this.selectedOverlay());
+            if (selectedTarget.type == TARGET_FLOOR) target.setFloorNet(this.selectedFloor());
+            else target.setOverlayNet(this.selectedOverlay());
             paintedDelay = 20;
             return true;
         },
@@ -245,16 +292,34 @@ blockType.buildType = prov(() => {
             table.table(cons(t => {
                 t.add("Item").left().row();
                 ItemSelection.buildTable(t, supportedItems(), prov(() => selectedItem), cons(v => {
-                    this.configure(tilerConfig(v == null ? -1 : v.id, radius));
+                    this.configure(tilerConfig(v == null ? -1 : v.id, radius, itemTarget(v)));
                 }));
             })).row();
+
+            let options = [];
+            for (let i = 0; i < tileTargets.length; i++) {
+                let target = tileTargets[i];
+                if (targetAvailable(target) && target.item == selectedItem) options.push(target);
+            }
+            if (options.length > 1) {
+                table.table(cons(t => {
+                    t.add("Tile").left().row();
+                    for (let i = 0; i < options.length; i++) {
+                        let target = options[i];
+                        t.button(targetLabel(target), run(() => {
+                            this.configure(tilerConfig(selectedItem == null ? -1 : selectedItem.id, radius, target));
+                        })).size(116, 40).pad(2);
+                        if (i % 2 == 1) t.row();
+                    }
+                })).row();
+            }
 
             table.table(cons(t => {
                 t.add("Radius").left().row();
                 for (let i = 0; i < RADIUS_LEVELS.length; i++) {
                     let value = RADIUS_LEVELS[i];
                     t.button(value + "b", run(() => {
-                        this.configure(tilerConfig(selectedItem == null ? -1 : selectedItem.id, value));
+                        this.configure(tilerConfig(selectedItem == null ? -1 : selectedItem.id, value, selectedTarget));
                     })).size(58, 40).pad(2);
                     if (i == 3) t.row();
                 }
@@ -262,11 +327,11 @@ blockType.buildType = prov(() => {
         },
 
         config() {
-            return tilerConfig(selectedItem == null ? -1 : selectedItem.id, radius);
+            return tilerConfig(selectedItem == null ? -1 : selectedItem.id, radius, selectedTarget);
         },
 
         itemName() {
-            return selectedItem == null ? Core.bundle.get("bar.items") : selectedItem.localizedName + " / tile";
+            return selectedItem == null ? Core.bundle.get("bar.items") : selectedItem.localizedName + " -> " + targetLabel(selectedTarget);
         },
 
         selectedItemColor() {
@@ -292,13 +357,15 @@ blockType.buildType = prov(() => {
         },
 
         version() {
-            return 1;
+            return 2;
         },
 
         write(write) {
             this.super$write(write);
             write.s(selectedItem == null ? -1 : selectedItem.id);
             write.s(radius);
+            write.s(selectedTarget == null ? -1 : selectedTarget.type);
+            write.s(selectedTarget == null || selectedTarget.block == null ? -1 : selectedTarget.block.id);
             write.f(progress);
             write.i(cursor);
         },
@@ -306,7 +373,10 @@ blockType.buildType = prov(() => {
         read(read, revision) {
             this.super$read(read, revision);
             let itemId = read.s();
-            this.setTilerConfig(itemId, read.s());
+            let radiusValue = read.s();
+            let targetType = revision >= 2 ? read.s() : null;
+            let targetBlockId = revision >= 2 ? read.s() : null;
+            this.setTilerConfig(itemId, radiusValue, targetType, targetBlockId);
             progress = read.f();
             cursor = read.i();
         }
