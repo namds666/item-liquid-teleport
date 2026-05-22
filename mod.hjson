@@ -2,9 +2,9 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code & Codex",
-  subtitle: "v1.2.72: add tiler floors",
+  subtitle: "v1.2.73: allow unloader theft",
   description: "Adds cheat-grade Chrono blocks for global item and liquid transport, terrain conversion, item conversion, repair, construction, overdrive, unit buffs, unit debuffs, and core placement.
   Update: expanded documentation and metadata for the full Chrono block set.",
-  version: "1.2.72",
+  version: "1.2.73",
   minGameVersion: "146"
 }

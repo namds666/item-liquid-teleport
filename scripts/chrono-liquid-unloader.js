@@ -89,7 +89,7 @@ blockType.buildType = prov(() => {
     let autoFlags = [false, false, false, false, false, false];
     let slowdownDelay = 0, warmup = 0, rotateDeg = 0, rotateSpeed = 0;
     const looper = (() => { let idx = 0; return { next(m) { if (idx < 0 || idx >= m) idx = m-1; let v = idx; idx--; return v; } }; })();
-    function lvt(the, t) { return t && t.team == the.team && t.liquids != null; }
+    function lvt(the, t) { return t && t.liquids != null; }
     function lv(the, pos) { if (pos == null || pos == -1) return false; return lvt(the, Vars.world.build(pos)); }
     const clearFn = () => { let s = new IntSeq(2); s.add(liquidType == null ? -1 : liquidType.id); s.add(0); return s; };
     const scanJob = lib.makeScanJob(autoFlags, 50);
@@ -180,7 +180,7 @@ blockType.buildType = prov(() => {
         },
         onConfigureBuildTapped(other) {
             if (this == other) { this.configure(-1); return false; }
-            if (other.team == this.team) { this.configure(new java.lang.Integer(other.pos())); return false; }
+            if (other && other.liquids != null) { this.configure(new java.lang.Integer(other.pos())); return false; }
             return true;
         },
         buildConfiguration(table) {
