@@ -105,6 +105,7 @@ blockType.buildType = prov(() => {
     const looper = (() => { let idx = 0; return { next(m) { if (idx < 0 || idx >= m) idx = m-1; let v = idx; idx--; return v; } }; })();
     function lvt(the, t) { return t && t.team == the.team; }
     function lv(the, pos) { if (pos == null || pos == -1) return false; return lvt(the, Vars.world.build(pos)); }
+    function targetFilter(t) { return selectedLiquid == null ? lib.buildConsumesAnyLiquid(t) : lib.buildConsumesLiquid(t, selectedLiquid); }
     const clearFn = () => new IntSeq();
     const scanJob = lib.makeScanJob(autoFlags, 50);
     const batchApply = lib.makeBatchApply(() => links);
@@ -155,6 +156,7 @@ blockType.buildType = prov(() => {
                                 if (pos == null || pos == -1) { this.configure(lib.int(pos)); continue; }
                                 let lt = Vars.world.build(pos);
                                 if (!lvt(this, lt)) { this.deadLink(pos); if (--max <= 0) break; continue; }
+                                if (!lib.buildConsumesLiquid(lt, selectedLiquid)) continue;
                                 if (!lt.block.hasLiquids || lt.liquids == null) continue;
                                 let space = lt.block.liquidCapacity - lt.liquids.get(selectedLiquid);
                                 let amount = Math.min(have, Math.min(space, TRANSFER_RATE));
@@ -179,6 +181,7 @@ blockType.buildType = prov(() => {
                                 if (pos == null || pos == -1) { this.configure(lib.int(pos)); continue; }
                                 let lt = Vars.world.build(pos);
                                 if (!lvt(this, lt)) { this.deadLink(pos); if (--max <= 0) break; continue; }
+                                if (!lib.buildConsumesLiquid(lt, liq)) continue;
                                 if (!lt.block.hasLiquids || lt.liquids == null) continue;
                                 let space = lt.block.liquidCapacity - lt.liquids.get(liq);
                                 let amount = Math.min(have, Math.min(space, TRANSFER_RATE));
@@ -202,7 +205,7 @@ blockType.buildType = prov(() => {
                 rotateSpeed = Mathf.lerpDelta(rotateSpeed, 0, warmupSpeed);
             }
             if (warmup > 0) rotateDeg += rotateSpeed;
-            scanJob.tick(this, () => links, lvt, clearFn, batchApply);
+            scanJob.tick(this, () => links, lvt, clearFn, batchApply, targetFilter);
             if (liquidSent && rotateSpeed > 0.5 && Mathf.random(60) > 48)
                 Time.run(Mathf.random(10), run(() => { inEffect.at(this.x, this.y, 0); }));
         },
@@ -239,7 +242,7 @@ blockType.buildType = prov(() => {
         },
         buildConfiguration(table) {
             table.table(cons(t => {
-                lib.addAutoConnectButtons(t, this, () => links, lvt, clearFn, autoFlags);
+                lib.addAutoConnectButtons(t, this, () => links, lvt, clearFn, autoFlags, targetFilter);
             })).row();
             table.table(cons(t => {
                 ItemSelection.buildTable(t, Vars.content.liquids(), prov(() => selectedLiquid), cons(v => { this.configure(v); }));

@@ -91,6 +91,7 @@ blockType.buildType = prov(() => {
     const looper = (() => { let idx = 0; return { next(m) { if (idx < 0 || idx >= m) idx = m-1; let v = idx; idx--; return v; } }; })();
     function lvt(the, t) { return t && t.liquids != null; }
     function lv(the, pos) { if (pos == null || pos == -1) return false; return lvt(the, Vars.world.build(pos)); }
+    function sourceFilter(t) { return liquidType == null ? lib.buildOutputsAnyLiquid(t) : lib.buildOutputsLiquid(t, liquidType); }
     const clearFn = () => { let s = new IntSeq(2); s.add(liquidType == null ? -1 : liquidType.id); s.add(0); return s; };
     const scanJob = lib.makeScanJob(autoFlags, 50);
     const batchApply = lib.makeBatchApply(() => links);
@@ -137,6 +138,7 @@ blockType.buildType = prov(() => {
                         if (pos == null || pos == -1) { this.configure(lib.int(pos)); continue; }
                         let lt = Vars.world.build(pos);
                         if (!lvt(this, lt)) { this.deadLink(pos); if (--max <= 0) break; continue; }
+                        if (!sourceFilter(lt)) continue;
                         let available = lt.liquids.get(liquidType);
                         let space = this.block.liquidCapacity - this.liquids.get(liquidType);
                         let amount = Math.min(available, Math.min(space, TRANSFER_RATE));
@@ -155,7 +157,7 @@ blockType.buildType = prov(() => {
                 }
                 if (liquidType != null && this.liquids.get(liquidType) > 0.001) this.dumpLiquid(liquidType);
             }
-            scanJob.tick(this, () => links, lvt, clearFn, batchApply);
+            scanJob.tick(this, () => links, lvt, clearFn, batchApply, sourceFilter);
             warmup = Mathf.lerpDelta(warmup, this.efficiency > 0 ? 1 : 0, warmupSpeed);
             rotateSpeed = Mathf.lerpDelta(rotateSpeed, slowdownDelay > 0 ? 1 : 0, warmupSpeed);
             slowdownDelay = Math.max(0, slowdownDelay - 1);
@@ -185,7 +187,7 @@ blockType.buildType = prov(() => {
         },
         buildConfiguration(table) {
             table.table(cons(t => {
-                lib.addAutoConnectButtons(t, this, () => links, lvt, clearFn, autoFlags);
+                lib.addAutoConnectButtons(t, this, () => links, lvt, clearFn, autoFlags, sourceFilter);
             })).row();
             table.table(cons(t => {
                 ItemSelection.buildTable(t, Vars.content.liquids(), prov(() => liquidType), cons(v => { this.configure(v); }));

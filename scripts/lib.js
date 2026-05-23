@@ -83,7 +83,168 @@ exports.pointTransportConfig = (config, transformer) => {
     out[3] = String(written);
     return out.join(";");
 };
-const autoConnect = (the, getLinks, lvt, filter) => {
+function eachArrayLike(values, fn) {
+    if (values == null) return false;
+    let size = values.size;
+    if (typeof size === "function") size = values.size();
+    if (typeof size === "number") {
+        for (let i = 0; i < size; i++) {
+            let v = values.get ? values.get(i) : values[i];
+            if (fn(v)) return true;
+        }
+        return false;
+    }
+    if (values.length != null) {
+        for (let i = 0; i < values.length; i++) if (fn(values[i])) return true;
+    }
+    return false;
+}
+function mapHasKey(map, key) {
+    if (map == null || key == null) return false;
+    try { if (map.containsKey && map.containsKey(key)) return true; } catch (e) {}
+    try { if (map.get && map.get(key) != null) return true; } catch (e) {}
+    return false;
+}
+function stackMatches(stack, resource, field) {
+    if (stack == null) return false;
+    if (resource == null) return true;
+    try { if (stack[field] === resource) return true; } catch (e) {}
+    try { if (stack[field] == resource) return true; } catch (e) {}
+    return false;
+}
+function anyStackField(obj, names, resource, field) {
+    if (obj == null) return false;
+    for (let ni = 0; ni < names.length; ni++) {
+        let values = null;
+        try { values = obj[names[ni]]; } catch (e) {}
+        if (values == null) continue;
+        if (stackMatches(values, resource, field)) return true;
+        if (eachArrayLike(values, v => stackMatches(v, resource, field))) return true;
+    }
+    return false;
+}
+function directResourceField(obj, names, resource) {
+    if (obj == null) return false;
+    for (let ni = 0; ni < names.length; ni++) {
+        let value = null;
+        try { value = obj[names[ni]]; } catch (e) {}
+        if (value == null) continue;
+        if (resource == null || value == resource) return true;
+    }
+    return false;
+}
+function consumers(block) {
+    try { return block == null ? null : block.consumes; } catch (e) { return null; }
+}
+function consumerByType(block, typeName) {
+    let cons = consumers(block);
+    if (cons == null) return null;
+    try {
+        let type = Packages.mindustry.world.consumers.ConsumeType[typeName];
+        if (type != null && cons.get != null) return cons.get(type);
+    } catch (e) {}
+    return null;
+}
+function anyConsumer(block, predicate) {
+    let cons = consumers(block);
+    if (cons == null) return false;
+    try {
+        let all = cons.all();
+        if (eachArrayLike(all, predicate)) return true;
+    } catch (e) {}
+    return false;
+}
+exports.blockConsumesItem = (block, item) => {
+    if (block == null || item == null) return false;
+    if (mapHasKey(block.ammoTypes, item)) return true;
+    let consumer = consumerByType(block, "item");
+    return anyStackField(consumer, ["items"], item, "item") ||
+           anyConsumer(block, c => anyStackField(c, ["items"], item, "item"));
+};
+exports.blockConsumesAnyItem = block => {
+    if (block == null) return false;
+    try { if (block.ammoTypes != null && block.ammoTypes.size > 0) return true; } catch (e) {}
+    let consumer = consumerByType(block, "item");
+    return anyStackField(consumer, ["items"], null, "item") ||
+           anyConsumer(block, c => anyStackField(c, ["items"], null, "item"));
+};
+exports.blockOutputsItem = (block, item) => {
+    if (block == null || item == null) return false;
+    return anyStackField(block, ["outputItem", "outputItems", "results"], item, "item") ||
+           directResourceField(block, ["itemDrop", "outputItem"], item);
+};
+exports.blockOutputsAnyItem = block => {
+    if (block == null) return false;
+    return anyStackField(block, ["outputItem", "outputItems", "results"], null, "item") ||
+           directResourceField(block, ["itemDrop", "outputItem"], null);
+};
+exports.blockConsumesLiquid = (block, liquid) => {
+    if (block == null || liquid == null) return false;
+    if (mapHasKey(block.ammoTypes, liquid)) return true;
+    let consumer = consumerByType(block, "liquid");
+    return anyStackField(consumer, ["liquids"], liquid, "liquid") ||
+           directResourceField(consumer, ["liquid"], liquid) ||
+           anyConsumer(block, c => anyStackField(c, ["liquids"], liquid, "liquid") || directResourceField(c, ["liquid"], liquid));
+};
+exports.blockConsumesAnyLiquid = block => {
+    if (block == null) return false;
+    try { if (block.ammoTypes != null && block.ammoTypes.size > 0) return true; } catch (e) {}
+    let consumer = consumerByType(block, "liquid");
+    return anyStackField(consumer, ["liquids"], null, "liquid") ||
+           directResourceField(consumer, ["liquid"], null) ||
+           anyConsumer(block, c => anyStackField(c, ["liquids"], null, "liquid") || directResourceField(c, ["liquid"], null));
+};
+exports.blockOutputsLiquid = (block, liquid) => {
+    if (block == null || liquid == null) return false;
+    return anyStackField(block, ["outputLiquid", "outputLiquids"], liquid, "liquid") ||
+           directResourceField(block, ["liquidDrop", "pumpLiquid", "outputLiquid"], liquid);
+};
+exports.blockOutputsAnyLiquid = block => {
+    if (block == null) return false;
+    return anyStackField(block, ["outputLiquid", "outputLiquids"], null, "liquid") ||
+           directResourceField(block, ["liquidDrop", "pumpLiquid", "outputLiquid"], null);
+};
+exports.buildConsumesItem = (build, item) => {
+    if (build == null || item == null) return false;
+    try { if (build.chronoConsumesItem && build.chronoConsumesItem(item)) return true; } catch (e) {}
+    return exports.blockConsumesItem(build.block, item);
+};
+exports.buildConsumesAnyItem = build => {
+    if (build == null) return false;
+    try { if (build.chronoConsumesAnyItem && build.chronoConsumesAnyItem()) return true; } catch (e) {}
+    return exports.blockConsumesAnyItem(build.block);
+};
+exports.buildOutputsItem = (build, item) => {
+    if (build == null || item == null) return false;
+    try { if (build.chronoOutputsItem && build.chronoOutputsItem(item)) return true; } catch (e) {}
+    return exports.blockOutputsItem(build.block, item);
+};
+exports.buildOutputsAnyItem = build => {
+    if (build == null) return false;
+    try { if (build.chronoOutputsAnyItem && build.chronoOutputsAnyItem()) return true; } catch (e) {}
+    return exports.blockOutputsAnyItem(build.block);
+};
+exports.buildConsumesLiquid = (build, liquid) => {
+    if (build == null || liquid == null) return false;
+    try { if (build.chronoConsumesLiquid && build.chronoConsumesLiquid(liquid)) return true; } catch (e) {}
+    return exports.blockConsumesLiquid(build.block, liquid);
+};
+exports.buildConsumesAnyLiquid = build => {
+    if (build == null) return false;
+    try { if (build.chronoConsumesAnyLiquid && build.chronoConsumesAnyLiquid()) return true; } catch (e) {}
+    return exports.blockConsumesAnyLiquid(build.block);
+};
+exports.buildOutputsLiquid = (build, liquid) => {
+    if (build == null || liquid == null) return false;
+    try { if (build.chronoOutputsLiquid && build.chronoOutputsLiquid(liquid)) return true; } catch (e) {}
+    return exports.blockOutputsLiquid(build.block, liquid);
+};
+exports.buildOutputsAnyLiquid = build => {
+    if (build == null) return false;
+    try { if (build.chronoOutputsAnyLiquid && build.chronoOutputsAnyLiquid()) return true; } catch (e) {}
+    return exports.blockOutputsAnyLiquid(build.block);
+};
+const autoConnect = (the, getLinks, lvt, filter, targetFilter) => {
     let links = getLinks();
     Groups.build.each(cons(b => {
         if (b == the) return;
@@ -91,6 +252,7 @@ const autoConnect = (the, getLinks, lvt, filter) => {
         if (b.getClass().getSimpleName() === "ConstructBuild") return;
         if (filter && !filter(b)) return;
         if (!lvt(the, b)) return;
+        if (targetFilter && !targetFilter(b)) return;
         let int = new java.lang.Integer(b.pos());
         if (!links.contains(boolf(i => i == int))) the.configure(int);
     }));
@@ -104,7 +266,7 @@ exports.makeScanJob = (autoFlags, chunkSize) => {
     let scanChanged = false;
 
     return {
-        tick(the, getLinks, lvt, clearFn, batchApply) {
+        tick(the, getLinks, lvt, clearFn, batchApply, targetFilter) {
             if (Vars.net.client()) return;
 
             let anyEnabled = false;
@@ -136,7 +298,7 @@ exports.makeScanJob = (autoFlags, chunkSize) => {
                     let pos = b.pos() | 0;
                     let hasLink = linkSet.has(pos);
 
-                    let isValidTarget = lvt(the, b) && (
+                    let isValidTarget = lvt(the, b) && (!targetFilter || targetFilter(b)) && (
                           (autoFlags[0] && b.block.category == Category.effect) ||
                           (autoFlags[1] && b.block.category == Category.turret) ||
                           (autoFlags[2] && b.block.category == Category.crafting) ||
@@ -192,7 +354,7 @@ const makeCheck = (table, autoFlags, idx) => {
     table.add(chk).size(40, 40);
     return chk;
 };
-exports.addAutoConnectButtons = (table, the, getLinks, lvt, clearFn, autoFlags) => {
+exports.addAutoConnectButtons = (table, the, getLinks, lvt, clearFn, autoFlags, targetFilter) => {
     table.center();
     const bw = 150; // Button width
     const cw = 40;  // Checkbox width
@@ -200,17 +362,17 @@ exports.addAutoConnectButtons = (table, the, getLinks, lvt, clearFn, autoFlags) 
     const sp = 20;  // Horizontal spacing between button groups
 
     makeCheck(table, autoFlags, 0);
-    table.button("Misc", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.effect); })).size(bw, bh).padRight(sp);
+    table.button("Misc", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.effect, targetFilter); })).size(bw, bh).padRight(sp);
     makeCheck(table, autoFlags, 1);
-    table.button("Turret", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.turret); })).size(bw, bh).row();
+    table.button("Turret", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.turret, targetFilter); })).size(bw, bh).row();
     makeCheck(table, autoFlags, 2);
-    table.button("Factory", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.crafting); })).size(bw, bh).padRight(sp);
+    table.button("Factory", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.crafting, targetFilter); })).size(bw, bh).padRight(sp);
     makeCheck(table, autoFlags, 3);
-    table.button("Power", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.power); })).size(bw, bh).row();
+    table.button("Power", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.power, targetFilter); })).size(bw, bh).row();
     makeCheck(table, autoFlags, 4);
-    table.button("Unit", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.units); })).size(bw, bh).padRight(sp);
+    table.button("Unit", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.units, targetFilter); })).size(bw, bh).padRight(sp);
     makeCheck(table, autoFlags, 5);
-    table.button("Drill", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.production); })).size(bw, bh).row();
+    table.button("Drill", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.production, targetFilter); })).size(bw, bh).row();
     table.button("Clear All Links", run(() => { the.configure(clearFn()); })).size(bw * 2 + cw * 2 + sp, bh).colspan(4).padTop(4).row();
 };
 exports.newEffect = (lifetime, renderer) => new Effect(lifetime, cons(renderer));

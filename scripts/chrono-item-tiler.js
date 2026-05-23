@@ -347,6 +347,15 @@ blockType.buildType = prov(() => {
             return Mathf.clamp(progress / TILE_INTERVAL);
         },
 
+        chronoConsumesItem(item) {
+            return acceptsTilerItem(this, item);
+        },
+
+        chronoConsumesAnyItem() {
+            if (selectedItem != null) return selectedTarget != null;
+            return supportedItems().size > 0;
+        },
+
         acceptItem(source, item) {
             return acceptsTilerItem(this, item);
         },

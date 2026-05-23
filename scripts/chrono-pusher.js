@@ -106,6 +106,7 @@ blockType.buildType = prov(() => {
     const looper = (() => { let idx = 0; return { next(m) { if (idx < 0 || idx >= m) idx = m-1; let v = idx; idx--; return v; } }; })();
     function lvt(the, t) { return t && t.team == the.team; }
     function lv(the, pos) { if (pos == null || pos == -1) return false; return lvt(the, Vars.world.build(pos)); }
+    function targetFilter(t) { return selectedItem == null ? lib.buildConsumesAnyItem(t) : lib.buildConsumesItem(t, selectedItem); }
     const clearFn = () => new IntSeq();
     const scanJob = lib.makeScanJob(autoFlags, 50);
     const batchApply = lib.makeBatchApply(() => links);
@@ -144,6 +145,7 @@ blockType.buildType = prov(() => {
             let s = false;
             for (let i = have.length-1; i >= 0; i--) {
                 let h = have[i], item = h.item, cnt = h.count;
+                if (!lib.buildConsumesItem(target, item)) continue;
                 let acc = Math.min(cnt, target.acceptStack(item, Math.min(cnt, 500), this));
                 if (acc > 0) {
                     s = true; target.handleStack(item, acc, this);
@@ -176,6 +178,7 @@ blockType.buildType = prov(() => {
                         if (pos == null || pos == -1) { this.configure(lib.int(pos)); continue; }
                         let lt = Vars.world.build(pos);
                         if (!lvt(this, lt)) { this.deadLink(pos); if (--max <= 0) break; continue; }
+                        if (!targetFilter(lt)) continue;
                         if (this.sendItems(lt, tmpHave)) itemSent = true;
                     }
                 }
@@ -188,7 +191,7 @@ blockType.buildType = prov(() => {
                 rotateSpeed = Mathf.lerpDelta(rotateSpeed, 0, warmupSpeed);
             }
             if (warmup > 0) rotateDeg += rotateSpeed;
-            scanJob.tick(this, () => links, lvt, clearFn, batchApply);
+            scanJob.tick(this, () => links, lvt, clearFn, batchApply, targetFilter);
         },
         draw() {
             this.super$draw();
@@ -232,7 +235,7 @@ blockType.buildType = prov(() => {
         },
         buildConfiguration(table) {
             table.table(cons(t => {
-                lib.addAutoConnectButtons(t, this, () => links, lvt, clearFn, autoFlags);
+                lib.addAutoConnectButtons(t, this, () => links, lvt, clearFn, autoFlags, targetFilter);
             })).row();
             table.table(cons(t => {
                 ItemSelection.buildTable(t, Vars.content.items(), prov(() => selectedItem), cons(v => { this.configure(v == null ? new java.lang.Integer(-1) : v); }));

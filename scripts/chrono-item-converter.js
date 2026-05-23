@@ -279,6 +279,22 @@ blockType.buildType = prov(() => {
             return outputItem != null && item == outputItem;
         },
 
+        chronoConsumesItem(item) {
+            return inputItem != null && outputItem != null && inputItem != outputItem && item == inputItem;
+        },
+
+        chronoConsumesAnyItem() {
+            return inputItem != null && outputItem != null && inputItem != outputItem;
+        },
+
+        chronoOutputsItem(item) {
+            return outputItem != null && inputItem != null && inputItem != outputItem && item == outputItem;
+        },
+
+        chronoOutputsAnyItem() {
+            return outputItem != null && inputItem != null && inputItem != outputItem;
+        },
+
         acceptItem(source, item) {
             return inputItem != null && outputItem != null && inputItem != outputItem && item == inputItem && this.items.get(item) < this.getMaximumAccepted(item);
         },

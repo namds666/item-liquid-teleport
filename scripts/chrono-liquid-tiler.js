@@ -259,6 +259,20 @@ blockType.buildType = prov(() => {
             return tilerConfig(selectedLiquid == null ? -1 : selectedLiquid.id, radius);
         },
 
+        chronoConsumesLiquid(liquid) {
+            if (selectedLiquid == null) return liquidFloor(liquid) != null;
+            return liquid == selectedLiquid && liquidFloor(liquid) != null;
+        },
+
+        chronoConsumesAnyLiquid() {
+            if (selectedLiquid != null) return liquidFloor(selectedLiquid) != null;
+            for (let i = 0; i < boostRules.liquidBoosters.length; i++) {
+                let liquid = boostRules.liquidBoosters[i].liquid;
+                if (liquidFloor(liquid) != null) return true;
+            }
+            return false;
+        },
+
         acceptLiquid(source, liquid) {
             if (this.liquids == null || this.liquids.get(liquid) >= blockType.liquidCapacity - 0.001) return false;
             if (selectedLiquid == null) return liquidFloor(liquid) != null;

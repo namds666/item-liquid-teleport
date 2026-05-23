@@ -85,10 +85,12 @@ blockType.buildType = prov(() => {
     const looper = (() => { let idx = 0; return { next(m) { if (idx < 0 || idx >= m) idx = m-1; let v = idx; idx--; return v; } }; })();
     function lvt(the, t) { return t && t.items != null; }
     function lv(the, pos) { if (pos == null || pos == -1) return false; return lvt(the, Vars.world.build(pos)); }
+    function sourceFilter(t) { return itemType == null ? lib.buildOutputsAnyItem(t) : lib.buildOutputsItem(t, itemType); }
     const clearFn = () => { let s = new IntSeq(2); s.add(itemType == null ? -1 : itemType.id); s.add(0); return s; };
     const scanJob = lib.makeScanJob(autoFlags, 50);
     const batchApply = lib.makeBatchApply(() => links);
     function transferItem(the, source, item) {
+        if (!lib.buildOutputsItem(source, item)) return false;
         let cnt = source.items.get(item);
         let acc = Math.min(cnt, the.acceptStack(item, Math.min(cnt, 500), source));
         if (acc <= 0) return false;
@@ -148,6 +150,7 @@ blockType.buildType = prov(() => {
                         if (pos == null || pos == -1) { this.configure(lib.int(pos)); continue; }
                         let lt = Vars.world.build(pos);
                         if (!lvt(this, lt)) { this.deadLink(pos); if (--max <= 0) break; continue; }
+                        if (!sourceFilter(lt)) continue;
                         if (itemType != null) {
                             if (transferItem(this, lt, itemType)) hasItem = true;
                         } else {
@@ -164,7 +167,7 @@ blockType.buildType = prov(() => {
                     Time.run(Mathf.random(10), run(() => { outEffect.at(this.x, this.y, 0); }));
                 for (let i = 0; i < FRAME_DELAY; i++) dumpStored(this);
             }
-            scanJob.tick(this, () => links, lvt, clearFn, batchApply);
+            scanJob.tick(this, () => links, lvt, clearFn, batchApply, sourceFilter);
             warmup = Mathf.lerpDelta(warmup, consValid ? 1 : 0, warmupSpeed);
             rotateSpeed = Mathf.lerpDelta(rotateSpeed, slowdownDelay > 0 ? 1 : 0, warmupSpeed);
             slowdownDelay = Math.max(0, slowdownDelay - 1);
@@ -213,7 +216,7 @@ blockType.buildType = prov(() => {
         },
         buildConfiguration(table) {
             table.table(cons(t => {
-                lib.addAutoConnectButtons(t, this, () => links, lvt, clearFn, autoFlags);
+                lib.addAutoConnectButtons(t, this, () => links, lvt, clearFn, autoFlags, sourceFilter);
             })).row();
             table.table(cons(t => {
                 ItemSelection.buildTable(t, Vars.content.items(), prov(() => itemType), cons(v => { this.configure(v); }));

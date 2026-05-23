@@ -244,12 +244,28 @@ blockType.buildType = prov(() => {
             return boostRules.acceptsBoostItem(item) && this.items != null && this.items.get(item) < blockType.itemCapacity;
         },
 
+        chronoConsumesItem(item) {
+            return boostRules.acceptsBoostItem(item);
+        },
+
+        chronoConsumesAnyItem() {
+            return boostRules.itemBoosters.length > 0;
+        },
+
         acceptStack(item, amount, source) {
             return boostRules.acceptsBoostItem(item) && this.items != null ? Math.min(amount, blockType.itemCapacity - this.items.get(item)) : 0;
         },
 
         acceptLiquid(source, liquid) {
             return boostRules.acceptsBoostLiquid(liquid) && this.liquids != null && this.liquids.get(liquid) < blockType.liquidCapacity;
+        },
+
+        chronoConsumesLiquid(liquid) {
+            return boostRules.acceptsBoostLiquid(liquid);
+        },
+
+        chronoConsumesAnyLiquid() {
+            return boostRules.liquidBoosters.length > 0;
         },
 
         write(write) {
