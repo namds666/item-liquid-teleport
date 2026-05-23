@@ -134,7 +134,11 @@ function directResourceField(obj, names, resource) {
     return false;
 }
 function consumers(block) {
-    try { return block == null ? null : block.consumes; } catch (e) { return null; }
+    if (block == null) return null;
+    try {
+        if (typeof block.consumes === "function") return block.consumes();
+        return block.consumes;
+    } catch (e) { return null; }
 }
 function consumerByType(block, typeName) {
     let cons = consumers(block);
@@ -149,9 +153,52 @@ function anyConsumer(block, predicate) {
     let cons = consumers(block);
     if (cons == null) return false;
     try {
-        let all = cons.all();
+        let all = typeof cons.all === "function" ? cons.all() : cons.all;
         if (eachArrayLike(all, predicate)) return true;
     } catch (e) {}
+    return false;
+}
+function callBool(obj, name, args) {
+    if (obj == null) return false;
+    try {
+        let fn = obj[name];
+        if (fn != null) return !!fn.apply(obj, args);
+    } catch (e) {}
+    try {
+        if (args.length == 1) return !!obj[name](args[0]);
+        if (args.length == 2) return !!obj[name](args[0], args[1]);
+        if (args.length == 3) return !!obj[name](args[0], args[1], args[2]);
+    } catch (e) {}
+    return false;
+}
+function callNumber(obj, name, args) {
+    if (obj == null) return 0;
+    try {
+        let fn = obj[name];
+        if (fn != null) {
+            let out = fn.apply(obj, args);
+            return out == null ? 0 : Number(out);
+        }
+    } catch (e) {}
+    try {
+        let out = null;
+        if (args.length == 1) out = obj[name](args[0]);
+        else if (args.length == 2) out = obj[name](args[0], args[1]);
+        else if (args.length == 3) out = obj[name](args[0], args[1], args[2]);
+        return out == null ? 0 : Number(out);
+    } catch (e) {}
+    return 0;
+}
+function blockOutputsItems(block) {
+    if (block == null) return false;
+    if (callBool(block, "outputsItems", [])) return true;
+    try { if (block.outputsItems === true) return true; } catch (e) {}
+    return false;
+}
+function blockOutputsLiquidAny(block) {
+    if (block == null) return false;
+    try { if (block.outputsLiquid === true) return true; } catch (e) {}
+    if (callBool(block, "outputsLiquid", [])) return true;
     return false;
 }
 exports.blockConsumesItem = (block, item) => {
@@ -170,12 +217,14 @@ exports.blockConsumesAnyItem = block => {
 };
 exports.blockOutputsItem = (block, item) => {
     if (block == null || item == null) return false;
-    return anyStackField(block, ["outputItem", "outputItems", "results"], item, "item") ||
+    return (blockOutputsItems(block) && directResourceField(block, ["itemDrop"], item)) ||
+           anyStackField(block, ["outputItem", "outputItems", "results"], item, "item") ||
            directResourceField(block, ["itemDrop", "outputItem"], item);
 };
 exports.blockOutputsAnyItem = block => {
     if (block == null) return false;
-    return anyStackField(block, ["outputItem", "outputItems", "results"], null, "item") ||
+    return blockOutputsItems(block) ||
+           anyStackField(block, ["outputItem", "outputItems", "results"], null, "item") ||
            directResourceField(block, ["itemDrop", "outputItem"], null);
 };
 exports.blockConsumesLiquid = (block, liquid) => {
@@ -196,52 +245,81 @@ exports.blockConsumesAnyLiquid = block => {
 };
 exports.blockOutputsLiquid = (block, liquid) => {
     if (block == null || liquid == null) return false;
-    return anyStackField(block, ["outputLiquid", "outputLiquids"], liquid, "liquid") ||
+    return (blockOutputsLiquidAny(block) && directResourceField(block, ["liquidDrop", "pumpLiquid"], liquid)) ||
+           anyStackField(block, ["outputLiquid", "outputLiquids"], liquid, "liquid") ||
            directResourceField(block, ["liquidDrop", "pumpLiquid", "outputLiquid"], liquid);
 };
 exports.blockOutputsAnyLiquid = block => {
     if (block == null) return false;
-    return anyStackField(block, ["outputLiquid", "outputLiquids"], null, "liquid") ||
+    return blockOutputsLiquidAny(block) ||
+           anyStackField(block, ["outputLiquid", "outputLiquids"], null, "liquid") ||
            directResourceField(block, ["liquidDrop", "pumpLiquid", "outputLiquid"], null);
 };
 exports.buildConsumesItem = (build, item) => {
     if (build == null || item == null) return false;
     try { if (build.chronoConsumesItem && build.chronoConsumesItem(item)) return true; } catch (e) {}
+    if (callNumber(build, "acceptStack", [item, 1, null]) > 0) return true;
+    if (callBool(build, "acceptItem", [null, item])) return true;
     return exports.blockConsumesItem(build.block, item);
 };
 exports.buildConsumesAnyItem = build => {
     if (build == null) return false;
     try { if (build.chronoConsumesAnyItem && build.chronoConsumesAnyItem()) return true; } catch (e) {}
+    try {
+        for (let i = 0; i < Vars.content.items().size; i++) {
+            if (exports.buildConsumesItem(build, Vars.content.items().get(i))) return true;
+        }
+    } catch (e) {}
     return exports.blockConsumesAnyItem(build.block);
 };
 exports.buildOutputsItem = (build, item) => {
     if (build == null || item == null) return false;
     try { if (build.chronoOutputsItem && build.chronoOutputsItem(item)) return true; } catch (e) {}
+    if (callBool(build, "canDump", [null, item])) return true;
+    try { if (blockOutputsItems(build.block) && build.items != null && build.items.get(item) > 0) return true; } catch (e) {}
     return exports.blockOutputsItem(build.block, item);
 };
 exports.buildOutputsAnyItem = build => {
     if (build == null) return false;
     try { if (build.chronoOutputsAnyItem && build.chronoOutputsAnyItem()) return true; } catch (e) {}
+    try {
+        for (let i = 0; i < Vars.content.items().size; i++) {
+            if (exports.buildOutputsItem(build, Vars.content.items().get(i))) return true;
+        }
+    } catch (e) {}
     return exports.blockOutputsAnyItem(build.block);
 };
 exports.buildConsumesLiquid = (build, liquid) => {
     if (build == null || liquid == null) return false;
     try { if (build.chronoConsumesLiquid && build.chronoConsumesLiquid(liquid)) return true; } catch (e) {}
+    if (callBool(build, "acceptLiquid", [null, liquid])) return true;
     return exports.blockConsumesLiquid(build.block, liquid);
 };
 exports.buildConsumesAnyLiquid = build => {
     if (build == null) return false;
     try { if (build.chronoConsumesAnyLiquid && build.chronoConsumesAnyLiquid()) return true; } catch (e) {}
+    try {
+        for (let i = 0; i < Vars.content.liquids().size; i++) {
+            if (exports.buildConsumesLiquid(build, Vars.content.liquids().get(i))) return true;
+        }
+    } catch (e) {}
     return exports.blockConsumesAnyLiquid(build.block);
 };
 exports.buildOutputsLiquid = (build, liquid) => {
     if (build == null || liquid == null) return false;
     try { if (build.chronoOutputsLiquid && build.chronoOutputsLiquid(liquid)) return true; } catch (e) {}
+    if (callBool(build, "canDumpLiquid", [null, liquid])) return true;
+    try { if (blockOutputsLiquidAny(build.block) && build.liquids != null && build.liquids.get(liquid) > 0.001) return true; } catch (e) {}
     return exports.blockOutputsLiquid(build.block, liquid);
 };
 exports.buildOutputsAnyLiquid = build => {
     if (build == null) return false;
     try { if (build.chronoOutputsAnyLiquid && build.chronoOutputsAnyLiquid()) return true; } catch (e) {}
+    try {
+        for (let i = 0; i < Vars.content.liquids().size; i++) {
+            if (exports.buildOutputsLiquid(build, Vars.content.liquids().get(i))) return true;
+        }
+    } catch (e) {}
     return exports.blockOutputsAnyLiquid(build.block);
 };
 const autoConnect = (the, getLinks, lvt, filter, targetFilter) => {
