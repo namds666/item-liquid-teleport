@@ -308,7 +308,6 @@ exports.buildConsumesAnyLiquid = build => {
 exports.buildOutputsLiquid = (build, liquid) => {
     if (build == null || liquid == null) return false;
     try { if (build.chronoOutputsLiquid && build.chronoOutputsLiquid(liquid)) return true; } catch (e) {}
-    if (callBool(build, "canDumpLiquid", [null, liquid])) return true;
     try { if (blockOutputsLiquidAny(build.block) && build.liquids != null && build.liquids.get(liquid) > 0.001) return true; } catch (e) {}
     return exports.blockOutputsLiquid(build.block, liquid);
 };
