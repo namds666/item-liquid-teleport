@@ -31,13 +31,18 @@ const blockType = extend(StorageBlock, "chrono-pusher", {
         if (lib.isStringConfig(config)) return lib.pointTransportConfig(config, transformer);
         if (!IntSeq.__javaObject__.isInstance(config)) return config;
         if (config.size < 1) return config;
-        // v3 format is even-sized (2 + lc*2 + 6); all older formats are odd-sized (1 + lc*2 + autoFlagCount)
-        let isV3 = (config.size % 2 == 0);
-        let selectedId = isV3 ? config.get(0) : -1;
-        let lc         = isV3 ? config.get(1) : config.get(0);
-        let linkStart  = isV3 ? 2 : 1;
+        let selectedFormat = false;
+        if (config.size >= 2) {
+            let candidateLinks = config.get(1);
+            let afterCandidateLinks = 2 + candidateLinks * 2;
+            let remaining = config.size - afterCandidateLinks;
+            selectedFormat = candidateLinks >= 0 && afterCandidateLinks <= config.size && remaining >= 6 && remaining <= 7;
+        }
+        let selectedId = selectedFormat ? config.get(0) : -1;
+        let lc         = selectedFormat ? config.get(1) : config.get(0);
+        let linkStart  = selectedFormat ? 2 : 1;
         let afterLinks = linkStart + lc * 2;
-        let ns = new IntSeq(config.size + (isV3 ? 0 : 1));
+        let ns = new IntSeq(config.size + (selectedFormat ? 0 : 1));
         ns.add(selectedId); ns.add(lc);
         for (let i = 0; i < lc; i++) {
             let base = linkStart + i*2;
@@ -66,13 +71,19 @@ blockType.requirements    = ItemStack.with();
 lib.enableAllEnvironments(blockType);
 
 blockType.config(IntSeq, lib.cons2((tile, sq) => {
-    // v3 format (even size): [selectedItemId, lc, x0,y0,..., af0..af5]
-    // old format (odd size):  [lc, x0,y0,..., af0..af5]  (no selectedItemId)
+    // v3+ format: [selectedItemId, lc, x0,y0,..., auto flags]
+    // old format: [lc, x0,y0,..., af0..af5] (no selectedItemId)
     if (sq.size == 0) { tile.setLink(new Seq(java.lang.Integer)); return; }
-    let isV3 = (sq.size % 2 == 0);
-    let selectedId = isV3 ? sq.get(0) : -1;
-    let lc         = isV3 ? sq.get(1) : sq.get(0);
-    let linkStart  = isV3 ? 2 : 1;
+    let selectedFormat = false;
+    if (sq.size >= 2) {
+        let candidateLinks = sq.get(1);
+        let afterCandidateLinks = 2 + candidateLinks * 2;
+        let remaining = sq.size - afterCandidateLinks;
+        selectedFormat = candidateLinks >= 0 && afterCandidateLinks <= sq.size && remaining >= 6 && remaining <= 7;
+    }
+    let selectedId = selectedFormat ? sq.get(0) : -1;
+    let lc         = selectedFormat ? sq.get(1) : sq.get(0);
+    let linkStart  = selectedFormat ? 2 : 1;
     tile.setSelectedItemId(selectedId);
     let lx = null;
     let links = new Seq(java.lang.Integer);
@@ -85,7 +96,7 @@ blockType.config(IntSeq, lib.cons2((tile, sq) => {
     if (sq.size >= autoStart + 6) tile.setAutoFlagsFromSeq(sq, autoStart);
 }));
 blockType.config(java.lang.String, lib.cons2((tile, text) => {
-    let cfg = lib.readTransportConfig(text, tile.tileX(), tile.tileY());
+    let cfg = lib.readTransportConfig(text, tile.tileX(), tile.tileY(), 7);
     if (cfg == null) return;
     tile.setSelectedItemId(cfg.selectedId);
     tile.setLink(cfg.links);
@@ -100,7 +111,7 @@ blockType.buildType = prov(() => {
     const MAX_LOOP = 100, FRAME_DELAY = 5;
     const timer = new Interval(6);
     let links = new Seq(java.lang.Integer), deadLinks = new Seq(java.lang.Integer);
-    let autoFlags = [false, false, false, false, false, false];
+    let autoFlags = [false, false, false, false, false, false, false];
     let selectedItem = null;
     let warmup = 0, rotateDeg = 0, rotateSpeed = 0, consValid = false, itemSent = false;
     const looper = (() => { let idx = 0; return { next(m) { if (idx < 0 || idx >= m) idx = m-1; let v = idx; idx--; return v; } }; })();
@@ -124,8 +135,10 @@ blockType.buildType = prov(() => {
             let int = new java.lang.Integer(v);
             if (!links.remove(boolf(i => i == int))) links.add(int);
         },
-        setAutoFlagsFromSeq(seq, offset) { for (let i = 0; i < 6; i++) autoFlags[i] = seq.get(offset + i) > 0; },
-        setAutoFlagsFromArray(values) { for (let i = 0; i < 6; i++) autoFlags[i] = !!values[i]; },
+        setAutoFlagsFromSeq(seq, offset) {
+            for (let i = 0; i < autoFlags.length; i++) autoFlags[i] = (offset + i < seq.size) && seq.get(offset + i) > 0;
+        },
+        setAutoFlagsFromArray(values) { for (let i = 0; i < autoFlags.length; i++) autoFlags[i] = !!values[i]; },
         setSelectedItemId(v) { selectedItem = (v == null || v < 0) ? null : Vars.content.items().get(v); },
         deadLink(v) {
             if (Vars.net.client()) return;
@@ -249,13 +262,14 @@ blockType.buildType = prov(() => {
         },
         add() { if (this.added) return; rdcGroup.add(this); this.super$add(); },
         remove() { if (!this.added) return; rdcGroup.remove(this); this.super$remove(); },
-        version() { return 3; },
+        version() { return 4; },
         write(write) {
             this.super$write(write);
             write.s(selectedItem == null ? -1 : selectedItem.id);
             write.s(links.size);
             let it = links.iterator(); while (it.hasNext()) write.i(it.next());
             write.bool(autoFlags[0]); write.bool(autoFlags[1]); write.bool(autoFlags[2]); write.bool(autoFlags[3]); write.bool(autoFlags[4]); write.bool(autoFlags[5]);
+            write.bool(autoFlags[6]);
         },
         read(read, revision) {
             this.super$read(read, revision);
@@ -264,6 +278,7 @@ blockType.buildType = prov(() => {
             let sz = read.s(); for (let i = 0; i < sz; i++) links.add(new java.lang.Integer(read.i()));
             if (revision >= 1) { autoFlags[0] = read.bool(); autoFlags[1] = read.bool(); autoFlags[2] = read.bool(); autoFlags[3] = read.bool(); }
             if (revision >= 2) { autoFlags[4] = read.bool(); autoFlags[5] = read.bool(); }
+            if (revision >= 4) autoFlags[6] = read.bool();
         },
     }, blockType);
 });

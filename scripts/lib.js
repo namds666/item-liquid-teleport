@@ -13,20 +13,22 @@ exports.isStringConfig = config => {
 };
 exports.transportConfig = (selectedId, links, tileX, tileY, autoFlags) => {
     let selected = selectedId == null ? -1 : selectedId;
-    if (links.size <= MAX_INTSEQ_CONFIG_LINKS) {
-        let seq = new IntSeq(links.size*2 + 8);
+    let flagCount = autoFlags == null ? 0 : autoFlags.length;
+    let maxSeqLinks = Math.min(MAX_INTSEQ_CONFIG_LINKS, Math.floor((200 - 2 - flagCount) / 2));
+    if (links.size <= maxSeqLinks) {
+        let seq = new IntSeq(links.size*2 + 2 + flagCount);
         seq.add(selected);
         seq.add(links.size);
         for (let i = 0; i < links.size; i++) {
             let p = Point2.unpack(links.get(i)).sub(tileX, tileY);
             seq.add(p.x, p.y);
         }
-        for (let i = 0; i < 6; i++) seq.add(autoFlags[i] ? 1 : 0);
+        for (let i = 0; i < flagCount; i++) seq.add(autoFlags[i] ? 1 : 0);
         return seq;
     }
 
     let flags = 0;
-    for (let i = 0; i < 6; i++) if (autoFlags[i]) flags |= (1 << i);
+    for (let i = 0; i < flagCount; i++) if (autoFlags[i]) flags |= (1 << i);
 
     let parts = [STRING_CONFIG_PREFIX, String(selected), String(flags), String(links.size)];
     for (let i = 0; i < links.size; i++) {
@@ -35,8 +37,9 @@ exports.transportConfig = (selectedId, links, tileX, tileY, autoFlags) => {
     }
     return parts.join(";");
 };
-exports.readTransportConfig = (config, tileX, tileY) => {
+exports.readTransportConfig = (config, tileX, tileY, flagCount) => {
     if (!exports.isStringConfig(config)) return null;
+    let countFlags = flagCount == null ? 6 : flagCount;
     let parts = String(config).split(";");
     if (parts.length < 4 || parts[0] !== STRING_CONFIG_PREFIX) return null;
 
@@ -57,7 +60,7 @@ exports.readTransportConfig = (config, tileX, tileY) => {
     }
 
     let autoFlags = [];
-    for (let i = 0; i < 6; i++) autoFlags[i] = (flags & (1 << i)) !== 0;
+    for (let i = 0; i < countFlags; i++) autoFlags[i] = (flags & (1 << i)) !== 0;
     return { selectedId: selectedId, links: links, autoFlags: autoFlags };
 };
 exports.pointTransportConfig = (config, transformer) => {
@@ -337,7 +340,7 @@ const autoConnect = (the, getLinks, lvt, filter, targetFilter) => {
 exports.makeScanJob = (autoFlags, chunkSize) => {
     const SCAN_DELAY = 60;
     let snapshot = null, idx = -1, delay = SCAN_DELAY;
-    let prevFlags = [false, false, false, false, false, false];
+    let prevFlags = [];
     let linkSet = null;
     let toAdd = [], toRemove = [];
     let scanChanged = false;
@@ -348,7 +351,7 @@ exports.makeScanJob = (autoFlags, chunkSize) => {
 
             let anyEnabled = false;
             let flagsChanged = false;
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < autoFlags.length; i++) {
                 if (autoFlags[i]) anyEnabled = true;
                 if (autoFlags[i] !== prevFlags[i]) flagsChanged = true;
                 prevFlags[i] = autoFlags[i];
@@ -381,7 +384,8 @@ exports.makeScanJob = (autoFlags, chunkSize) => {
                           (autoFlags[2] && b.block.category == Category.crafting) ||
                           (autoFlags[3] && b.block.category == Category.power) ||
                           (autoFlags[4] && b.block.category == Category.units) ||
-                          (autoFlags[5] && b.block.category == Category.production)
+                          (autoFlags[5] && b.block.category == Category.production) ||
+                          (autoFlags[6] && b.block.category == Category.liquid)
                     );
 
                     if (isValidTarget && !hasLink) {
@@ -450,6 +454,8 @@ exports.addAutoConnectButtons = (table, the, getLinks, lvt, clearFn, autoFlags, 
     table.button("Unit", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.units, targetFilter); })).size(bw, bh).padRight(sp);
     makeCheck(table, autoFlags, 5);
     table.button("Drill", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.production, targetFilter); })).size(bw, bh).row();
+    makeCheck(table, autoFlags, 6);
+    table.button("Liquid", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.liquid, targetFilter); })).size(bw, bh).row();
     table.button("Clear All Links", run(() => { the.configure(clearFn()); })).size(bw * 2 + cw * 2 + sp, bh).colspan(4).padTop(4).row();
 };
 exports.newEffect = (lifetime, renderer) => new Effect(lifetime, cons(renderer));

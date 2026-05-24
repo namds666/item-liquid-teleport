@@ -10,18 +10,18 @@ A standalone Mindustry cheat mod providing compact Chrono blocks for global item
 - **Category:** Distribution - extends `StorageBlock` / `StorageBuild`
 - **Function:** Pulls the selected item type from every linked building (up to 500/link per 5-tick batch), buffers it (100-item capacity), then dumps it through adjacent conveyors every tick.
 - **Filter:** Must have an item type selected; does nothing without one.
-- **Config:** Tap to toggle individual links. UI: auto-connect buttons (6 categories) + item picker. `clearFn` preserves the selected item id when clearing links.
+- **Config:** Tap to toggle individual links. UI: Auto Steal toggle, auto-connect category buttons, and item picker. `clearFn` preserves the selected item id when clearing links. Auto Steal defaults off; when off, sources must be on the same team.
 
 ### Chrono Pusher (`chrono-pusher`)
 - **Category:** Distribution - extends `StorageBlock` / `StorageBuild`
 - **Function:** Receives items from adjacent conveyors (10,000-item capacity), then pushes them into every linked building (up to 500/link per 5-tick batch). Optionally filtered to a single item type via UI picker; without a filter it pushes all held items.
-- **Config:** Tap to toggle individual links. UI: auto-connect buttons + optional item filter. Config format is v3 (even-length IntSeq: `[selectedItemId, lc, x0,y0,..., af0..af5]`); older odd-length saves are handled in both `pointConfig` and the IntSeq config handler.
+- **Config:** Tap to toggle individual links. UI: auto-connect buttons + optional item filter. Config format is v4 (`[selectedItemId, lc, x0,y0,..., af0..af6]`); older no-filter configs are handled in both `pointConfig` and the IntSeq config handler.
 
 ### Chrono Liquid Unloader (`chrono-liquid-unloader`)
 - **Category:** Liquid - extends `Block` / `Building`
 - **Function:** Pulls the selected liquid from every linked building (up to 500/link per 5-tick batch), buffers it (100-unit capacity), then dumps it through adjacent pipes.
 - **Filter:** Must have a liquid type selected; does nothing without one.
-- **Config:** Tap to toggle individual links. UI: auto-connect buttons + liquid picker. `clearFn` preserves the liquid type id when clearing.
+- **Config:** Tap to toggle individual links. UI: Auto Steal toggle, auto-connect buttons, and liquid picker. `clearFn` preserves the liquid type id when clearing. Auto Steal defaults off; when off, sources must be on the same team.
 
 ### Chrono Liquid Pusher (`chrono-liquid-pusher`)
 - **Category:** Liquid - extends `Block` / `Building`
@@ -122,7 +122,7 @@ Returns a stateful scan job called from `updateTile` every tick. Flow:
 5. Chrono blocks themselves are excluded via `CHRONO_NAMES` check; `ConstructBuild`s (buildings under construction) are excluded via `getSimpleName() === "ConstructBuild"` - their `.block` resolves to the real block so they pass category checks, but their `.liquids` is null, causing crashes.
 
 ### Config serialization
-Small link snapshots serialize as the legacy `IntSeq` format. Because Mindustry save plan IO reads `IntSeq` configs with a 200-element limit, this path is capped at 96 links (`selected + count + 96*2 offsets + 6 flags = 200`).
+Small link snapshots serialize as the legacy `IntSeq` format. Because Mindustry save plan IO reads `IntSeq` configs with a 200-element limit, this path is capped at 95 links for seven category flags (`selected + count + 95*2 offsets + 7 flags = 199`) and 95 links for unloaders with the extra Auto Steal flag.
 
 Large link snapshots serialize as a compact `ctl1` string (`selected;flags;count;dx,dy...`) so sector saves, rebuild plans, copy/paste, and schematic transforms do not hit `TypeIO.writeObject`'s `IntSeq` array limit.
 
@@ -130,7 +130,7 @@ Large link snapshots serialize as a compact `ctl1` string (`selected;flags;count
 Mutates the `links` Seq directly (add/remove) without going through `configure()` per-entry. Deferred to scan end so auto-scan can apply a single full config sync after the batch.
 
 ### Auto-connect buttons (`addAutoConnectButtons`)
-Renders 6 checkbox+button pairs for categories: Misc (effect), Turret, Factory (crafting), Power, Unit, Drill (production). Checkboxes toggle `autoFlags[i]` for continuous auto-scan; buttons trigger a one-shot `autoConnect` scan for their category.
+Renders 7 checkbox+button pairs for categories: Misc (effect), Turret, Factory (crafting), Power, Unit, Drill (production), Liquid. Checkboxes toggle `autoFlags[i]` for continuous auto-scan; buttons trigger a one-shot `autoConnect` scan for their category.
 
 ## Shared Properties
 
@@ -184,4 +184,4 @@ item-liquid-teleport/
 - Item transport/converter/item-tiler blocks extend `StorageBlock` (JavaAdapter over `StorageBlock.StorageBuild`); liquid blocks extend `Block` (plain `extend(Building, ...)`).
 - The center dot on transport and tiler blocks reuses the vanilla `"unloader-center"` sprite, tinted to the selected filter color (or dominant held liquid/item color) at render time.
 - Config serialization uses relative tile offsets (delta from block's own tile) so configs survive copy-paste and schematic placement (`pointConfig` transforms them back).
-- Save/load versioned via `version()`: unloader v4, pusher v3, liquid-unloader v3, liquid-pusher v5, liquid-tiler v2, item-tiler v2, item-converter v2, chrono-booster v1, chrono-buffer v1, chrono-debuffer v1. Older revisions are handled in `read()`.
+- Save/load versioned via `version()`: unloader v6, pusher v4, liquid-unloader v5, liquid-pusher v6, liquid-tiler v2, item-tiler v2, item-converter v2, chrono-booster v1, chrono-buffer v1, chrono-debuffer v1. Older revisions are handled in `read()`.

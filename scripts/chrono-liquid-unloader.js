@@ -69,9 +69,11 @@ blockType.config(IntSeq, lib.cons2((tile, seq) => {
     for (let i = 2; i < 2 + lc*2; i++) { let n = seq.get(i); if (lx == null) lx = n; else { nl.add(lib.int(Point2.pack(lx + tile.tileX(), n + tile.tileY()))); lx = null; } }
     tile.setLiquidTypeId(seq.get(0)); tile.setLinks(nl);
     if (seq.size >= 2 + lc*2 + 6) tile.setAutoFlagsFromSeq(seq, 2 + lc*2);
+    if (seq.size >= 2 + lc*2 + 7) tile.setAutoSteal(seq.get(2 + lc*2 + 6) > 0);
+    if (seq.size >= 2 + lc*2 + 8) tile.setAutoLiquid(seq.get(2 + lc*2 + 7) > 0);
 }));
 blockType.config(java.lang.String, lib.cons2((tile, text) => {
-    let cfg = lib.readTransportConfig(text, tile.tileX(), tile.tileY());
+    let cfg = lib.readTransportConfig(text, tile.tileX(), tile.tileY(), 8);
     if (cfg == null) return;
     tile.setLiquidTypeId(cfg.selectedId);
     tile.setLinks(cfg.links);
@@ -86,12 +88,13 @@ blockType.buildType = prov(() => {
     const MAX_LOOP = 100, FRAME_DELAY = 5;
     const timer = new Interval(3);
     let liquidType = null, links = new Seq(java.lang.Integer), deadLinks = new Seq(java.lang.Integer);
-    let autoFlags = [false, false, false, false, false, false];
+    let autoFlags = [false, false, false, false, false, false, false], autoSteal = false;
     let slowdownDelay = 0, warmup = 0, rotateDeg = 0, rotateSpeed = 0;
     const looper = (() => { let idx = 0; return { next(m) { if (idx < 0 || idx >= m) idx = m-1; let v = idx; idx--; return v; } }; })();
     function lvt(the, t) { return t && t.liquids != null; }
     function lv(the, pos) { if (pos == null || pos == -1) return false; return lvt(the, Vars.world.build(pos)); }
-    function sourceFilter(t) { return liquidType == null ? lib.buildOutputsAnyLiquid(t) : lib.buildOutputsLiquid(t, liquidType); }
+    function canAccessSource(the, t) { return autoSteal || (t != null && t.team == the.team); }
+    function sourceFilterFor(the, t) { return canAccessSource(the, t) && (liquidType == null ? lib.buildOutputsAnyLiquid(t) : lib.buildOutputsLiquid(t, liquidType)); }
     const clearFn = () => { let s = new IntSeq(2); s.add(liquidType == null ? -1 : liquidType.id); s.add(0); return s; };
     const scanJob = lib.makeScanJob(autoFlags, 50);
     const batchApply = lib.makeBatchApply(() => links);
@@ -111,7 +114,13 @@ blockType.buildType = prov(() => {
             if (!links.remove(boolf(i => i == int))) links.add(int);
         },
         setAutoFlagsFromSeq(seq, offset) { for (let i = 0; i < 6; i++) autoFlags[i] = (offset + i < seq.size) && seq.get(offset + i) > 0; },
-        setAutoFlagsFromArray(values) { for (let i = 0; i < 6; i++) autoFlags[i] = !!values[i]; },
+        setAutoFlagsFromArray(values) {
+            for (let i = 0; i < 6; i++) autoFlags[i] = !!values[i];
+            autoSteal = !!values[6];
+            autoFlags[6] = !!values[7];
+        },
+        setAutoSteal(v) { autoSteal = !!v; },
+        setAutoLiquid(v) { autoFlags[6] = !!v; },
         deadLink(v) {
             if (Vars.net.client()) return;
             let int = new java.lang.Integer(v);
@@ -138,7 +147,7 @@ blockType.buildType = prov(() => {
                         if (pos == null || pos == -1) { this.configure(lib.int(pos)); continue; }
                         let lt = Vars.world.build(pos);
                         if (!lvt(this, lt)) { this.deadLink(pos); if (--max <= 0) break; continue; }
-                        if (!sourceFilter(lt)) continue;
+                        if (!sourceFilterFor(this, lt)) continue;
                         let available = lt.liquids.get(liquidType);
                         let space = this.block.liquidCapacity - this.liquids.get(liquidType);
                         let amount = Math.min(available, Math.min(space, TRANSFER_RATE));
@@ -157,7 +166,7 @@ blockType.buildType = prov(() => {
                 }
                 if (liquidType != null && this.liquids.get(liquidType) > 0.001) this.dumpLiquid(liquidType);
             }
-            scanJob.tick(this, () => links, lvt, clearFn, batchApply, sourceFilter);
+            scanJob.tick(this, () => links, lvt, clearFn, batchApply, b => sourceFilterFor(this, b));
             warmup = Mathf.lerpDelta(warmup, this.efficiency > 0 ? 1 : 0, warmupSpeed);
             rotateSpeed = Mathf.lerpDelta(rotateSpeed, slowdownDelay > 0 ? 1 : 0, warmupSpeed);
             slowdownDelay = Math.max(0, slowdownDelay - 1);
@@ -182,30 +191,42 @@ blockType.buildType = prov(() => {
         },
         onConfigureBuildTapped(other) {
             if (this == other) { this.configure(-1); return false; }
-            if (other && other.liquids != null) { this.configure(new java.lang.Integer(other.pos())); return false; }
+            if (other && other.liquids != null) {
+                let pos = new java.lang.Integer(other.pos());
+                if (canAccessSource(this, other) || links.contains(boolf(i => i == pos))) this.configure(pos);
+                return false;
+            }
             return true;
         },
         buildConfiguration(table) {
             table.table(cons(t => {
-                lib.addAutoConnectButtons(t, this, () => links, lvt, clearFn, autoFlags, sourceFilter);
+                let chk = new CheckBox("Auto Steal");
+                chk.setChecked(autoSteal);
+                chk.changed(run(() => { autoSteal = chk.isChecked(); this.configure(this.config()); }));
+                t.add(chk).left();
+            })).row();
+            table.table(cons(t => {
+                lib.addAutoConnectButtons(t, this, () => links, lvt, clearFn, autoFlags, b => sourceFilterFor(this, b));
             })).row();
             table.table(cons(t => {
                 ItemSelection.buildTable(t, Vars.content.liquids(), prov(() => liquidType), cons(v => { this.configure(v); }));
             })).row();
         },
         config() {
-            return lib.transportConfig(liquidType == null ? -1 : liquidType.id, links, this.tile.x, this.tile.y, autoFlags);
+            return lib.transportConfig(liquidType == null ? -1 : liquidType.id, links, this.tile.x, this.tile.y, autoFlags.slice(0, 6).concat([autoSteal, autoFlags[6]]));
         },
         acceptLiquid(source, liquid) { return liquidType != null && liquid == liquidType; },
         outputsLiquid() { return true; },
         add() { if (this.added) return; theGroup.add(this); this.super$add(); },
         remove() { if (!this.added) return; theGroup.remove(this); this.super$remove(); },
-        version() { return 3; },
+        version() { return 5; },
         write(write) {
             this.super$write(write);
             write.s(liquidType == null ? -1 : liquidType.id); write.s(links.size);
             let it = links.iterator(); while (it.hasNext()) write.i(it.next());
             write.bool(autoFlags[0]); write.bool(autoFlags[1]); write.bool(autoFlags[2]); write.bool(autoFlags[3]); write.bool(autoFlags[4]); write.bool(autoFlags[5]);
+            write.bool(autoSteal);
+            write.bool(autoFlags[6]);
         },
         read(read, revision) {
             this.super$read(read, revision);
@@ -214,6 +235,8 @@ blockType.buildType = prov(() => {
             let sz = read.s(); for (let i = 0; i < sz; i++) links.add(new java.lang.Integer(read.i()));
             if (revision >= 2) { autoFlags[0] = read.bool(); autoFlags[1] = read.bool(); autoFlags[2] = read.bool(); autoFlags[3] = read.bool(); }
             if (revision >= 3) { autoFlags[4] = read.bool(); autoFlags[5] = read.bool(); }
+            if (revision >= 4) autoSteal = read.bool();
+            if (revision >= 5) autoFlags[6] = read.bool();
         },
     });
 });
