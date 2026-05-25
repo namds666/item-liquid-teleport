@@ -31,10 +31,9 @@ function maxHealthOf(b) {
 function canHealBuilding(b, team) {
     if (!b || b.team != team) return false;
 
-    let maxHealth = maxHealthOf(b);
-    if (maxHealth <= 0) return false;
-    if (b.health != null) return b.health < maxHealth - 0.001;
-    return typeof b.damaged === "function" && b.damaged();
+    if (typeof b.damaged === "function" && !b.damaged()) return false;
+    if (typeof b.isHealSuppressed === "function" && b.isHealSuppressed()) return false;
+    return maxHealthOf(b) > 0;
 }
 
 // ── Block definition ───────────────────────────────────────────────────────
