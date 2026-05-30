@@ -88,17 +88,26 @@ exports.pointTransportConfig = (config, transformer) => {
 };
 function eachArrayLike(values, fn) {
     if (values == null) return false;
-    let size = values.size;
-    if (typeof size === "function") size = values.size();
+    let length = null;
+    try { length = values.length; } catch (e) {}
+    if (typeof length === "number") {
+        for (let i = 0; i < length; i++) if (fn(values[i])) return true;
+        return false;
+    }
+    let size = null;
+    try { size = values.size; } catch (e) {}
+    if (typeof size === "function") {
+        try { size = values.size(); } catch (e) { size = null; }
+    }
     if (typeof size === "number") {
         for (let i = 0; i < size; i++) {
-            let v = values.get ? values.get(i) : values[i];
+            let v = null;
+            try { v = values.get ? values.get(i) : values[i]; } catch (e) {
+                try { v = values[i]; } catch (ignored) {}
+            }
             if (fn(v)) return true;
         }
         return false;
-    }
-    if (values.length != null) {
-        for (let i = 0; i < values.length; i++) if (fn(values[i])) return true;
     }
     return false;
 }
