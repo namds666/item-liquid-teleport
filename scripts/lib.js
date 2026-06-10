@@ -333,6 +333,11 @@ exports.buildOutputsAnyLiquid = build => {
     } catch (e) {}
     return exports.blockOutputsAnyLiquid(build.block);
 };
+const EXCLUDED_LIQUID_LINK_BLOCKS = ["liquid-router", "liquid-junction", "liquid-container"];
+exports.isValidLiquidLinkTarget = build => {
+    if (build == null) return false;
+    return EXCLUDED_LIQUID_LINK_BLOCKS.indexOf(build.block.name) < 0;
+};
 const autoConnect = (the, getLinks, lvt, filter, targetFilter) => {
     let links = getLinks();
     Groups.build.each(cons(b => {

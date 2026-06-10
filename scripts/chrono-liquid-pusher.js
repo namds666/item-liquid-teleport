@@ -105,7 +105,7 @@ blockType.buildType = prov(() => {
     const looper = (() => { let idx = 0; return { next(m) { if (idx < 0 || idx >= m) idx = m-1; let v = idx; idx--; return v; } }; })();
     function lvt(the, t) { return t && t.team == the.team; }
     function lv(the, pos) { if (pos == null || pos == -1) return false; return lvt(the, Vars.world.build(pos)); }
-    function targetFilter(t) { return selectedLiquid == null ? lib.buildConsumesAnyLiquid(t) : lib.buildConsumesLiquid(t, selectedLiquid); }
+    function targetFilter(t) { return lib.isValidLiquidLinkTarget(t) && (selectedLiquid == null ? lib.buildConsumesAnyLiquid(t) : lib.buildConsumesLiquid(t, selectedLiquid)); }
     const clearFn = () => new IntSeq();
     const scanJob = lib.makeScanJob(autoFlags, 50);
     const batchApply = lib.makeBatchApply(() => links);

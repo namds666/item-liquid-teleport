@@ -94,7 +94,7 @@ blockType.buildType = prov(() => {
     function lvt(the, t) { return t && t.liquids != null; }
     function lv(the, pos) { if (pos == null || pos == -1) return false; return lvt(the, Vars.world.build(pos)); }
     function canAccessSource(the, t) { return autoSteal || (t != null && t.team == the.team); }
-    function sourceFilterFor(the, t) { return canAccessSource(the, t) && (liquidType == null ? lib.buildOutputsAnyLiquid(t) : lib.buildOutputsLiquid(t, liquidType)); }
+    function sourceFilterFor(the, t) { return lib.isValidLiquidLinkTarget(t) && canAccessSource(the, t) && (liquidType == null ? lib.buildOutputsAnyLiquid(t) : lib.buildOutputsLiquid(t, liquidType)); }
     const clearFn = () => { let s = new IntSeq(2); s.add(liquidType == null ? -1 : liquidType.id); s.add(0); return s; };
     const scanJob = lib.makeScanJob(autoFlags, 50);
     const batchApply = lib.makeBatchApply(() => links);
