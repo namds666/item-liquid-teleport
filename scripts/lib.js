@@ -333,10 +333,34 @@ exports.buildOutputsAnyLiquid = build => {
     } catch (e) {}
     return exports.blockOutputsAnyLiquid(build.block);
 };
-const EXCLUDED_LIQUID_LINK_BLOCKS = ["liquid-router", "liquid-junction", "liquid-container"];
+// Liquid transport / pass-through blocks must not be auto-linked: the pusher/unloader
+// should connect to real producers & consumers, not relays. Class checks catch every
+// variant (vanilla + Erekir reinforced + modded subclasses); the name list is a
+// fallback for blocks that don't share one of these base classes.
+const EXCLUDED_LIQUID_LINK_NAMES = [
+    "liquid-junction", "reinforced-liquid-junction",
+    "liquid-router", "reinforced-liquid-router",
+    "liquid-container", "reinforced-liquid-container",
+    "liquid-tank", "reinforced-liquid-tank",
+    "conduit", "pulse-conduit", "plated-conduit", "reinforced-conduit",
+    "bridge-conduit", "phase-conduit", "reinforced-bridge-conduit"
+];
+const isExcludedLiquidClass = block => {
+    try {
+        // LiquidRouter covers router, container and tank (all variants)
+        if (block instanceof Packages.mindustry.world.blocks.liquid.LiquidRouter) return true;
+        if (block instanceof Packages.mindustry.world.blocks.liquid.LiquidJunction) return true;
+        // Conduit covers every pipe, incl. ArmoredConduit (plated/reinforced)
+        if (block instanceof Packages.mindustry.world.blocks.liquid.Conduit) return true;
+        // LiquidBridge covers bridge & phase conduits
+        if (block instanceof Packages.mindustry.world.blocks.liquid.LiquidBridge) return true;
+    } catch (e) {}
+    return false;
+};
 exports.isValidLiquidLinkTarget = build => {
-    if (build == null) return false;
-    return EXCLUDED_LIQUID_LINK_BLOCKS.indexOf(build.block.name) < 0;
+    if (build == null || build.block == null) return false;
+    if (isExcludedLiquidClass(build.block)) return false;
+    return EXCLUDED_LIQUID_LINK_NAMES.indexOf(build.block.name) < 0;
 };
 const autoConnect = (the, getLinks, lvt, filter, targetFilter) => {
     let links = getLinks();
