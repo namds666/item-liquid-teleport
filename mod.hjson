@@ -2,9 +2,9 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code & Codex",
-  subtitle: "v1.2.80: exclude containers/junctions/pipes from liquid auto-link",
+  subtitle: "v1.2.81: fix Chrono Mender not healing walls/containers/sorters",
   description: "Adds cheat-grade Chrono blocks for global item and liquid transport, terrain conversion, item conversion, repair, construction, overdrive, unit buffs, unit debuffs, and core placement.
-  Update: expanded documentation and metadata for the full Chrono block set.",
-  version: "1.2.80",
+  Update: fix Chrono Mender not healing walls, containers, vaults, sorters, overflow gates, and sleeping conveyors; item auto-link now also reaches those blocks.",
+  version: "1.2.81",
   minGameVersion: "146"
 }

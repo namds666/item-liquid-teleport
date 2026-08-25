@@ -362,9 +362,30 @@ exports.isValidLiquidLinkTarget = build => {
     if (isExcludedLiquidClass(build.block)) return false;
     return EXCLUDED_LIQUID_LINK_NAMES.indexOf(build.block.name) < 0;
 };
+// Groups.build holds only update=true, non-sleeping buildings; this Seq holds every one
+const teamBuildings = (team) => {
+    if (team == null || Vars.state == null) return null;
+    let td;
+    try { td = team.data(); } catch (e) { return null; }
+    return td == null ? null : td.buildings;
+};
+const eachBuilding = (fn) => {
+    if (Vars.state == null) return;
+    let present = Vars.state.teams.present;
+    if (present == null) return;
+    let pItems = present.items, pSize = present.size;
+    for (let pi = 0; pi < pSize; pi++) {
+        let td = pItems[pi];
+        if (td == null) continue;
+        let seq = td.buildings;
+        if (seq == null) continue;
+        let items = seq.items, size = seq.size;
+        for (let i = 0; i < size; i++) if (items[i] != null) fn(items[i]);
+    }
+};
 const autoConnect = (the, getLinks, lvt, filter, targetFilter) => {
     let links = getLinks();
-    Groups.build.each(cons(b => {
+    eachBuilding(b => {
         if (b == the) return;
         if (CHRONO_NAMES.indexOf(b.block.name) >= 0) return;
         if (b.getClass().getSimpleName() === "ConstructBuild") return;
@@ -373,7 +394,7 @@ const autoConnect = (the, getLinks, lvt, filter, targetFilter) => {
         if (targetFilter && !targetFilter(b)) return;
         let int = new java.lang.Integer(b.pos());
         if (!links.contains(boolf(i => i == int))) the.configure(int);
-    }));
+    });
 };
 exports.makeScanJob = (autoFlags, chunkSize) => {
     const SCAN_DELAY = 60;
@@ -453,7 +474,7 @@ exports.makeScanJob = (autoFlags, chunkSize) => {
                     return;
                 }
                 if (++delay >= SCAN_DELAY) {
-                    snapshot = []; Groups.build.each(cons(b => snapshot.push(b)));
+                    snapshot = []; eachBuilding(b => snapshot.push(b));
                     idx = 0; delay = 0;
                 }
             }
@@ -504,6 +525,8 @@ exports.loadRegion = (name) => {
     if (Vars.headless === true) return null;
     return Core.atlas.find(exports.modName + "-" + name, "error");
 };
+exports.teamBuildings = teamBuildings;
+exports.eachBuilding = eachBuilding;
 exports.enableAllEnvironments = (block) => {
     try {
         block.envEnabled = Packages.mindustry.type.Env.any;

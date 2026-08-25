@@ -61,7 +61,7 @@ A standalone Mindustry cheat mod providing compact Chrono blocks for global item
 
 ### Chrono Mender (`chrono-mender`)
 - **Category:** Effect
-- **Function:** Heals every damaged friendly building globally twice per second.
+- **Function:** Heals every damaged friendly building globally, including non-updating blocks (walls, containers, vaults, sorters, overflow gates, liquid junctions) and sleeping buildings (idle conveyors, conduits). Also heals privileged blocks. No range stat. Uses `lib.teamBuildings` to scan one team per pulse. Pulses fire every RELOAD (10) ticks. Each pulse inspects up to MAX_HEALS_PER_PULSE (512) buildings.
 - **Requirements:** None (free to place).
 - **Size:** 1x1, health 8000.
 
@@ -116,10 +116,11 @@ All four transport blocks share the same plumbing from `lib.js`:
 ### Auto-scan (`makeScanJob`)
 Returns a stateful scan job called from `updateTile` every tick. Flow:
 1. Waits 60 ticks between scans (resets if `autoFlags` change while any flag is on).
-2. On trigger: snapshots `Groups.build` into an array, sets `idx = 0`.
+2. On trigger: snapshots all buildings via `lib.eachBuilding` into an array, sets `idx = 0`.
 3. Each tick, processes `chunkSize` (50) buildings from the snapshot - checks `lvt` and category flags, accumulates `toAdd`/`toRemove` lists.
 4. At scan end: calls `batchApply(toAdd, toRemove)` to flush the final batch, then fires one `configure(config())` sync to propagate to other clients.
 5. Chrono blocks themselves are excluded via `CHRONO_NAMES` check; `ConstructBuild`s (buildings under construction) are excluded via `getSimpleName() === "ConstructBuild"` - their `.block` resolves to the real block so they pass category checks, but their `.liquids` is null, causing crashes.
+6. Because `lib.eachBuilding` iterates all buildings (not just `update=true` ones), item auto-link now reaches containers, vaults, sorters, and overflow gates. Liquid auto-link keeps its exclusions: containers, junctions, and pipes are excluded from the liquid path.
 
 ### Config serialization
 Small link snapshots serialize as the legacy `IntSeq` format. Because Mindustry save plan IO reads `IntSeq` configs with a 200-element limit, this path is capped at 95 links for seven category flags (`selected + count + 95*2 offsets + 7 flags = 199`) and 95 links for unloaders with the extra Auto Steal flag.
@@ -184,4 +185,5 @@ item-liquid-teleport/
 - Item transport/converter/item-tiler blocks extend `StorageBlock` (JavaAdapter over `StorageBlock.StorageBuild`); liquid blocks extend `Block` (plain `extend(Building, ...)`).
 - The center dot on transport and tiler blocks reuses the vanilla `"unloader-center"` sprite, tinted to the selected filter color (or dominant held liquid/item color) at render time.
 - Config serialization uses relative tile offsets (delta from block's own tile) so configs survive copy-paste and schematic placement (`pointConfig` transforms them back).
+- All building iteration in this mod must use `lib.teamBuildings(team)` (one team) or `lib.eachBuilding(fn)` (all teams). Do not use the vanilla build group directly — it holds only buildings whose block sets `update = true` and that have not called `sleep()`.
 - Save/load versioned via `version()`: unloader v6, pusher v4, liquid-unloader v5, liquid-pusher v6, liquid-tiler v2, item-tiler v2, item-converter v2, chrono-booster v1, chrono-buffer v1, chrono-debuffer v1. Older revisions are handled in `read()`.

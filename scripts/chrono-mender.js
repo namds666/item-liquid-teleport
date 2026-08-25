@@ -2,10 +2,13 @@
 const lib = require("lib");
 
 // ── Config ─────────────────────────────────────────────────────────────────
-const HEAL_PERCENT = 50;   // % of max health healed per pulse (insane)
-const RELOAD       = 10;    // ticks between pulses (0.5 s — fully heals twice/sec)
+const HEAL_PERCENT          = 50;   // % of max health healed per pulse (insane)
+const RELOAD                = 10;   // ticks between pulses (0.5 s — fully heals twice/sec)
 const MAX_EFFECTS_PER_PULSE = 24;
+const MAX_HEALS_PER_PULSE   = 512;  // buildings inspected per pulse
 const nextPulseByTeam = {};
+const nextIndexByTeam = {};
+let errored = false;
 
 function teamKey(team) {
     return team == null ? -1 : team.id;
@@ -23,16 +26,13 @@ function takeTeamPulse(team) {
 
 function maxHealthOf(b) {
     if (!b) return 0;
-    if (typeof b.maxHealth === "function") return b.maxHealth();
-    if (b.maxHealth != null) return b.maxHealth;
-    return b.block != null && b.block.health != null ? b.block.health : 0;
+    return b.maxHealth();
 }
 
-function canHealBuilding(b, team) {
-    if (!b || b.team != team) return false;
-
-    if (typeof b.damaged === "function" && !b.damaged()) return false;
-    if (typeof b.isHealSuppressed === "function" && b.isHealSuppressed()) return false;
+function canHealBuilding(b) {
+    if (!b) return false;
+    if (!b.damaged()) return false;
+    if (b.isHealSuppressed()) return false;
     return maxHealthOf(b) > 0;
 }
 
@@ -78,18 +78,38 @@ chronoMender.buildType = prov(() => extend(Building, {
         if (this.efficiency <= 0 || !takeTeamPulse(this.team)) return;
         this.charge = 0;
 
-        let effectsLeft = MAX_EFFECTS_PER_PULSE;
-        Groups.build.each(cons(b => {
-            if (!canHealBuilding(b, this.team)) return;
+        try {
+            let seq = lib.teamBuildings(this.team);
+            if (seq == null) return;
 
-            let maxHealth = maxHealthOf(b);
-            b.heal(maxHealth * HEAL_PERCENT / 100.0);
-            if (typeof b.recentlyHealed === "function") b.recentlyHealed();
+            let key   = teamKey(this.team);
+            let items = seq.items;
+            let total = seq.size;
 
-            if (effectsLeft-- > 0 && b.block != null) {
-                Fx.healBlockFull.at(b.x, b.y, b.block.size, Pal.heal, b.block);
+            let start = nextIndexByTeam[key] || 0;
+            if (start >= total) start = 0;
+            let end = Math.min(start + MAX_HEALS_PER_PULSE, total);
+
+            let effectsLeft = MAX_EFFECTS_PER_PULSE;
+            for (let i = start; i < end; i++) {
+                let b = items[i];
+                if (!canHealBuilding(b)) continue;
+
+                b.heal(b.maxHealth() * HEAL_PERCENT / 100.0);
+                b.recentlyHealed();
+
+                if (effectsLeft-- > 0 && b.block != null) {
+                    Fx.healBlockFull.at(b.x, b.y, b.block.size, Pal.heal, b.block);
+                }
             }
-        }));
+
+            nextIndexByTeam[key] = end;
+        } catch (e) {
+            if (!errored) {
+                Log.err("[item-liquid-teleport] chrono-mender sweep error: @", e);
+                errored = true;
+            }
+        }
     },
 
     draw() {
@@ -120,6 +140,13 @@ chronoMender.buildType = prov(() => extend(Building, {
         this.heat   = read.f();
         this.charge = read.f();
     }
+}));
+
+// ── World reset ───────────────────────────────────────────────────────────
+Events.on(EventType.WorldLoadEvent, cons(() => {
+    for (let k in nextPulseByTeam) delete nextPulseByTeam[k];
+    for (let k in nextIndexByTeam) delete nextIndexByTeam[k];
+    errored = false;
 }));
 
 module.exports = chronoMender;

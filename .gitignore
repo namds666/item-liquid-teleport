@@ -33,3 +33,7 @@ dist/
 out/
 *.jar
 *.zip
+
+# Local planning notes
+docs/*
+!docs/.gitkeep

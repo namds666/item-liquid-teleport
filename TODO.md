@@ -56,7 +56,7 @@ Continuous auto-scan already uses batch apply, but one-shot auto-connect still t
 
 ## 5. Cache block capability checks
 
-`buildConsumesAnyItem`, `buildOutputsAnyItem`, `buildConsumesAnyLiquid`, and `buildOutputsAnyLiquid` can loop through all content types. This is fine on small maps but can become expensive during repeated scans.
+`buildConsumesAnyItem`, `buildOutputsAnyItem`, `buildConsumesAnyLiquid`, and `buildOutputsAnyLiquid` can loop through all content types. This was tolerable when auto-link only saw `Groups.build` (updating blocks), but since v1.2.81 both auto-link and the mender scan `team.data().buildings`, which includes every building on the map. The candidate set is much larger and the per-candidate predicate cost matters more.
 
 - [ ] Add a cache for stable block-level capability checks.
 - [ ] Key the cache by block name and check type.
@@ -109,10 +109,10 @@ The repo already has an `edgeCase/` folder. Surface it better for future debuggi
 ## Suggested priority
 
 1. Fix liquid pusher rate mismatch.
-2. Normalize auto flag naming and config comments.
-3. Make dead link handling consistent.
-4. Batch one-shot auto-connect.
-5. Harden string config parsing.
-6. Cache block capability checks.
+2. Cache block capability checks.
+3. Normalize auto flag naming and config comments.
+4. Make dead link handling consistent.
+5. Batch one-shot auto-connect.
+6. Harden string config parsing.
 7. Extract shared link-state helpers.
 8. Improve edge-case documentation links.
