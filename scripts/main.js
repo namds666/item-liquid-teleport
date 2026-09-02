@@ -17,6 +17,14 @@ const optionalScripts = [
     "chrono-debuffer"
 ];
 
+let mod = Vars.mods.locateMod("item-liquid-teleport"); //Get module by name
+Log.info(Core.bundle.get("item-liquid-teleport.name"));
+if(mod != null && !Vars.headless) { //Check if the mod exists and if the game is not running in headless mode (without a graphical interface)
+  mod.meta.displayName = Core.bundle.get("item-liquid-teleport.displayName"); //Core.bundle.get retrieves the translation, then modifies the module's meta tag.
+  mod.meta.subtitle = Core.bundle.get("item-liquid-teleport.subtitle");
+  mod.meta.description = Core.bundle.get("item-liquid-teleport.description");
+};
+
 for (let i = 0; i < optionalScripts.length; i++) {
     const scriptName = optionalScripts[i];
     try {
