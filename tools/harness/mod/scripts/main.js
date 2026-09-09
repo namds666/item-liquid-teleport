@@ -86,6 +86,59 @@ function report(tag) {
     }
 }
 
+function probe(label, fn) {
+    try { log("PROBE ok   " + label + " -> " + fn()); }
+    catch (e) { log("PROBE FAIL " + label + " -> " + e); }
+}
+
+function probeApi() {
+    if (mender == null || targets.length == 0) return;
+    const t = mender.tile;
+    const core = TEAM.core();
+    const conveyor = targets[1];
+    let unit = null;
+    try { unit = UnitTypes.dagger.spawn(TEAM, mender.x, mender.y - 24); } catch (e) { log("PROBE spawn unit failed " + e); }
+    probe("Building.maxHealth()", () => mender.maxHealth());
+    probe("Building.maxHealth",   () => mender.maxHealth);
+    probe("Building.health()",    () => mender.health());
+    probe("Building.team()",      () => mender.team());
+    probe("Building.timer(0,10)", () => mender.timer(0, 10));
+    probe("Building.timer.get",   () => mender.timer.get(0, 10));
+    probe("Building.timeScale()", () => mender.timeScale());
+    probe("Building.delta()",     () => mender.delta());
+    probe("Building.dead()",      () => mender.dead());
+    probe("Tile.floor()",         () => t.floor());
+    probe("Tile.block()",         () => t.block());
+    probe("Tile.overlay()",       () => t.overlay());
+    probe("Tile.build",           () => t.build);
+    probe("ItemModule.total()",   () => core.items.total());
+    probe("ItemModule.empty()",   () => core.items.empty());
+    probe("ItemModule.any()",     () => core.items.any());
+    probe("ConveyorBuild.next()", () => conveyor.next());
+    probe("ConveyorBuild.next",   () => conveyor.next);
+    probe("Block.requirements()", () => Blocks.copperWall.requirements());
+    probe("Block.unlocked()",     () => Blocks.copperWall.unlocked());
+    probe("Floor.edge()",         () => t.floor().edge());
+    probe("Team.data()",          () => TEAM.data());
+    probe("Seq.size",             () => TEAM.data().buildings.size);
+    if (unit != null) {
+        probe("Unit.maxHealth()", () => unit.maxHealth());
+        probe("Unit.type()",      () => unit.type());
+        probe("Unit.type",        () => unit.type);
+        probe("Unit.team()",      () => unit.team());
+        probe("Unit.health()",    () => unit.health());
+        probe("Unit.dead()",      () => unit.dead());
+        probe("Unit.hitSize()",   () => unit.hitSize());
+        probe("Unit.isShooting()",() => unit.isShooting());
+        probe("Unit.hasTarget()", () => unit.hasTarget());
+        probe("Unit.shield()",    () => unit.shield());
+        probe("Unit.armor()",     () => unit.armor());
+        probe("Unit.rotation()",  () => unit.rotation());
+        probe("Unit.controller()",() => unit.controller());
+        probe("UnitType.hittable()", () => UnitTypes.dagger.hittable());
+    }
+}
+
 function verdict() {
     let healed = 0;
     for (let i = 0; i < targets.length; i++) if (!targets[i].damaged()) healed++;
@@ -98,7 +151,7 @@ Events.run(EventType.Trigger.update, run(() => {
     if (ticks < 0) return;
     ticks++;
     try {
-        if (ticks == SETUP_TICK) setup();
+        if (ticks == SETUP_TICK) { setup(); probeApi(); }
         for (let i = 0; i < CHECK_TICKS.length; i++) if (ticks == CHECK_TICKS[i]) report("t" + ticks);
         if (ticks == CHECK_TICKS[CHECK_TICKS.length - 1]) verdict();
     } catch (e) {
