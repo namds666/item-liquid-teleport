@@ -103,6 +103,16 @@ A standalone Mindustry cheat mod providing compact Chrono blocks for global item
 - **Requirements:** Same as Chrono Booster: 200 lead, 130 titanium, 130 silicon, 80 plastanium, 120 surge alloy.
 - **Size:** 1x1, health 485.
 
+### Outpost (`outpost`)
+- **Category:** Production - extends `Block` / `Building`; ships its own `UnitType` (`outpost-drone`, poly sprite, no weapons).
+- **Function:** Spawns one drone every 5 seconds (300 ticks) while below its unit cap. Drones mine the nearest floor ore of the selected item type (searched from the Outpost) and deliver to the closest core. Without a selection, with a locked ore, or with no such ore on the map, drones circle the Outpost and the block shows a red status square plus a blinking warning icon.
+- **Config:** `Item` config selects the ore (null clears). `Integer` config requests an upgrade of path 0..4; the handler removes the cost from the team core and raises the level. Only the selected item is exposed via `config()`, so schematics and copy/paste never carry upgrade levels.
+- **Upgrade paths (independent, 0-based level stored):** unit cap 5/7/9/12/15; drone speed 1.5/1.8/2.1/2.4/2.8; mine speed 0.5/1.0/1.75/2.75/4.0; carry capacity 20/30/40/55/70; mine tier 1/2/3/4 (copper, lead, sand, scrap -> coal -> titanium -> thorium).
+- **Costs:** stat paths use one shared table per step: 150 titanium + 80 silicon, 150 thorium + 120 silicon, 120 plastanium + 100 thorium, 80 phase fabric + 60 surge alloy. Mine tier: 100 titanium + 100 graphite, 200 thorium + 150 silicon, 150 plastanium + 60 phase fabric.
+- **Drone stats:** one `UnitType` with `mineTier = 4`, `mineSpeed = 0.5`, `itemCapacity = 70`; the AI applies the Outpost's live levels (custom move speed, extra `mineTimer` progress, capacity cutoff, tier gate). `useUnitCap = false`, not player or logic controllable, not counted as enemy.
+- **Persistence:** the building writes selected item, spawn progress, levels, and drone unit ids; on load it re-adopts units by id and re-attaches the AI. Drones are killed in `onRemoved()`.
+- **Requirements:** 60 copper, 70 lead, 40 graphite, 20 silicon. **Size:** 3x3, health 480. No power.
+
 ## Shared lib.js Infrastructure
 
 All four transport blocks share the same plumbing from `lib.js`:

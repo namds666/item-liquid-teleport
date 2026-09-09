@@ -3,9 +3,12 @@ const TEAM = Team.sharded;
 const ENEMY = Team.crux;
 const SETUP_TICK = 30;
 const FINAL_TICK = 330;
+const LONG_TICK = 1500;
+const RELOAD_TICK = 120;
 const TS = Vars.tilesize;
 
 let ticks = -1;
+let phase = 0;
 let claimed = [];
 let tests = [];
 
@@ -77,14 +80,15 @@ function ringTiles(cx, cy, radius) {
     return out;
 }
 
-function test(name, w, h, setup, check, poll) {
-    tests.push({ name: name, w: w, h: h, setup: setup, check: check, poll: poll, state: {}, area: null, error: null });
+function test(name, w, h, setup, check, poll, opts) {
+    opts = opts || {};
+    tests.push({ name: name, w: w, h: h, setup: setup, check: check, poll: poll, reload: opts.reload, long: !!opts.long, state: {}, area: null, error: null });
 }
 
 function pollAll() {
     for (let i = 0; i < tests.length; i++) {
         let t = tests[i];
-        if (t.error != null || !t.poll) continue;
+        if (t.error != null || !t.poll || ticks >= (t.long ? LONG_TICK : FINAL_TICK)) continue;
         try { t.poll(t.area, t.state); } catch (e) { log("poll " + t.name + " ERROR " + e); }
     }
 }
@@ -312,6 +316,63 @@ test("core", 1, 1, (a, s) => {
     return { pass: now == s.before + 1 && s.core.isValid(), info: "cores " + s.before + "->" + now };
 });
 
+// ── Long tests: checked at LONG_TICK, then again after save/stop/load ────
+
+function drones() {
+    let out = { alive: 0, mining: 0, carried: 0 };
+    Groups.unit.each(cons(u => {
+        if (u.type.name != "item-liquid-teleport-outpost-drone" || u.team != TEAM || u.dead) return;
+        out.alive++;
+        out.carried += u.stack.amount;
+        if (u.mineTile != null) out.mining++;
+    }));
+    return out;
+}
+
+test("outpost", 5, 5, (a, s) => {
+    s.outpost = place(modBlock("outpost"), a.x + 2, a.y + 2);
+    const core = TEAM.core();
+    core.items.add(Items.titanium, 500);
+    core.items.add(Items.silicon, 500);
+    core.items.add(Items.thorium, 500);
+    core.items.add(Items.graphite, 500);
+    s.copper0 = core.items.get(Items.copper);
+    s.ti0 = core.items.get(Items.titanium);
+    s.th0 = core.items.get(Items.thorium);
+    s.outpost.configured(null, Items.copper);
+    s.outpost.configured(null, jint(0));
+    s.outpost.configured(null, jint(2));
+    s.outpost.configured(null, jint(2));
+    s.outpost.configured(null, jint(4));
+    s.pos = s.outpost.pos();
+    s.levels = () => [0, 1, 2, 3, 4].map(p => s.outpost.levelOf(p)).join(",");
+    log("outpost hasCopperOre=" + Vars.indexer.hasOre(Items.copper) + " levels=" + s.levels() + " cap=" + s.outpost.unitCap()
+        + " titanium=" + s.ti0 + "->" + core.items.get(Items.titanium) + " thorium=" + s.th0 + "->" + core.items.get(Items.thorium));
+}, (a, s) => {
+    const core = TEAM.core(), d = drones();
+    const delivered = core.items.get(Items.copper) - s.copper0;
+    const spawned = s.outpost.unitCount() >= 4 && s.outpost.unitCount() == d.alive;
+    const upgraded = s.levels() == "1,0,2,0,1" && s.outpost.unitCap() == 7
+        && core.items.get(Items.titanium) == s.ti0 - 400 && core.items.get(Items.thorium) == s.th0 - 150;
+    s.units = s.outpost.unitCount();
+    return { pass: spawned && upgraded && delivered > 0,
+             info: "units=" + s.units + "/" + s.outpost.unitCap() + " drones=" + d.alive + " mining=" + d.mining + " carried=" + d.carried
+                + " delivered=" + delivered + " levels=" + s.levels() + " upgraded=" + upgraded };
+}, (a, s) => {
+    if (ticks % 300 == 0) { let d = drones(); log("outpost t" + ticks + " units=" + s.outpost.unitCount() + " mining=" + d.mining + " carried=" + d.carried + " delivered=" + (TEAM.core().items.get(Items.copper) - s.copper0)); }
+}, { long: true, reload: (s) => {
+    const build = Vars.world.build(s.pos);
+    if (build == null || build.block.name != "item-liquid-teleport-outpost") return [{ name: "reload", pass: false, info: "build=" + build }];
+    const d = drones();
+    const levelsOk = [0, 1, 2, 3, 4].map(p => build.levelOf(p)).join(",") == "1,0,2,0,1" && build.selectedItem() == Items.copper;
+    const adopted = build.unitCount() == s.units && d.alive == s.units;
+    const reload = { name: "reload", pass: levelsOk && adopted && d.mining > 0,
+        info: "levelsOk=" + levelsOk + " units=" + build.unitCount() + "/" + s.units + " drones=" + d.alive + " mining=" + d.mining };
+    build.tile.remove();
+    const after = drones();
+    return [reload, { name: "remove", pass: after.alive == 0, info: "dronesAlive=" + after.alive }];
+} });
+
 // ── Driver ──────────────────────────────────────────────────────────────
 
 function setupAll() {
@@ -330,30 +391,60 @@ function setupAll() {
     }
 }
 
-function checkAll() {
-    let passed = 0;
+function runCheck(t) {
+    if (t.error != null) return { pass: false, info: "setup error: " + t.error };
+    try { return t.check(t.area, t.state); }
+    catch (e) { return { pass: false, info: "check error: " + e }; }
+}
+
+function checkAll(long, label) {
+    let passed = 0, total = 0;
     for (let i = 0; i < tests.length; i++) {
-        let t = tests[i], r;
-        if (t.error != null) r = { pass: false, info: "setup error: " + t.error };
-        else {
-            try { r = t.check(t.area, t.state); }
-            catch (e) { r = { pass: false, info: "check error: " + e }; }
-        }
+        let t = tests[i];
+        if (t.long != long) continue;
+        let r = runCheck(t);
+        total++;
         if (r.pass) passed++;
         log("TEST " + t.name + " " + (r.pass ? "PASS" : "FAIL") + " " + r.info);
     }
-    log("RESULT " + (passed == tests.length ? "PASS" : "FAIL") + " " + passed + "/" + tests.length);
+    log(label + " " + (passed == total ? "PASS" : "FAIL") + " " + passed + "/" + total);
 }
 
-Events.on(EventType.WorldLoadEvent, cons(() => { ticks = 0; claimed = []; log("world loaded " + Vars.state.map.name()); }));
+function reloadAll() {
+    let passed = 0, total = 0;
+    for (let i = 0; i < tests.length; i++) {
+        let t = tests[i];
+        if (!t.reload) continue;
+        let results;
+        if (t.error != null) results = [{ name: "reload", pass: false, info: "setup error: " + t.error }];
+        else {
+            try { results = t.reload(t.state); }
+            catch (e) { results = [{ name: "reload", pass: false, info: "reload error: " + e }]; }
+        }
+        for (let j = 0; j < results.length; j++) {
+            total++;
+            if (results[j].pass) passed++;
+            log("TEST " + t.name + "-" + results[j].name + " " + (results[j].pass ? "PASS" : "FAIL") + " " + results[j].info);
+        }
+    }
+    log("RESULT-RELOAD " + (passed == total ? "PASS" : "FAIL") + " " + passed + "/" + total);
+}
+
+Events.on(EventType.WorldLoadEvent, cons(() => { phase++; ticks = 0; claimed = []; log("world loaded " + Vars.state.map.name() + " phase=" + phase); }));
 
 Events.run(EventType.Trigger.update, run(() => {
     if (ticks < 0) return;
     ticks++;
     try {
+        if (phase == 2) {
+            if (ticks == RELOAD_TICK) reloadAll();
+            return;
+        }
+        if (phase != 1) return;
         if (ticks == SETUP_TICK) setupAll();
-        if (ticks > SETUP_TICK && ticks < FINAL_TICK && ticks % 15 == 0) pollAll();
-        if (ticks == FINAL_TICK) checkAll();
+        if (ticks > SETUP_TICK && ticks < LONG_TICK && ticks % 15 == 0) pollAll();
+        if (ticks == FINAL_TICK) checkAll(false, "RESULT");
+        if (ticks == LONG_TICK) checkAll(true, "RESULT-LONG");
     } catch (e) {
         log("ERROR " + e);
         if (e.javaException) e.javaException.printStackTrace();

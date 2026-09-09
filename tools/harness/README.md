@@ -11,13 +11,21 @@ point, build tower (rebuilds a destroyed wall), booster, buffer, debuffer,
 core. `api-types` is informational: it prints how Rhino resolves
 field-vs-method names on each Building subclass.
 
-Add a test with `test(name, w, h, setup, check, poll?)` in
+`outpost` is a long test: it is checked at tick 1500 (`RESULT-LONG`) because
+drones spawn every 300 ticks and copper must reach the core. After that the
+runner saves, stops, and reloads the save; tests with a `reload` callback run
+again in the reloaded world (`RESULT-RELOAD`): the Outpost must keep its
+levels and re-adopt its drones, and removing it must kill them.
+
+Add a test with `test(name, w, h, setup, check, poll?, opts?)` in
 `mod/scripts/main.js`; the harness claims a free `w`x`h` area near the core
 and passes its origin to the callbacks. `poll` runs every 15 ticks for
-values that do not survive until the final check.
+values that do not survive until the final check. `opts.long` moves the check
+to tick 1500; `opts.reload(state)` returns `[{name, pass, info}]` after the
+save/load round trip.
 
 ```bash
-tools/harness/run.sh          # ~30 s, prints [HARNESS] lines and RESULT PASS/FAIL
+tools/harness/run.sh          # ~2 min, prints [HARNESS] lines and RESULT / RESULT-LONG / RESULT-RELOAD
 ```
 
 Setup (one time): download `server-release.jar` for the game build you target

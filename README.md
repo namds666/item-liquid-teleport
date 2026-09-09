@@ -20,6 +20,7 @@ This mod started from the teleporter item logic in [abomb4/super-cheat](https://
 - **Chrono Booster**: a 1x1 overdrive dome variant with resource-based range and speed boosts.
 - **Chrono Buffer**: applies allied unit buffs in range, with extra resources unlocking additional custom statuses.
 - **Chrono Debuffer**: applies stacked negative statuses to enemy units in range.
+- **Outpost**: a 3x3 vanilla-balanced drone base. Builds one flying mining drone every 5 seconds up to its cap, drones mine the selected ore and deliver it to the core. Five independent upgrade paths (unit cap, drone speed, mine speed, carry capacity, mine tier) are paid with items from the core.
 
 ## Transport Features
 
@@ -31,4 +32,4 @@ This mod started from the teleporter item logic in [abomb4/super-cheat](https://
 
 ## Notes
 
-All Chrono blocks are intentionally cheat-grade. Most are free or near-free to place, and several bypass normal range limitations.
+All Chrono blocks are intentionally cheat-grade. The Outpost is the exception and is balanced against vanilla mono/poly mining. Most are free or near-free to place, and several bypass normal range limitations.

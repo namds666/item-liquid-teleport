@@ -2,9 +2,9 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code & Codex",
-  subtitle: "v1.2.83: fix Chrono Mender not healing on v8 (build 147+)",
-  description: "Adds cheat-grade Chrono blocks for global item and liquid transport, terrain conversion, item conversion, repair, construction, overdrive, unit buffs, unit debuffs, and core placement.
-  Update: Chrono Mender healed nothing on game v8 because maxHealth became a field; fixed and verified in a headless test.",
-  version: "1.2.83",
+  subtitle: "v1.3.0: add Outpost, a drone mining base with five upgrade paths",
+  description: "Adds cheat-grade Chrono blocks for global item and liquid transport, terrain conversion, item conversion, repair, construction, overdrive, unit buffs, unit debuffs, and core placement, plus the Outpost drone mining base.
+  Update: new Outpost block builds flying mining drones that deliver a selected ore to the core; upgrade unit cap, speed, mine speed, carry capacity, and mine tier with items from the core.",
+  version: "1.3.0",
   minGameVersion: "146"
 }

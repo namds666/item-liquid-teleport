@@ -32,10 +32,11 @@ function upgradeCost(path, level) {
     return level < table.length && level < PATHS[path].values.length - 1 ? table[level] : null;
 }
 
-function bundle(key, args) {
+function bundle(key, a, b) {
     let full = "outpost." + key;
     if (!Core.bundle.has(full)) return key;
-    return args == null ? Core.bundle.get(full) : Core.bundle.format(full, args);
+    if (a === undefined) return Core.bundle.get(full);
+    return b === undefined ? Core.bundle.format(full, a) : Core.bundle.format(full, a, b);
 }
 
 let oreCache = null;
@@ -176,7 +177,7 @@ const blockType = extend(Block, "outpost", {
     setBars() {
         this.super$setBars();
         this.addBar("units", lib.func(e => new Bar(
-            prov(() => bundle("bar.units", [e.unitCount(), e.unitCap()])),
+            prov(() => bundle("bar.units", e.unitCount(), e.unitCap())),
             prov(() => Pal.power),
             floatp(() => e.unitCount() / e.unitCap())
         )));
@@ -305,6 +306,7 @@ blockType.buildType = prov(() => {
 
         draw() {
             this.super$draw();
+            this.drawStatus();
             if (item == null) return;
             Draw.z(Layer.block + 0.1);
             Draw.rect(item.fullIcon, this.x, this.y, 6, 6);
@@ -337,8 +339,8 @@ blockType.buildType = prov(() => {
 
             function valueText(path) {
                 let value = PATHS[path].values[levels[path]];
-                if (path == PATH_TIER) return bundle("value.tier", [value]);
-                return bundle("value." + PATHS[path].key, [Strings.autoFixed(value, 2)]);
+                if (path == PATH_TIER) return bundle("value.tier", value);
+                return bundle("value." + PATHS[path].key, Strings.autoFixed(value, 2));
             }
 
             function rebuild() {
@@ -355,7 +357,7 @@ blockType.buildType = prov(() => {
                             build.configure(item == ore ? null : ore);
                         }));
                         cell.size(40).checked(boolf(b => item == ore));
-                        cell.tooltip(locked ? bundle("locked", [ore.localizedName, ore.hardness]) : ore.localizedName);
+                        cell.tooltip(locked ? bundle("locked", ore.localizedName, ore.hardness) : ore.localizedName);
                         if (locked) cell.get().getImage().setColor(Color.darkGray);
                         if (i % 6 == 5) t.row();
                     }
