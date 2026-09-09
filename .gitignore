@@ -37,3 +37,6 @@ out/
 # Local planning notes
 docs/*
 !docs/.gitkeep
+
+# Local headless test server
+tools/server/

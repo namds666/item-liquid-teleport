@@ -1,0 +1,10 @@
+{
+  name: "ilt-debug-harness",
+  displayName: "ILT Debug Harness",
+  author: "namds666",
+  description: "Headless test harness for item-liquid-teleport. Not for players.",
+  version: "0.1",
+  minGameVersion: "146",
+  hidden: true,
+  dependencies: ["item-liquid-teleport"]
+}

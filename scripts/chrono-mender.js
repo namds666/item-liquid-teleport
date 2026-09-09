@@ -7,8 +7,9 @@ const RELOAD                = 10;   // ticks between pulses (0.5 s — fully hea
 const MAX_EFFECTS_PER_PULSE = 24;
 const MAX_HEALS_PER_PULSE   = 512;  // buildings inspected per pulse
 const nextPulseByTeam = {};
+const MAX_ERROR_LOGS        = 20;
 const nextIndexByTeam = {};
-let errored = false;
+let errorsLogged = 0;
 
 function teamKey(team) {
     return team == null ? -1 : team.id;
@@ -24,9 +25,12 @@ function takeTeamPulse(team) {
     return true;
 }
 
+// v146 exposes maxHealth() as a method; v8 (build 147+) exposes it as a field,
+// and Rhino resolves the field first, so calling it throws.
 function maxHealthOf(b) {
     if (!b) return 0;
-    return b.maxHealth();
+    if (typeof b.maxHealth === "function") return b.maxHealth();
+    return b.maxHealth != null ? b.maxHealth : 0;
 }
 
 function canHealBuilding(b) {
@@ -93,21 +97,28 @@ chronoMender.buildType = prov(() => extend(Building, {
             let effectsLeft = MAX_EFFECTS_PER_PULSE;
             for (let i = start; i < end; i++) {
                 let b = items[i];
-                if (!canHealBuilding(b)) continue;
+                try {
+                    if (!canHealBuilding(b)) continue;
 
-                b.heal(b.maxHealth() * HEAL_PERCENT / 100.0);
-                b.recentlyHealed();
+                    b.heal(maxHealthOf(b) * HEAL_PERCENT / 100.0);
+                    b.recentlyHealed();
 
-                if (effectsLeft-- > 0 && b.block != null) {
-                    Fx.healBlockFull.at(b.x, b.y, b.block.size, Pal.heal, b.block);
+                    if (effectsLeft-- > 0 && b.block != null) {
+                        Fx.healBlockFull.at(b.x, b.y, b.block.size, Pal.heal, b.block);
+                    }
+                } catch (e) {
+                    if (errorsLogged < MAX_ERROR_LOGS) {
+                        errorsLogged++;
+                        Log.err("[item-liquid-teleport] chrono-mender failed on @: @", b != null && b.block != null ? b.block.name : b, e);
+                    }
                 }
             }
 
             nextIndexByTeam[key] = end;
         } catch (e) {
-            if (!errored) {
+            if (errorsLogged < MAX_ERROR_LOGS) {
+                errorsLogged++;
                 Log.err("[item-liquid-teleport] chrono-mender sweep error: @", e);
-                errored = true;
             }
         }
     },
@@ -146,7 +157,7 @@ chronoMender.buildType = prov(() => extend(Building, {
 Events.on(EventType.WorldLoadEvent, cons(() => {
     for (let k in nextPulseByTeam) delete nextPulseByTeam[k];
     for (let k in nextIndexByTeam) delete nextIndexByTeam[k];
-    errored = false;
+    errorsLogged = 0;
 }));
 
 module.exports = chronoMender;
