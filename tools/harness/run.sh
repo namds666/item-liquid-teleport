@@ -17,4 +17,4 @@ rsync -a --delete --exclude tools --exclude .git --exclude .codegraph --exclude 
 rsync -a --delete "$ROOT/tools/harness/mod/" "$MODS/ilt-debug-harness/"
 cd "$SRV"
 ( sleep 3; echo "host Glacier survival"; sleep "$WAIT"; echo "exit" ) | "$JAVA" -jar server-release.jar > harness.log 2>&1 || true
-sed "s/\x1b\[[0-9;]*m//g" harness.log | grep -E "HARNESS|chrono-mender|item-liquid-teleport|Exception|\[E\]" || { echo "no harness output; tail of log:"; tail -40 harness.log; }
+sed "s/\x1b\[[0-9;]*m//g" harness.log | grep -E "HARNESS|item-liquid-teleport|Exception|\[E\]" || { echo "no harness output; tail of log:"; tail -40 harness.log; }
