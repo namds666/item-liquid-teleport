@@ -2,9 +2,9 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code & Codex",
-  subtitle: "v1.2.81: fix Chrono Mender not healing walls/containers/sorters",
+  subtitle: "v1.2.82: Chinese mod page text (thanks redloong9527)",
   description: "Adds cheat-grade Chrono blocks for global item and liquid transport, terrain conversion, item conversion, repair, construction, overdrive, unit buffs, unit debuffs, and core placement.
-  Update: fix Chrono Mender not healing walls, containers, vaults, sorters, overflow gates, and sleeping conveyors; item auto-link now also reaches those blocks.",
-  version: "1.2.81",
+  Update: mod name, subtitle and description now follow the game language; Chinese translation added for Item Converter, Liquid Tiler and Item Tiler.",
+  version: "1.2.82",
   minGameVersion: "146"
 }
