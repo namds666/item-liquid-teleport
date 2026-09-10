@@ -1,7 +1,12 @@
 #!/bin/bash
-# Refuse commits that would ship a block or unit locked out of campaign.
+# Refuse commits that would ship a block or unit locked out of campaign,
+# or a string that is not translated in every Mindustry language.
 root=$(git rev-parse --show-toplevel)
 node "$root/tools/check-campaign.js" "$root" --quiet || {
   echo "pre-commit: campaign availability check failed. Fix scripts/*.js (see above) or run: node tools/check-campaign.js" >&2
+  exit 1
+}
+node "$root/tools/check-localize.js" "$root" --quiet || {
+  echo "pre-commit: localization check failed. Fix bundles/*.properties (see above) or run: node tools/check-localize.js" >&2
   exit 1
 }
