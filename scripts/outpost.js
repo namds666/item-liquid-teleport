@@ -77,6 +77,7 @@ droneType.playerControllable = false;
 droneType.logicControllable = false;
 droneType.isEnemy = false;
 droneType.buildSpeed = 0;
+droneType.alwaysUnlocked = true;
 lib.enableAllEnvironments(droneType);
 
 function makeDroneAI(initialOutpost) {
@@ -190,6 +191,7 @@ const blockType = extend(Block, "outpost", {
 });
 
 blockType.buildVisibility = BuildVisibility.shown;
+blockType.alwaysUnlocked = true;
 blockType.category = Category.production;
 blockType.size = 3;
 blockType.health = 480;

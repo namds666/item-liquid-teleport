@@ -1,0 +1,7 @@
+#!/bin/bash
+# Refuse commits that would ship a block or unit locked out of campaign.
+root=$(git rev-parse --show-toplevel)
+node "$root/tools/check-campaign.js" "$root" --quiet || {
+  echo "pre-commit: campaign availability check failed. Fix scripts/*.js (see above) or run: node tools/check-campaign.js" >&2
+  exit 1
+}

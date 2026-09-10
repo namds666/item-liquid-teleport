@@ -18,6 +18,7 @@ blockType.size            = 1;
 blockType.health          = 500;
 blockType.unitType        = UnitTypes.gamma;
 blockType.requirements    = ItemStack.with(Items.copper, 1000, Items.lead, 1000);
+lib.enableAllEnvironments(blockType);
 
 blockType.buildType = prov(() => new JavaAdapter(CoreBlock.CoreBuild, {}, blockType));
 

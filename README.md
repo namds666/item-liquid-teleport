@@ -30,6 +30,10 @@ This mod started from the teleporter item logic in [abomb4/super-cheat](https://
 - Save, copy/paste, rebuild plan, and schematic support for large link lists.
 - Dead links can resume automatically after a linked building is rebuilt.
 
+## Development
+
+Every block and unit must stay available in campaign without research. `node tools/check-campaign.js` verifies this; `.githooks/pre-commit` runs it on every commit (enable once with `git config core.hooksPath .githooks`).
+
 ## Notes
 
 All Chrono blocks are intentionally cheat-grade. The Outpost is the exception and is balanced against vanilla mono/poly mining. Most are free or near-free to place, and several bypass normal range limitations.
