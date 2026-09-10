@@ -348,6 +348,8 @@ blockType.buildType = prov(() => {
             function rebuild() {
                 snapshot = state();
                 table.clearChildren();
+                table.background(Styles.black6);
+                table.margin(8);
                 table.table(cons(t => {
                     t.add(bundle("ore")).left().colspan(6).row();
                     let ores = oreItems();
@@ -365,14 +367,18 @@ blockType.buildType = prov(() => {
                     }
                 })).left().row();
                 table.table(cons(t => {
+                    t.defaults().padTop(3).padBottom(3);
                     for (let p = 0; p < PATHS.length; p++) {
                         let path = p;
-                        t.add(bundle("path." + PATHS[path].key)).left().padRight(6);
-                        t.label(prov(() => (levels[path] + 1) + "/" + PATHS[path].values.length + "  " + valueText(path))).left().padRight(8).minWidth(110);
-                        t.table(cons(c => costTable(c, path))).left().padRight(6);
-                        t.button(bundle("upgrade"), run(() => build.configure(lib.int(path))))
-                            .size(90, 36).disabled(boolf(b => !self.canUpgrade(path)));
-                        t.row();
+                        t.table(Styles.black3, cons(row => {
+                            row.margin(4).left();
+                            row.add(bundle("path." + PATHS[path].key)).left().minWidth(120).padRight(6);
+                            row.label(prov(() => (levels[path] + 1) + "/" + PATHS[path].values.length + "  " + valueText(path))).left().minWidth(130).padRight(8);
+                            row.table(cons(c => costTable(c, path))).left().minWidth(120).padRight(6);
+                            let btn = row.button(bundle("upgrade"), run(() => build.configure(lib.int(path))))
+                                .minWidth(120).height(40).disabled(boolf(b => !self.canUpgrade(path)));
+                            btn.get().getLabel().setWrap(false);
+                        })).growX().row();
                     }
                 })).left().row();
             }
