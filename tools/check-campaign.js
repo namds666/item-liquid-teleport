@@ -13,17 +13,23 @@ const SKIP = new Set(["lib.js", "main.js", "chrono-boost-rules.js"]);
 const mainSrc = fs.readFileSync(path.join(scriptsDir, "main.js"), "utf8");
 const registered = new Set([...mainSrc.matchAll(/"([\w-]+)"/g)].map(m => m[1]));
 
+const allSrc = fs.readdirSync(scriptsDir).filter(f => f.endsWith(".js")).map(f => fs.readFileSync(path.join(scriptsDir, f), "utf8")).join("\n");
+const factoryConfigs = [...allSrc.matchAll(/create\(\s*\{([\s\S]*?)\n\}\);/g)].map(m => m[1]);
+const factoryNames = field => factoryConfigs.map(c => (c.match(new RegExp(String.raw`\b${field}\s*:\s*"([^"]+)"`)) || [])[1]).filter(Boolean);
+
 const violations = [];
 const seen = [];
 
 for (const file of fs.readdirSync(scriptsDir).filter(f => f.endsWith(".js") && !SKIP.has(f)).sort()) {
     const src = fs.readFileSync(path.join(scriptsDir, file), "utf8");
     const base = file.replace(/\.js$/, "");
-    const decls = [...src.matchAll(/(?:const|let|var)\s+(\w+)\s*=\s*extend(?:Content)?\(\s*([\w.]+)\s*,\s*"([^"]+)"/g)];
-    if (decls.length === 0) continue;
+    const decls = [...src.matchAll(/(?:const|let|var)\s+(\w+)\s*=\s*extend(?:Content)?\(\s*([\w.]+)\s*,\s*("[^"]+"|cfg\.\w+)/g)];
+    const factoryCall = /\.create\(\s*\{/.test(src) || /^create\(\s*\{/m.test(src);
+    if (decls.length === 0 && !factoryCall) continue;
     if (!registered.has(base)) violations.push(`${file}: not listed in scripts/main.js optionalScripts, so the game never loads it`);
 
-    for (const [, v, cls, name] of decls) {
+    for (const [, v, cls, rawName] of decls) {
+        const name = rawName.startsWith('"') ? rawName.slice(1, -1) : `${rawName} (${factoryNames(rawName.slice(4)).join(", ") || "no create() config found"})`;
         const has = re => new RegExp(re.replace(/VAR/g, v)).test(src);
         if (cls === "StatusEffect") { seen.push(`${name} (status)`); continue; }
         const kind = cls === "UnitType" ? "unit" : "block";

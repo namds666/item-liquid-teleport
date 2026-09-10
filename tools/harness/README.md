@@ -11,7 +11,7 @@ point, build tower (rebuilds a destroyed wall), booster, buffer, debuffer,
 core. `api-types` is informational: it prints how Rhino resolves
 field-vs-method names on each Building subclass.
 
-`outpost` is a long test: it is checked at tick 1500 (`RESULT-LONG`) because
+`outpost` and `outpost-small` are long tests: they are checked at tick 1500 (`RESULT-LONG`) because
 drones spawn every 300 ticks and copper must reach the core. After that the
 runner saves, stops, and reloads the save; tests with a `reload` callback run
 again in the reloaded world (`RESULT-RELOAD`): the Outpost must keep its

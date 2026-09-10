@@ -15,7 +15,8 @@ const optionalScripts = [
     "chrono-booster",
     "chrono-buffer",
     "chrono-debuffer",
-    "outpost"
+    "outpost",
+    "outpost-small"
 ];
 
 const mod = Vars.mods.locateMod("item-liquid-teleport");

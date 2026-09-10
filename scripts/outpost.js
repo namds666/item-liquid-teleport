@@ -5,32 +5,9 @@ const SPAWN_TIME = 300;
 const CIRCLE_RADIUS = 3 * TILE;
 const DROP_RANGE = 40;
 const ORE_REFIND = 60;
-const MAX_TIER = 4;
 
 const PATH_CAP = 0, PATH_SPEED = 1, PATH_MINE = 2, PATH_CAPACITY = 3, PATH_TIER = 4;
-const PATHS = [
-    { key: "cap",      values: [5, 7, 9, 12, 15] },
-    { key: "speed",    values: [1.5, 1.8, 2.1, 2.4, 2.8] },
-    { key: "mine",     values: [0.5, 1.0, 1.75, 2.75, 4.0] },
-    { key: "capacity", values: [20, 30, 40, 55, 70] },
-    { key: "tier",     values: [1, 2, 3, 4] },
-];
-const STAT_COSTS = [
-    ItemStack.with(Items.titanium, 150, Items.silicon, 80),
-    ItemStack.with(Items.thorium, 150, Items.silicon, 120),
-    ItemStack.with(Items.plastanium, 120, Items.thorium, 100),
-    ItemStack.with(Items.phaseFabric, 80, Items.surgeAlloy, 60),
-];
-const TIER_COSTS = [
-    ItemStack.with(Items.titanium, 100, Items.graphite, 100),
-    ItemStack.with(Items.thorium, 200, Items.silicon, 150),
-    ItemStack.with(Items.plastanium, 150, Items.phaseFabric, 60),
-];
-
-function upgradeCost(path, level) {
-    let table = path == PATH_TIER ? TIER_COSTS : STAT_COSTS;
-    return level < table.length && level < PATHS[path].values.length - 1 ? table[level] : null;
-}
+const PATH_KEYS = ["cap", "speed", "mine", "capacity", "tier"];
 
 function bundle(key, a, b) {
     let full = "outpost." + key;
@@ -39,24 +16,33 @@ function bundle(key, a, b) {
     return b === undefined ? Core.bundle.format(full, a) : Core.bundle.format(full, a, b);
 }
 
-let oreCache = null;
-function oreItems() {
-    if (oreCache != null) return oreCache;
+const oreCaches = {};
+function oreItems(maxTier) {
+    if (oreCaches[maxTier] != null) return oreCaches[maxTier];
     let seen = {};
     let out = [];
     Vars.content.blocks().each(cons(b => {
         if (!(b instanceof Floor) || b.wallOre || b.itemDrop == null) return;
         let item = b.itemDrop;
-        if (item.hardness > MAX_TIER || seen[item.id]) return;
+        if (item.hardness > maxTier || seen[item.id]) return;
         seen[item.id] = true;
         out.push(item);
     }));
     out.sort((a, b) => a.hardness != b.hardness ? a.hardness - b.hardness : a.id - b.id);
-    oreCache = out;
+    oreCaches[maxTier] = out;
     return out;
 }
 
-const droneType = extend(UnitType, "outpost-drone", {});
+function create(cfg) {
+const PATHS = PATH_KEYS.map((key, i) => ({ key: key, values: cfg.paths[i] }));
+const MAX_TIER = PATHS[PATH_TIER].values[PATHS[PATH_TIER].values.length - 1];
+
+function upgradeCost(path, level) {
+    let table = path == PATH_TIER ? cfg.tierCosts : cfg.statCosts;
+    return level < table.length && level < PATHS[path].values.length - 1 ? table[level] : null;
+}
+
+const droneType = extend(UnitType, cfg.unitName, {});
 droneType.constructor = prov(() => UnitEntity.create());
 droneType.flying = true;
 droneType.lowAltitude = true;
@@ -64,9 +50,9 @@ droneType.drag = 0.05;
 droneType.accel = 0.08;
 droneType.speed = PATHS[PATH_SPEED].values[0];
 droneType.rotateSpeed = 15;
-droneType.health = 400;
-droneType.hitSize = 9;
-droneType.engineOffset = 6.5;
+droneType.health = cfg.unitHealth;
+droneType.hitSize = cfg.hitSize;
+droneType.engineOffset = cfg.engineOffset;
 droneType.mineTier = MAX_TIER;
 droneType.mineSpeed = PATHS[PATH_MINE].values[0];
 droneType.itemCapacity = PATHS[PATH_CAPACITY].values[PATHS[PATH_CAPACITY].values.length - 1];
@@ -163,10 +149,10 @@ function makeDroneAI(initialOutpost) {
 droneType.aiController = prov(() => makeDroneAI(null));
 droneType.controller = lib.func(u => makeDroneAI(null));
 
-const blockType = extend(Block, "outpost", {
+const blockType = extend(Block, cfg.name, {
     load() {
         this.super$load();
-        this.region = lib.loadRegion("outpost");
+        this.region = lib.loadRegion(cfg.name);
     },
 
     setStats() {
@@ -193,12 +179,12 @@ const blockType = extend(Block, "outpost", {
 blockType.buildVisibility = BuildVisibility.shown;
 blockType.alwaysUnlocked = true;
 blockType.category = Category.production;
-blockType.size = 3;
-blockType.health = 480;
+blockType.size = cfg.size;
+blockType.health = cfg.health;
 blockType.update = true;
 blockType.solid = true;
 blockType.configurable = true;
-blockType.requirements = ItemStack.with(Items.copper, 60, Items.lead, 70, Items.graphite, 40, Items.silicon, 20);
+blockType.requirements = cfg.requirements;
 lib.enableAllEnvironments(blockType);
 
 blockType.config(Item, lib.cons2((build, item) => build.setSelectedItem(item)));
@@ -352,7 +338,7 @@ blockType.buildType = prov(() => {
                 table.margin(8);
                 table.table(cons(t => {
                     t.add(bundle("ore")).left().colspan(6).row();
-                    let ores = oreItems();
+                    let ores = oreItems(MAX_TIER);
                     for (let i = 0; i < ores.length; i++) {
                         let ore = ores[i];
                         let locked = ore.hardness > self.mineTier();
@@ -420,4 +406,36 @@ blockType.buildType = prov(() => {
     });
 });
 
-module.exports = blockType;
+return blockType;
+}
+
+exports.create = create;
+
+create({
+    name: "outpost",
+    unitName: "outpost-drone",
+    size: 3,
+    health: 480,
+    requirements: ItemStack.with(Items.copper, 60, Items.lead, 70, Items.graphite, 40, Items.silicon, 20),
+    unitHealth: 400,
+    hitSize: 9,
+    engineOffset: 6.5,
+    paths: [
+        [5, 7, 9, 12, 15],
+        [1.5, 1.8, 2.1, 2.4, 2.8],
+        [0.5, 1.0, 1.75, 2.75, 4.0],
+        [20, 30, 40, 55, 70],
+        [1, 2, 3, 4],
+    ],
+    statCosts: [
+        ItemStack.with(Items.titanium, 150, Items.silicon, 80),
+        ItemStack.with(Items.thorium, 150, Items.silicon, 120),
+        ItemStack.with(Items.plastanium, 120, Items.thorium, 100),
+        ItemStack.with(Items.phaseFabric, 80, Items.surgeAlloy, 60),
+    ],
+    tierCosts: [
+        ItemStack.with(Items.titanium, 100, Items.graphite, 100),
+        ItemStack.with(Items.thorium, 200, Items.silicon, 150),
+        ItemStack.with(Items.plastanium, 150, Items.phaseFabric, 60),
+    ],
+});
