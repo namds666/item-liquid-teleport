@@ -13,6 +13,10 @@ Every block and unit this mod defines must be usable in the normal campaign with
 
 Sandbox availability is not evidence. The pre-commit hook and the Claude Code Stop hook block on failure.
 
+## Non-negotiable: version bump on every push
+
+Every push must raise `version` in `mod.hjson` (bump the last digit, e.g. 1.3.2 -> 1.3.3), update its `subtitle`, and mirror subtitle/description into `bundles/bundle_zh_CN.properties`. The pre-push hook refuses a push whose version is not above the remote branch.
+
 ## Setup after clone
 
 ```bash

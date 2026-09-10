@@ -316,12 +316,13 @@ blockType.buildType = prov(() => {
                 c.clearChildren();
                 let cost = self.upgradeCost(path);
                 if (cost == null) { c.add(bundle("maxed")).color(Pal.accent); return; }
-                let core = self.team.core();
                 for (let i = 0; i < cost.length; i++) {
                     let stack = cost[i];
-                    let has = core != null && core.items.has(stack.item, stack.amount);
                     c.image(stack.item.uiIcon).size(18).padRight(2);
-                    c.add(stack.amount + "").color(has ? Color.white : Pal.remove).padRight(8);
+                    c.add(stack.amount + "").padRight(8).update(cons(l => {
+                        let core = self.team.core();
+                        l.setColor(core != null && core.items.has(stack.item, stack.amount) ? Color.white : Pal.remove);
+                    }));
                 }
             }
 
@@ -337,19 +338,28 @@ blockType.buildType = prov(() => {
                 table.background(Styles.black6);
                 table.margin(8);
                 table.table(cons(t => {
-                    t.add(bundle("ore")).left().colspan(6).row();
+                    t.add(bundle("ore")).left().colspan(2).row();
                     let ores = oreItems(MAX_TIER);
-                    for (let i = 0; i < ores.length; i++) {
-                        let ore = ores[i];
-                        let locked = ore.hardness > self.mineTier();
-                        let cell = t.button(new TextureRegionDrawable(ore.uiIcon), Styles.clearTogglei, 24, run(() => {
-                            if (locked) return;
-                            build.configure(item == ore ? null : ore);
-                        }));
-                        cell.size(40).checked(boolf(b => item == ore));
-                        cell.tooltip(locked ? bundle("locked", ore.localizedName, ore.hardness) : ore.localizedName);
-                        if (locked) cell.get().getImage().setColor(Color.darkGray);
-                        if (i % 6 == 5) t.row();
+                    let rows = [
+                        { planet: Planets.erekir,  ores: ores.filter(o => !Items.serpuloItems.contains(o)) },
+                        { planet: Planets.serpulo, ores: ores.filter(o => Items.serpuloItems.contains(o)) },
+                    ];
+                    for (let r = 0; r < rows.length; r++) {
+                        if (rows[r].ores.length == 0) continue;
+                        t.add(rows[r].planet.localizedName).left().minWidth(70).padRight(6);
+                        t.table(cons(line => {
+                            for (let i = 0; i < rows[r].ores.length; i++) {
+                                let ore = rows[r].ores[i];
+                                let locked = ore.hardness > self.mineTier();
+                                let cell = line.button(new TextureRegionDrawable(ore.uiIcon), Styles.clearTogglei, 24, run(() => {
+                                    if (locked) return;
+                                    build.configure(item == ore ? null : ore);
+                                }));
+                                cell.size(40).checked(boolf(b => item == ore));
+                                cell.tooltip(locked ? bundle("locked", ore.localizedName, ore.hardness) : ore.localizedName);
+                                if (locked) cell.get().getImage().setColor(Color.darkGray);
+                            }
+                        })).left().row();
                     }
                 })).left().row();
                 table.table(cons(t => {

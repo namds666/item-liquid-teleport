@@ -1,0 +1,24 @@
+#!/bin/bash
+# Refuse pushes that do not raise mod.hjson version above the remote branch.
+root=$(git rev-parse --show-toplevel)
+remote="$1"
+ver() { sed -nE 's/^ *version: *"([^"]+)".*/\1/p'; }
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ "$local_sha" = "0000000000000000000000000000000000000000" ] && continue
+  new=$(git show "$local_sha:mod.hjson" 2>/dev/null | ver)
+  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+    old=$(git show "$remote/HEAD:mod.hjson" 2>/dev/null | ver)
+  else
+    old=$(git show "$remote_sha:mod.hjson" 2>/dev/null | ver)
+  fi
+  [ -z "$old" ] && continue
+  if [ -z "$new" ]; then
+    echo "pre-push: mod.hjson has no version in $local_ref" >&2; exit 1
+  fi
+  highest=$(printf '%s\n%s\n' "$old" "$new" | sort -t. -k1,1n -k2,2n -k3,3n | tail -1)
+  if [ "$new" = "$old" ] || [ "$highest" != "$new" ]; then
+    echo "pre-push: mod.hjson version is $new but $remote_ref already has $old. Every push must raise the version (bump the last digit, update subtitle and bundle_zh_CN)." >&2
+    exit 1
+  fi
+done
+exit 0
