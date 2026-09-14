@@ -82,7 +82,25 @@ function ringTiles(cx, cy, radius) {
 
 function test(name, w, h, setup, check, poll, opts) {
     opts = opts || {};
-    tests.push({ name: name, w: w, h: h, setup: setup, check: check, poll: poll, reload: opts.reload, long: !!opts.long, state: {}, area: null, error: null });
+    tests.push({ name: name, w: w, h: h, setup: setup, check: check, poll: poll, track: opts.track, reload: opts.reload, long: !!opts.long, state: {}, area: null, error: null });
+}
+
+// The map's enemy core spawns gammas whose bullets kill small drones; Unit.disarmed is recomputed from statuses every tick, so the flag alone does nothing.
+function disarmEnemies() {
+    Groups.unit.each(cons(u => {
+        if (u.team == TEAM) return;
+        if (u.type != UnitTypes.fortress) { u.remove(); return; }
+        u.apply(StatusEffects.disarmed, 120);
+    }));
+}
+
+// Runs every tick until the save so reload checks compare against the state that was written, not the LONG_TICK snapshot.
+function trackAll() {
+    for (let i = 0; i < tests.length; i++) {
+        let t = tests[i];
+        if (t.error != null || !t.track) continue;
+        try { t.track(t.area, t.state); } catch (e) { log("track " + t.name + " ERROR " + e); }
+    }
 }
 
 function pollAll() {
@@ -296,7 +314,7 @@ test("debuffer", 4, 1, (a, s) => {
     s.debuffer.items.add(Items.phaseFabric, 5);
     s.debuffer.items.add(Items.silicon, 5);
     s.enemy = spawn(UnitTypes.fortress, ENEMY, a.x + 3, a.y);
-    s.enemy.disarmed = true;
+    s.enemy.apply(StatusEffects.disarmed, 120);
     s.maxStatuses = 0;
     s.effects = [StatusEffects.wet, StatusEffects.burning, StatusEffects.tarred, StatusEffects.freezing, StatusEffects.electrified, StatusEffects.shocked, StatusEffects.corroded, StatusEffects.melting, StatusEffects.sapped];
 }, (a, s) => {
@@ -354,7 +372,7 @@ function outpostTest(cfg) {
             && core.items.get(Items.thorium) == s.th0 - cfg.thorium && core.items.get(Items.graphite) == s.gr0 - cfg.graphite;
         s.pos = s.outpost.pos();
         s.levels = () => [0, 1, 2, 3, 4].map(p => s.outpost.levelOf(p)).join(",");
-        log(name + " hasCopperOre=" + Vars.indexer.hasOre(Items.copper) + " levels=" + s.levels() + " cap=" + s.outpost.unitCap()
+        log(name + " hasCopperOre=" + Vars.indexer.hasOre(Items.copper) + " levels=" + s.levels() + " cap=" + s.outpost.unitCap() + " enemyCores=" + ENEMY.cores().size
             + " titanium=" + s.ti0 + "->" + core.items.get(Items.titanium) + " thorium=" + s.th0 + "->" + core.items.get(Items.thorium));
     }, (a, s) => {
         const core = TEAM.core(), d = drones(cfg.unitName);
@@ -366,8 +384,13 @@ function outpostTest(cfg) {
                  info: "units=" + s.units + "/" + s.outpost.unitCap() + " drones=" + d.alive + " mining=" + d.mining + " carried=" + d.carried
                     + " delivered=" + delivered + " levels=" + s.levels() + " upgraded=" + upgraded };
     }, (a, s) => {
-        if (ticks % 300 == 0) { let d = drones(cfg.unitName); log(name + " t" + ticks + " units=" + s.outpost.unitCount() + " mining=" + d.mining + " carried=" + d.carried + " delivered=" + (TEAM.core().items.get(Items.copper) - s.copper0)); }
-    }, { long: true, reload: (s) => {
+        if (ticks % 300 == 0) {
+            let d = drones(cfg.unitName), enemies = "";
+            Groups.unit.each(cons(u => { if (u.team != TEAM && !u.dead) enemies += u.type.name + "@" + Math.round(u.x / TS) + "," + Math.round(u.y / TS) + (u.disarmed ? "(disarmed)" : "") + " "; }));
+            log(name + " t" + ticks + " units=" + s.outpost.unitCount() + " mining=" + d.mining + " carried=" + d.carried + " delivered=" + (TEAM.core().items.get(Items.copper) - s.copper0)
+                + " timeScale=" + s.outpost.timeScale + " delta=" + Time.delta + " eff=" + s.outpost.efficiency + " enemies=[" + enemies.trim() + "] wave=" + Vars.state.wave + " wavetime=" + Math.round(Vars.state.wavetime));
+        }
+    }, { long: true, track: (a, s) => { s.units = s.outpost.unitCount(); }, reload: (s) => {
         const build = Vars.world.build(s.pos);
         if (build == null || build.block.name != "item-liquid-teleport-" + name) return [{ name: "reload", pass: false, info: "build=" + build }];
         const d = drones(cfg.unitName);
@@ -443,6 +466,20 @@ function reloadAll() {
     log("RESULT-RELOAD " + (passed == total ? "PASS" : "FAIL") + " " + passed + "/" + total);
 }
 
+Events.on(EventType.UnitDestroyEvent, cons(e => {
+    let u = e.unit;
+    if (u == null || u.type == null || u.type.name.indexOf("item-liquid-teleport-outpost") != 0) return;
+    let near = "";
+    let tx = Math.round(u.x / TS), ty = Math.round(u.y / TS);
+    for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+        let t = Vars.world.tile(tx + dx, ty + dy);
+        if (t != null && t.build != null && t.build.tile == t) near += t.build.block.name + "/" + t.build.team + " ";
+    }
+    let ctrl = "?"; try { ctrl = u.controller().getClass().getSimpleName(); } catch (e) {}
+    log("DRONE DIED " + u.type.name + " id=" + u.id + " t" + ticks + " phase=" + phase + " at " + tx + "," + ty
+        + " health=" + u.health + " stack=" + u.stack.amount + " mine=" + (u.mineTile != null) + " ctrl=" + ctrl + " floor=" + (u.tileOn() == null ? "null" : u.tileOn().floor().name) + " near=[" + near.trim() + "]");
+}));
+
 Events.on(EventType.WorldLoadEvent, cons(() => { phase++; ticks = 0; claimed = []; log("world loaded " + Vars.state.map.name() + " phase=" + phase); }));
 
 Events.run(EventType.Trigger.update, run(() => {
@@ -450,11 +487,14 @@ Events.run(EventType.Trigger.update, run(() => {
     ticks++;
     try {
         if (phase == 2) {
+            disarmEnemies();
             if (ticks == RELOAD_TICK) reloadAll();
             return;
         }
         if (phase != 1) return;
+        disarmEnemies();
         if (ticks == SETUP_TICK) setupAll();
+        if (ticks > SETUP_TICK) trackAll();
         if (ticks > SETUP_TICK && ticks < LONG_TICK && ticks % 15 == 0) pollAll();
         if (ticks == FINAL_TICK) checkAll(false, "RESULT");
         if (ticks == LONG_TICK) checkAll(true, "RESULT-LONG");
