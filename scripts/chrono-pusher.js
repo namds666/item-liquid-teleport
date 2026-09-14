@@ -251,7 +251,7 @@ blockType.buildType = prov(() => {
                 lib.addAutoConnectButtons(t, this, () => links, lvt, clearFn, autoFlags, targetFilter);
             })).row();
             table.table(cons(t => {
-                ItemSelection.buildTable(t, Vars.content.items(), prov(() => selectedItem), cons(v => { this.configure(v == null ? new java.lang.Integer(-1) : v); }));
+                lib.addResourceGrid(t, Vars.content.items(), () => selectedItem, v => { this.configure(v == null ? new java.lang.Integer(-1) : v); });
             })).row();
         },
         config() {

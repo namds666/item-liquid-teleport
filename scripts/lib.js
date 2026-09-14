@@ -231,13 +231,13 @@ exports.blockOutputsItem = (block, item) => {
     if (block == null || item == null) return false;
     return (blockOutputsItems(block) && directResourceField(block, ["itemDrop"], item)) ||
            anyStackField(block, ["outputItem", "outputItems", "results"], item, "item") ||
-           directResourceField(block, ["itemDrop", "outputItem"], item);
+           directResourceField(block, ["itemDrop", "outputItem", "output"], item);
 };
 exports.blockOutputsAnyItem = block => {
     if (block == null) return false;
     return blockOutputsItems(block) ||
            anyStackField(block, ["outputItem", "outputItems", "results"], null, "item") ||
-           directResourceField(block, ["itemDrop", "outputItem"], null);
+           directResourceField(block, ["itemDrop", "outputItem", "output"], null);
 };
 exports.blockConsumesLiquid = (block, liquid) => {
     if (block == null || liquid == null) return false;
@@ -287,13 +287,14 @@ exports.buildConsumesAnyItem = build => {
 exports.buildOutputsItem = (build, item) => {
     if (build == null || item == null) return false;
     try { if (build.chronoOutputsItem && build.chronoOutputsItem(item)) return true; } catch (e) {}
-    if (callBool(build, "canDump", [null, item])) return true;
-    try { if (blockOutputsItems(build.block) && build.items != null && build.items.get(item) > 0) return true; } catch (e) {}
+    if (directResourceField(build, ["dominantItem"], item)) return true;
+    try { if ((build.block.unloadable || blockOutputsItems(build.block)) && build.items != null && build.items.get(item) > 0) return true; } catch (e) {}
     return exports.blockOutputsItem(build.block, item);
 };
 exports.buildOutputsAnyItem = build => {
     if (build == null) return false;
     try { if (build.chronoOutputsAnyItem && build.chronoOutputsAnyItem()) return true; } catch (e) {}
+    if (directResourceField(build, ["dominantItem"], null)) return true;
     try {
         for (let i = 0; i < Vars.content.items().size; i++) {
             if (exports.buildOutputsItem(build, Vars.content.items().get(i))) return true;
@@ -437,15 +438,16 @@ exports.makeScanJob = (autoFlags, chunkSize) => {
                     let pos = b.pos() | 0;
                     let hasLink = linkSet.has(pos);
 
-                    let isValidTarget = lvt(the, b) && (!targetFilter || targetFilter(b)) && (
-                          (autoFlags[0] && b.block.category == Category.effect) ||
-                          (autoFlags[1] && b.block.category == Category.turret) ||
-                          (autoFlags[2] && b.block.category == Category.crafting) ||
-                          (autoFlags[3] && b.block.category == Category.power) ||
-                          (autoFlags[4] && b.block.category == Category.units) ||
-                          (autoFlags[5] && b.block.category == Category.production) ||
-                          (autoFlags[6] && b.block.category == Category.liquid)
-                    );
+                    let cat = b.block.category;
+                    let isValidTarget = (
+                          (autoFlags[0] && cat == Category.effect) ||
+                          (autoFlags[1] && cat == Category.turret) ||
+                          (autoFlags[2] && cat == Category.crafting) ||
+                          (autoFlags[3] && cat == Category.power) ||
+                          (autoFlags[4] && cat == Category.units) ||
+                          (autoFlags[5] && cat == Category.production) ||
+                          (autoFlags[6] && cat == Category.liquid)
+                    ) && lvt(the, b) && (!targetFilter || targetFilter(b));
 
                     if (isValidTarget && !hasLink) {
                         if (batchApply) { toAdd.push(pos); linkSet.add(pos); }
@@ -493,6 +495,26 @@ const makeCheck = (table, autoFlags, idx) => {
     chk.changed(run(() => { autoFlags[idx] = chk.isChecked(); }));
     table.add(chk).size(40, 40);
     return chk;
+};
+exports.addResourceGrid = (table, items, holder, onSelect) => {
+    const COLS = 8, GROUP = 4, GROUP_GAP = 12;
+    let n = 0;
+    table.table(cons(grid => {
+        grid.defaults().size(40);
+        for (let i = 0; i < items.size; i++) {
+            let item = items.get(i);
+            if (!item.unlockedNow()) continue;
+            try { if (Vars.state.rules.hiddenBuildItems.contains(item)) continue; } catch (e) {}
+            let cell = grid.button(new TextureRegionDrawable(item.uiIcon), Styles.clearNoneTogglei, 24, run(() => {
+                onSelect(holder() == item ? null : item);
+            }));
+            cell.checked(boolf(b => holder() == item));
+            cell.tooltip(item.localizedName);
+            n++;
+            if (n % COLS == 0) cell.row();
+            else if (n % GROUP == 0) cell.padRight(GROUP_GAP);
+        }
+    }));
 };
 exports.addAutoConnectButtons = (table, the, getLinks, lvt, clearFn, autoFlags, targetFilter) => {
     table.center();
