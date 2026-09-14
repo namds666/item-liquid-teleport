@@ -291,9 +291,9 @@ blockType.buildType = prov(() => {
         buildConfiguration(table) {
             table.table(cons(t => {
                 t.add("Item").left().row();
-                ItemSelection.buildTable(t, supportedItems(), prov(() => selectedItem), cons(v => {
+                lib.addResourceGrid(t, supportedItems(), () => selectedItem, v => {
                     this.configure(tilerConfig(v == null ? -1 : v.id, radius, itemTarget(v)));
-                }));
+                });
             })).row();
 
             let options = [];

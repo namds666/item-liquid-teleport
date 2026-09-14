@@ -499,7 +499,8 @@ const makeCheck = (table, autoFlags, idx) => {
 exports.addResourceGrid = (table, items, holder, onSelect) => {
     const COLS = 8, GROUP = 4, GROUP_GAP = 12;
     let n = 0;
-    table.table(cons(grid => {
+    table.table(Styles.black6, cons(grid => {
+        grid.margin(4);
         grid.defaults().size(40);
         for (let i = 0; i < items.size; i++) {
             let item = items.get(i);

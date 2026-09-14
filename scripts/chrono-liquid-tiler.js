@@ -238,9 +238,9 @@ blockType.buildType = prov(() => {
         buildConfiguration(table) {
             table.table(cons(t => {
                 t.add("Liquid").left().row();
-                ItemSelection.buildTable(t, Vars.content.liquids(), prov(() => selectedLiquid), cons(v => {
+                lib.addResourceGrid(t, Vars.content.liquids(), () => selectedLiquid, v => {
                     this.configure(tilerConfig(v == null ? -1 : v.id, radius));
-                }));
+                });
             })).row();
 
             table.table(cons(t => {

@@ -209,7 +209,7 @@ blockType.buildType = prov(() => {
                 lib.addAutoConnectButtons(t, this, () => links, lvt, clearFn, autoFlags, b => sourceFilterFor(this, b));
             })).row();
             table.table(cons(t => {
-                ItemSelection.buildTable(t, Vars.content.liquids(), prov(() => liquidType), cons(v => { this.configure(v); }));
+                lib.addResourceGrid(t, Vars.content.liquids(), () => liquidType, v => { this.configure(v); });
             })).row();
         },
         config() {

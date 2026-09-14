@@ -245,15 +245,15 @@ blockType.buildType = prov(() => {
         buildConfiguration(table) {
             table.table(cons(t => {
                 t.add("Input").left().row();
-                ItemSelection.buildTable(t, Vars.content.items(), prov(() => inputItem), cons(v => {
+                lib.addResourceGrid(t, Vars.content.items(), () => inputItem, v => {
                     this.configure(converterConfig(v == null ? -1 : v.id, outputItem == null ? -1 : outputItem.id, speed));
-                }));
+                });
             })).row();
             table.table(cons(t => {
                 t.add("Output").left().row();
-                ItemSelection.buildTable(t, Vars.content.items(), prov(() => outputItem), cons(v => {
+                lib.addResourceGrid(t, Vars.content.items(), () => outputItem, v => {
                     this.configure(converterConfig(inputItem == null ? -1 : inputItem.id, v == null ? -1 : v.id, speed));
-                }));
+                });
             })).row();
             table.table(cons(t => {
                 t.add("Speed").left().row();
