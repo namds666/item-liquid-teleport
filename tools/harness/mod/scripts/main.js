@@ -144,6 +144,30 @@ test("unloader", 8, 3, (a, s) => {
     return { pass: got > 0 && left < 500, info: "sink=" + got + " vault=" + left + " links=" + s.unl.getLinks().size };
 });
 
+// Auto steal ON: own-team buildings are skipped; every other team is a source. Toggle OFF drops the other-team links.
+test("unloader-steal", 12, 3, (a, s) => {
+    s.own = place(Blocks.vault, a.x + 1, a.y + 1);
+    s.own.items.add(Items.copper, 500);
+    s.unl = place(modBlock("chrono-unloader"), a.x + 4, a.y);
+    s.sink = place(Blocks.container, a.x + 5, a.y);
+    s.enemy = place(Blocks.vault, a.x + 9, a.y + 1, ENEMY);
+    s.enemy.items.add(Items.copper, 500);
+    let cfg = new IntSeq(10);
+    [Items.copper.id, 0, 0, 0, 0, 0, 0, 0, 1, 0].forEach(v => cfg.add(v));
+    s.unl.configured(null, cfg);
+    s.unl.onConfigureBuildTapped(s.own);
+    s.unl.onConfigureBuildTapped(s.enemy);
+    let has = b => { let p = jint(b.pos()); return s.unl.getLinks().contains(boolf(i => i == p)); };
+    s.tapOwn = has(s.own); s.tapEnemy = has(s.enemy);
+}, (a, s) => {
+    let has = b => { let p = jint(b.pos()); return s.unl.getLinks().contains(boolf(i => i == p)); };
+    let got = s.sink.items.get(Items.copper), own = s.own.items.get(Items.copper), enemy = s.enemy.items.get(Items.copper);
+    s.unl.setAutoSteal(false);
+    let dropped = !has(s.enemy);
+    return { pass: !s.tapOwn && s.tapEnemy && got > 0 && own == 500 && enemy < 500 && dropped,
+             info: "tapOwn=" + s.tapOwn + " tapEnemy=" + s.tapEnemy + " sink=" + got + " own=" + own + " enemy=" + enemy + " droppedOnOff=" + dropped };
+});
+
 test("pusher", 7, 2, (a, s) => {
     s.pusher = place(modBlock("chrono-pusher"), a.x, a.y);
     s.pusher.items.add(Items.copper, 200);
@@ -202,6 +226,29 @@ test("liquid-unloader", 8, 3, (a, s) => {
 }, (a, s) => {
     let got = s.sink.liquids.get(Liquids.water);
     return { pass: got > 0.1, info: "tank=" + got.toFixed(1) + " src=" + s.src.liquids.get(Liquids.water).toFixed(1) + " links=" + s.unl.getLinks().size };
+});
+
+test("liquid-unloader-steal", 10, 3, (a, s) => {
+    s.own = place(Blocks.liquidSource, a.x, a.y);
+    s.own.configured(null, Liquids.water);
+    s.unl = place(modBlock("chrono-liquid-unloader"), a.x + 3, a.y);
+    s.sink = place(Blocks.liquidTank, a.x + 5, a.y + 1);
+    s.enemy = place(Blocks.liquidSource, a.x + 8, a.y, ENEMY);
+    s.enemy.configured(null, Liquids.water);
+    let cfg = new IntSeq(10);
+    [Liquids.water.id, 0, 0, 0, 0, 0, 0, 0, 1, 0].forEach(v => cfg.add(v));
+    s.unl.configured(null, cfg);
+    s.unl.onConfigureBuildTapped(s.own);
+    s.unl.onConfigureBuildTapped(s.enemy);
+    let has = b => { let p = jint(b.pos()); return s.unl.getLinks().contains(boolf(i => i == p)); };
+    s.tapOwn = has(s.own); s.tapEnemy = has(s.enemy);
+}, (a, s) => {
+    let has = b => { let p = jint(b.pos()); return s.unl.getLinks().contains(boolf(i => i == p)); };
+    let got = s.sink.liquids.get(Liquids.water);
+    s.unl.setAutoSteal(false);
+    let dropped = !has(s.enemy);
+    return { pass: !s.tapOwn && s.tapEnemy && got > 0.1 && dropped,
+             info: "tapOwn=" + s.tapOwn + " tapEnemy=" + s.tapEnemy + " tank=" + got.toFixed(1) + " droppedOnOff=" + dropped };
 });
 
 test("liquid-pusher", 7, 2, (a, s) => {

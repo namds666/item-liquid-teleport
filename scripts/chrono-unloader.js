@@ -91,7 +91,16 @@ blockType.buildType = prov(() => {
     const looper = (() => { let idx = 0; return { next(m) { if (idx < 0 || idx >= m) idx = m-1; let v = idx; idx--; return v; } }; })();
     function lvt(the, t) { return t && t.items != null; }
     function lv(the, pos) { if (pos == null || pos == -1) return false; return lvt(the, Vars.world.build(pos)); }
-    function canAccessSource(the, t) { return autoSteal || (t != null && t.team == the.team); }
+    function canAccessSource(the, t) {
+        if (t == null || t.team == null) return false;
+        return autoSteal ? t.team != the.team : t.team == the.team;
+    }
+    function pruneLinks(the) {
+        for (let i = links.size-1; i >= 0; i--) {
+            let t = Vars.world.build(links.get(i));
+            if (t != null && !canAccessSource(the, t)) links.remove(i);
+        }
+    }
     function sourceFilterFor(the, t) { return canAccessSource(the, t) && (itemType == null ? lib.buildOutputsAnyItem(t) : lib.buildOutputsItem(t, itemType)); }
     const clearFn = () => { let s = new IntSeq(2); s.add(itemType == null ? -1 : itemType.id); s.add(0); return s; };
     const scanJob = lib.makeScanJob(autoFlags, 50);
@@ -136,8 +145,9 @@ blockType.buildType = prov(() => {
             for (let i = 0; i < 6; i++) autoFlags[i] = !!values[i];
             autoSteal = !!values[6];
             autoFlags[6] = !!values[7];
+            pruneLinks(this);
         },
-        setAutoSteal(v) { autoSteal = !!v; },
+        setAutoSteal(v) { autoSteal = !!v; pruneLinks(this); },
         setAutoLiquid(v) { autoFlags[6] = !!v; },
         deadLink(v) {
             if (Vars.net.client()) return;
@@ -235,7 +245,7 @@ blockType.buildType = prov(() => {
             table.table(cons(t => {
                 let chk = new CheckBox("Auto Steal");
                 chk.setChecked(autoSteal);
-                chk.changed(run(() => { autoSteal = chk.isChecked(); this.configure(this.config()); }));
+                chk.changed(run(() => { this.setAutoSteal(chk.isChecked()); this.configure(this.config()); }));
                 t.add(chk).left();
             })).row();
             table.table(cons(t => {
