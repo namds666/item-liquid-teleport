@@ -189,10 +189,13 @@ lib.enableAllEnvironments(blockType);
 
 blockType.config(Item, lib.cons2((build, item) => build.setSelectedItem(item)));
 blockType.configClear(build => build.setSelectedItem(null));
+blockType.config(java.lang.Boolean, lib.cons2((build, on) => build.setAuto(!!on)));
 blockType.config(java.lang.Integer, lib.cons2((build, path) => build.tryUpgrade(path | 0)));
 
 blockType.buildType = prov(() => {
     let item = null;
+    let auto = false;
+    let autoTimer = 0;
     let levels = [0, 0, 0, 0, 0];
     let progress = 0;
     let units = [];
@@ -203,8 +206,21 @@ blockType.buildType = prov(() => {
     }
 
     return extend(Building, {
-        setSelectedItem(v) { item = v; },
+        setSelectedItem(v) { item = v; auto = false; },
         selectedItem() { return item; },
+        setAuto(v) { auto = v; if (auto) this.pickLowest(); },
+        isAuto() { return auto; },
+        pickLowest() {
+            let core = this.team.core();
+            if (core == null) return;
+            let ores = oreItems(this.mineTier()).filter(o => Vars.indexer.hasOre(o));
+            let best = null;
+            for (let i = 0; i < ores.length; i++) {
+                let o = ores[i];
+                if (best == null || core.items.get(o) < core.items.get(best) || (o == item && core.items.get(o) == core.items.get(best))) best = o;
+            }
+            item = best;
+        },
         levelOf(path) { return levels[path]; },
         mineTier() { return PATHS[PATH_TIER].values[levels[PATH_TIER]]; },
         unitCap() { return PATHS[PATH_CAP].values[levels[PATH_CAP]]; },
@@ -258,6 +274,10 @@ blockType.buildType = prov(() => {
 
         updateTile() {
             if (pendingIds != null) this.resolvePending();
+            if (auto) {
+                autoTimer += Time.delta;
+                if (autoTimer >= ORE_REFIND) { autoTimer = 0; this.pickLowest(); }
+            }
             pruneUnits();
             if (units.length >= this.unitCap()) { progress = 0; return; }
             progress += this.edelta();
@@ -310,7 +330,10 @@ blockType.buildType = prov(() => {
             const build = this;
             const self = this;
             let snapshot = "";
-            const state = () => levels.join(",") + "|" + (item == null ? -1 : item.id);
+            const state = () => levels.join(",") + "|" + (item == null ? -1 : item.id) + "|" + auto;
+            table.background(Styles.black6);
+            table.margin(8);
+            const root = table.table().get();
 
             function costTable(c, path) {
                 c.clearChildren();
@@ -334,11 +357,13 @@ blockType.buildType = prov(() => {
 
             function rebuild() {
                 snapshot = state();
-                table.clearChildren();
-                table.background(Styles.black6);
-                table.margin(8);
-                table.table(cons(t => {
-                    t.add(bundle("ore")).left().colspan(2).row();
+                root.clearChildren();
+                root.table(cons(t => {
+                    t.table(cons(head => {
+                        head.add(bundle("ore")).left().padRight(8);
+                        head.button(bundle("lowest"), Styles.togglet, run(() => build.configure(auto ? null : java.lang.Boolean.TRUE)))
+                            .height(32).minWidth(90).checked(boolf(b => auto)).tooltip(bundle("lowest.tooltip"));
+                    })).left().colspan(2).row();
                     let ores = oreItems(MAX_TIER);
                     let rows = [
                         { planet: Planets.erekir,  ores: ores.filter(o => !Items.serpuloItems.contains(o)) },
@@ -362,7 +387,7 @@ blockType.buildType = prov(() => {
                         })).left().row();
                     }
                 })).left().row();
-                table.table(cons(t => {
+                root.table(cons(t => {
                     t.defaults().padTop(3).padBottom(3);
                     for (let p = 0; p < PATHS.length; p++) {
                         let path = p;
@@ -380,16 +405,17 @@ blockType.buildType = prov(() => {
             }
 
             rebuild();
-            table.update(run(() => { if (state() != snapshot) rebuild(); }));
+            root.update(run(() => { if (state() != snapshot) { rebuild(); table.pack(); } }));
         },
 
-        config() { return item; },
+        config() { return auto ? java.lang.Boolean.TRUE : item; },
 
-        version() { return 1; },
+        version() { return 2; },
 
         write(write) {
             this.super$write(write);
             write.s(item == null ? -1 : item.id);
+            write.bool(auto);
             write.f(progress);
             write.b(PATHS.length);
             for (let i = 0; i < PATHS.length; i++) write.b(levels[i]);
@@ -402,6 +428,7 @@ blockType.buildType = prov(() => {
             this.super$read(read, revision);
             let id = read.s();
             item = id < 0 ? null : Vars.content.items().get(id);
+            auto = revision >= 2 ? read.bool() : false;
             progress = read.f();
             let pathCount = read.b();
             for (let i = 0; i < pathCount; i++) {
