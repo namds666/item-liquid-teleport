@@ -7,6 +7,8 @@ require("outpost").create({
     unitHealth: 100,
     hitSize: 8,
     engineOffset: 6,
+    unitMineTier: 4,
+    mergeInto: "outpost-mega",
     paths: [
         [2, 3, 4, 5, 6],
         [1.5, 1.7, 1.9, 2.1, 2.4],

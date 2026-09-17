@@ -19,6 +19,7 @@ const factoryNames = field => factoryConfigs.map(c => (c.match(new RegExp(String
 
 const violations = [];
 const seen = [];
+const notes = [];
 
 for (const file of fs.readdirSync(scriptsDir).filter(f => f.endsWith(".js") && !SKIP.has(f)).sort()) {
     const src = fs.readFileSync(path.join(scriptsDir, file), "utf8");
@@ -38,7 +39,11 @@ for (const file of fs.readdirSync(scriptsDir).filter(f => f.endsWith(".js") && !
             violations.push(`${file}: ${name} lacks "${v}.alwaysUnlocked = true" -> locked behind research in campaign`);
         }
         if (kind === "block") {
-            if (!has(String.raw`\bVAR\.buildVisibility\s*=\s*BuildVisibility\.shown\b`)) {
+            const mergeOnly = has(String.raw`\bVAR\.buildVisibility\s*=\s*cfg\.mergeOnly\s*\?\s*BuildVisibility\.hidden\s*:\s*BuildVisibility\.shown\b`);
+            if (mergeOnly) {
+                const merged = factoryConfigs.filter(c => /\bmergeOnly\s*:\s*true\b/.test(c)).map(c => (c.match(/\bname\s*:\s*"([^"]+)"/) || [])[1]).filter(Boolean);
+                notes.push(`merge-only (formed in play by 4 parts, never in the build menu): ${merged.join(", ")}`);
+            } else if (!has(String.raw`\bVAR\.buildVisibility\s*=\s*BuildVisibility\.shown\b`)) {
                 violations.push(`${file}: ${name} lacks "${v}.buildVisibility = BuildVisibility.shown" -> hidden from the build menu`);
             }
             if (has(String.raw`\bVAR\.buildVisibility\s*=\s*BuildVisibility\.(sandboxOnly|editorOnly|debugOnly|hidden)\b`)) {
@@ -53,6 +58,7 @@ for (const file of fs.readdirSync(scriptsDir).filter(f => f.endsWith(".js") && !
 
 if (!quiet) {
     for (const s of seen) console.log("checked " + s);
+    for (const n of notes) console.log("note " + n);
 }
 if (violations.length) {
     console.error("CAMPAIGN AVAILABILITY FAIL (" + violations.length + "):");

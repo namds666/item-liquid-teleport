@@ -5,6 +5,8 @@ const SPAWN_TIME = 300;
 const CIRCLE_RADIUS = 3 * TILE;
 const DROP_RANGE = 40;
 const ORE_REFIND = 60;
+const MERGE_CHECK = 120;
+const ORPHAN_TIME = 120;
 
 const PATH_CAP = 0, PATH_SPEED = 1, PATH_MINE = 2, PATH_CAPACITY = 3, PATH_TIER = 4;
 const PATH_KEYS = ["cap", "speed", "mine", "capacity", "tier"];
@@ -53,7 +55,7 @@ droneType.rotateSpeed = 15;
 droneType.health = cfg.unitHealth;
 droneType.hitSize = cfg.hitSize;
 droneType.engineOffset = cfg.engineOffset;
-droneType.mineTier = MAX_TIER;
+droneType.mineTier = Math.max(MAX_TIER, cfg.unitMineTier || 0);
 droneType.mineSpeed = PATHS[PATH_MINE].values[0];
 droneType.itemCapacity = PATHS[PATH_CAPACITY].values[PATHS[PATH_CAPACITY].values.length - 1];
 droneType.mineWalls = false;
@@ -66,15 +68,38 @@ droneType.buildSpeed = 0;
 droneType.alwaysUnlocked = true;
 lib.enableAllEnvironments(droneType);
 
-function makeDroneAI(initialOutpost) {
+function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
     let outpost = initialOutpost;
     let mining = true;
     let ore = null;
     let oreTimer = ORE_REFIND;
+    let orphanTimer = 0;
+    let subs = [];
+    let subTimer = 0;
     const vec = new Vec2();
 
     return new JavaAdapter(AIController, {
         setOutpost(build) { outpost = build; },
+
+        updateSubs(unit) {
+            subs = subs.filter(u => !u.dead && u.isAdded());
+            let want = Math.min(cfg.subDrone.max, outpost.levelOf(cfg.subDrone.path));
+            if (subs.length >= want) { subTimer = 0; return; }
+            subTimer += Time.delta;
+            if (subTimer < cfg.subDrone.spawnTime || Vars.net.client()) return;
+            subTimer = 0;
+            let type = Vars.content.unit(lib.modName + "-" + cfg.subDrone.unitName);
+            if (type == null) return;
+            let sub = type.create(unit.team);
+            sub.set(unit.x, unit.y);
+            sub.rotation = unit.rotation;
+            sub.add();
+            sub.controller(makeDroneAI(outpost, cfg.subDrone.stats, unit));
+            outpost.registerSub(sub);
+            Fx.spawn.at(unit.x, unit.y);
+            Events.fire(new EventType.UnitCreateEvent(sub, outpost, null));
+            subs.push(sub);
+        },
 
         moveToSpeed(target, circleLength, smooth, speed) {
             const unit = this.unit;
@@ -90,14 +115,28 @@ function makeDroneAI(initialOutpost) {
         updateMovement() {
             const unit = this.unit;
             if (outpost != null && !outpost.isValid()) outpost = null;
-            if (outpost == null) { unit.mineTile = null; return; }
+            if (parentUnit != null && (parentUnit.dead || !parentUnit.isAdded())) {
+                unit.mineTile = null;
+                if (!Vars.net.client()) unit.kill();
+                return;
+            }
+            if (outpost == null) {
+                unit.mineTile = null;
+                orphanTimer += Time.delta;
+                if (orphanTimer >= ORPHAN_TIME && !Vars.net.client()) unit.kill();
+                return;
+            }
+            orphanTimer = 0;
+            if (cfg.subDrone != null && parentUnit == null) this.updateSubs(unit);
 
-            const stats = outpost.droneStats();
+            const stats = fixedStats != null
+                ? { speed: fixedStats.speed, mineSpeed: fixedStats.mineSpeed, capacity: fixedStats.capacity, tier: outpost.mineTier() }
+                : outpost.droneStats();
             const core = unit.closestCore();
             const item = outpost.targetItem();
 
             if (unit.mineTile != null && !unit.validMine(unit.mineTile)) unit.mineTile = null;
-            if (unit.mineTile != null) unit.mineTimer += Time.delta * Math.max(0, stats.mineSpeed - droneType.mineSpeed);
+            if (unit.mineTile != null) unit.mineTimer += Time.delta * Math.max(0, stats.mineSpeed - unit.type.mineSpeed);
 
             if (core == null || (item == null && unit.stack.amount == 0)) {
                 unit.mineTile = null;
@@ -125,8 +164,8 @@ function makeDroneAI(initialOutpost) {
                         this.circle(outpost, CIRCLE_RADIUS, stats.speed);
                         return;
                     }
-                    this.moveToSpeed(ore, droneType.mineRange / 2, 20, stats.speed);
-                    if (unit.within(ore, droneType.mineRange) && unit.validMine(ore)) unit.mineTile = ore;
+                    this.moveToSpeed(ore, unit.type.mineRange / 2, 20, stats.speed);
+                    if (unit.within(ore, unit.type.mineRange) && unit.validMine(ore)) unit.mineTile = ore;
                     return;
                 }
             }
@@ -176,7 +215,8 @@ const blockType = extend(Block, cfg.name, {
     }
 });
 
-blockType.buildVisibility = BuildVisibility.shown;
+blockType.buildVisibility = cfg.mergeOnly ? BuildVisibility.hidden : BuildVisibility.shown;
+blockType.rebuildable = !cfg.mergeOnly;
 blockType.alwaysUnlocked = true;
 blockType.category = Category.production;
 blockType.size = cfg.size;
@@ -192,8 +232,44 @@ blockType.configClear(build => build.setSelectedItem(null));
 blockType.config(java.lang.Boolean, lib.cons2((build, on) => build.setAuto(!!on)));
 blockType.config(java.lang.Integer, lib.cons2((build, path) => build.tryUpgrade(path | 0)));
 
+// Four same-team parts in an aligned 2x2 square become one merged block; the merged origin is
+// the part square's bottom-left center shifted by (1, 1) for both size 2 and size 3 parts.
+function tryMerge(build) {
+    if (cfg.mergeInto == null || Vars.net.client()) return false;
+    let mega = Vars.content.block(lib.modName + "-" + cfg.mergeInto);
+    if (mega == null) return false;
+    let s = blockType.size;
+    let bx = build.tileX(), by = build.tileY();
+    for (let dx = 0; dx <= 1; dx++) {
+        for (let dy = 0; dy <= 1; dy++) {
+            let x0 = bx - dx * s, y0 = by - dy * s;
+            let parts = [];
+            for (let i = 0; i < 2 && parts != null; i++) {
+                for (let j = 0; j < 2; j++) {
+                    let px = x0 + i * s, py = y0 + j * s;
+                    let t = Vars.world.tile(px, py);
+                    let b = t == null ? null : t.build;
+                    if (b == null || b.block != blockType || b.team != build.team || b.tileX() != px || b.tileY() != py) { parts = null; break; }
+                    parts.push(b);
+                }
+            }
+            if (parts == null) continue;
+            let origin = Vars.world.tile(x0 + 1, y0 + 1);
+            if (origin == null) continue;
+            let team = build.team;
+            for (let k = 0; k < parts.length; k++) Call.removeTile(parts[k].tile);
+            Call.setTile(origin, mega, team, 0);
+            Fx.placeBlock.at(origin.worldx() + mega.offset, origin.worldy() + mega.offset, mega.size);
+            return true;
+        }
+    }
+    return false;
+}
+
 blockType.buildType = prov(() => {
     let item = null;
+    let mergeTimer = 0;
+    let subs = [];
     let auto = false;
     let autoTimer = 0;
     let levels = [0, 0, 0, 0, 0];
@@ -225,6 +301,8 @@ blockType.buildType = prov(() => {
         mineTier() { return PATHS[PATH_TIER].values[levels[PATH_TIER]]; },
         unitCap() { return PATHS[PATH_CAP].values[levels[PATH_CAP]]; },
         unitCount() { return units.length; },
+        registerSub(unit) { subs.push(unit); },
+        subCount() { subs = subs.filter(u => !u.dead && u.isAdded()); return subs.length; },
         spawnFrac() { return units.length >= this.unitCap() ? 0 : Mathf.clamp(progress / SPAWN_TIME); },
         droneStats() {
             return {
@@ -272,8 +350,17 @@ blockType.buildType = prov(() => {
             Events.fire(new EventType.UnitCreateEvent(unit, this, null));
         },
 
+        placed() {
+            this.super$placed();
+            tryMerge(this);
+        },
+
         updateTile() {
             if (pendingIds != null) this.resolvePending();
+            if (cfg.mergeInto != null) {
+                mergeTimer += Time.delta;
+                if (mergeTimer >= MERGE_CHECK) { mergeTimer = 0; if (tryMerge(this)) return; }
+            }
             if (auto) {
                 autoTimer += Time.delta;
                 if (autoTimer >= ORE_REFIND) { autoTimer = 0; this.pickLowest(); }
@@ -291,8 +378,10 @@ blockType.buildType = prov(() => {
             this.super$onRemoved();
             if (!Vars.net.client()) {
                 for (let i = 0; i < units.length; i++) if (!units[i].dead) units[i].kill();
+                for (let i = 0; i < subs.length; i++) if (!subs[i].dead) subs[i].kill();
             }
             units = [];
+            subs = [];
         },
 
         status() {
@@ -457,6 +546,7 @@ create({
     unitHealth: 400,
     hitSize: 9,
     engineOffset: 6.5,
+    mergeInto: "outpost-quad",
     paths: [
         [5, 7, 9, 12, 15],
         [1.5, 1.8, 2.1, 2.4, 2.8],

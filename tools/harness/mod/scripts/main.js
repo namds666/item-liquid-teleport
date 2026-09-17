@@ -383,6 +383,14 @@ test("core", 1, 1, (a, s) => {
 
 // ── Long tests: checked at LONG_TICK, then again after save/stop/load ────
 
+// Quad Outposts deploy Mono helpers of the Small Outpost drone type; those are subtracted so the
+// Small Outpost test only sees its own drones.
+function quadSubs() {
+    let n = 0;
+    Groups.build.each(cons(b => { if (b.team == TEAM && b.block.name == "item-liquid-teleport-outpost-quad") n += b.subCount(); }));
+    return n;
+}
+
 function drones(unitName) {
     let out = { alive: 0, mining: 0, carried: 0 };
     Groups.unit.each(cons(u => {
@@ -391,6 +399,7 @@ function drones(unitName) {
         out.carried += u.stack.amount;
         if (u.mineTile != null) out.mining++;
     }));
+    if (unitName == "outpost-small-drone") out.alive -= quadSubs();
     return out;
 }
 
@@ -450,6 +459,64 @@ function outpostTest(cfg) {
         return [reload, { name: "remove", pass: after.alive == 0, info: "dronesAlive=" + after.alive }];
     } });
 }
+
+// cfg: { name, part, unitName, subUnit?, cap }
+// Places 4 parts in a 2x2 square; the periodic merge check must turn them into one merged block,
+// which is then configured to mine copper and upgraded once on the unit cap path (levels "1,0,0,0,0").
+function mergeTest(cfg) {
+    const name = cfg.name;
+    const partSize = modBlock(cfg.part).size;
+    const megaSize = partSize * 2;
+    test(name, megaSize + 2, megaSize + 2, (a, s) => {
+        const part = modBlock(cfg.part);
+        const off = Math.floor((partSize - 1) / 2) + 1;
+        s.x0 = a.x + off; s.y0 = a.y + off;
+        for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) place(part, s.x0 + i * partSize, s.y0 + j * partSize);
+        s.origin = Vars.world.tile(s.x0 + 1, s.y0 + 1);
+        const core = TEAM.core();
+        core.items.add(Items.titanium, 3000);
+        core.items.add(Items.silicon, 3000);
+        s.copper0 = core.items.get(Items.copper);
+        s.configured = false;
+        s.mega = () => { const b = Vars.world.build(s.x0 + 1, s.y0 + 1); return b != null && b.block.name == "item-liquid-teleport-" + name ? b : null; };
+        log(name + " parts placed at " + s.x0 + "," + s.y0 + " size " + partSize);
+    }, (a, s) => {
+        const core = TEAM.core(), d = drones(cfg.unitName);
+        const mega = s.mega();
+        const delivered = core.items.get(Items.copper) - s.copper0;
+        const merged = mega != null && mega.block.size == megaSize && Vars.world.build(s.x0, s.y0) == mega;
+        const parts = Groups.build.count(boolf(b => b.block.name == "item-liquid-teleport-" + cfg.part && b.team == TEAM));
+        const levels = mega == null ? "" : [0, 1, 2, 3, 4].map(p => mega.levelOf(p)).join(",");
+        const spawned = mega != null && mega.unitCount() >= 3 && mega.unitCount() == d.alive;
+        const subsOk = cfg.subUnit == null || (mega != null && mega.subCount() >= Math.max(1, mega.unitCount() - 2));
+        s.units = mega == null ? 0 : mega.unitCount();
+        return { pass: merged && parts == s.partsBefore && spawned && levels == "1,0,0,0,0" && mega.unitCap() == cfg.cap && delivered > 0 && subsOk,
+                 info: "merged=" + merged + " partsLeft=" + parts + " units=" + s.units + "/" + (mega == null ? "?" : mega.unitCap()) + " drones=" + d.alive + " mining=" + d.mining
+                    + " delivered=" + delivered + " levels=" + levels + " subs=" + (mega == null ? "?" : mega.subCount()) + " tier=" + (mega == null ? "?" : mega.mineTier()) };
+    }, (a, s) => {
+        const mega = s.mega();
+        if (mega == null || s.configured) return;
+        s.configured = true;
+        s.partsBefore = Groups.build.count(boolf(b => b.block.name == "item-liquid-teleport-" + cfg.part && b.team == TEAM));
+        mega.configured(null, Items.copper);
+        mega.configured(null, jint(0));
+        log(name + " merged at t" + ticks + " selected=" + mega.selectedItem() + " levels=" + [0, 1, 2, 3, 4].map(p => mega.levelOf(p)).join(",") + " otherParts=" + s.partsBefore);
+    }, { long: true, track: (a, s) => { const m = s.mega(); s.units = m == null ? 0 : m.unitCount(); }, reload: (s) => {
+        const build = Vars.world.build(s.x0 + 1, s.y0 + 1);
+        if (build == null || build.block.name != "item-liquid-teleport-" + name) return [{ name: "reload", pass: false, info: "build=" + build }];
+        const d = drones(cfg.unitName);
+        const levelsOk = [0, 1, 2, 3, 4].map(p => build.levelOf(p)).join(",") == "1,0,0,0,0" && build.selectedItem() == Items.copper;
+        const adopted = build.unitCount() == s.units && d.alive == s.units;
+        const reload = { name: "reload", pass: levelsOk && adopted && d.mining > 0,
+            info: "levelsOk=" + levelsOk + " units=" + build.unitCount() + "/" + s.units + " drones=" + d.alive + " mining=" + d.mining };
+        build.tile.remove();
+        const after = drones(cfg.unitName);
+        return [reload, { name: "remove", pass: after.alive == 0, info: "dronesAlive=" + after.alive }];
+    } });
+}
+
+mergeTest({ name: "outpost-mega", part: "outpost-small", unitName: "outpost-mega-drone", cap: 12 });
+mergeTest({ name: "outpost-quad", part: "outpost", unitName: "outpost-quad-drone", subUnit: "outpost-small-drone", cap: 30 });
 
 outpostTest({ name: "outpost", unitName: "outpost-drone", size: 3, offset: 2, cap: 7, minUnits: 4,
     titanium: 400, silicon: 280, thorium: 150, graphite: 100 });

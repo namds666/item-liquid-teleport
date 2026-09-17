@@ -17,6 +17,12 @@ runner saves, stops, and reloads the save; tests with a `reload` callback run
 again in the reloaded world (`RESULT-RELOAD`): the Outpost must keep its
 levels and re-adopt its drones, and removing it must kill them.
 
+`outpost-mega` and `outpost-quad` place 4 Small Outposts / 4 Outposts in a 2x2
+square and expect the periodic merge check to replace them with one merged block
+within 120 ticks; the merged block is then configured and upgraded once. The
+Quad test also expects Mono helpers (`subCount()`), and the Small Outpost drone
+count subtracts those helpers because they share the unit type.
+
 Add a test with `test(name, w, h, setup, check, poll?, opts?)` in
 `mod/scripts/main.js`; the harness claims a free `w`x`h` area near the core
 and passes its origin to the callbacks. `poll` runs every 15 ticks for
