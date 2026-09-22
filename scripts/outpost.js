@@ -40,7 +40,8 @@ const PATHS = PATH_KEYS.map((key, i) => ({ key: key, values: cfg.paths[i] }));
 const MAX_TIER = PATHS[PATH_TIER].values[PATHS[PATH_TIER].values.length - 1];
 
 function upgradeCost(path, level) {
-    let table = path == PATH_TIER ? cfg.tierCosts : cfg.statCosts;
+    let erekir = Vars.state.rules.planet == Planets.erekir;
+    let table = path == PATH_TIER ? (erekir ? cfg.erekirTierCosts : cfg.tierCosts) : (erekir ? cfg.erekirStatCosts : cfg.statCosts);
     return level < table.length && level < PATHS[path].values.length - 1 ? table[level] : null;
 }
 
@@ -561,8 +562,19 @@ create({
         ItemStack.with(Items.phaseFabric, 80, Items.surgeAlloy, 60),
     ],
     tierCosts: [
-        ItemStack.with(Items.titanium, 100, Items.graphite, 100),
-        ItemStack.with(Items.thorium, 200, Items.silicon, 150),
-        ItemStack.with(Items.plastanium, 150, Items.phaseFabric, 60),
+        ItemStack.with(Items.copper, 100, Items.lead, 100),
+        ItemStack.with(Items.graphite, 200, Items.silicon, 150),
+        ItemStack.with(Items.plastanium, 150, Items.surgeAlloy, 60),
+    ],
+    erekirStatCosts: [
+        ItemStack.with(Items.beryllium, 150, Items.silicon, 80),
+        ItemStack.with(Items.tungsten, 150, Items.silicon, 120),
+        ItemStack.with(Items.oxide, 120, Items.tungsten, 100),
+        ItemStack.with(Items.phaseFabric, 80, Items.surgeAlloy, 60),
+    ],
+    erekirTierCosts: [
+        ItemStack.with(Items.sand, 200),
+        ItemStack.with(Items.graphite, 200, Items.silicon, 150),
+        ItemStack.with(Items.beryllium, 150, Items.oxide, 60),
     ],
 });

@@ -403,8 +403,9 @@ function drones(unitName) {
     return out;
 }
 
-// cfg: { name, unitName, size, offset, cap, minUnits, titanium, silicon, thorium, graphite }
+// cfg: { name, unitName, size, offset, cap, minUnits, titanium, silicon, thorium, graphite, copper, lead }
 // Upgrades applied: cap L1, mine L1+L2, tier L1 -> levels "1,0,2,0,1".
+// The tier upgrade costs copper, so the delivery baseline is taken after the upgrades.
 function outpostTest(cfg) {
     const name = cfg.name;
     test(name, cfg.size + 2, cfg.size + 2, (a, s) => {
@@ -414,22 +415,27 @@ function outpostTest(cfg) {
         core.items.add(Items.silicon, 500);
         core.items.add(Items.thorium, 500);
         core.items.add(Items.graphite, 500);
-        s.copper0 = core.items.get(Items.copper);
+        core.items.add(Items.copper, 500);
+        core.items.add(Items.lead, 500);
         s.ti0 = core.items.get(Items.titanium);
         s.si0 = core.items.get(Items.silicon);
         s.th0 = core.items.get(Items.thorium);
         s.gr0 = core.items.get(Items.graphite);
+        s.cu0 = core.items.get(Items.copper);
+        s.pb0 = core.items.get(Items.lead);
         s.outpost.configured(null, Items.copper);
         s.outpost.configured(null, jint(0));
         s.outpost.configured(null, jint(2));
         s.outpost.configured(null, jint(2));
         s.outpost.configured(null, jint(4));
         s.spent = core.items.get(Items.titanium) == s.ti0 - cfg.titanium && core.items.get(Items.silicon) == s.si0 - cfg.silicon
-            && core.items.get(Items.thorium) == s.th0 - cfg.thorium && core.items.get(Items.graphite) == s.gr0 - cfg.graphite;
+            && core.items.get(Items.thorium) == s.th0 - cfg.thorium && core.items.get(Items.graphite) == s.gr0 - cfg.graphite
+            && core.items.get(Items.copper) == s.cu0 - cfg.copper && core.items.get(Items.lead) == s.pb0 - cfg.lead;
+        s.copper0 = core.items.get(Items.copper);
         s.pos = s.outpost.pos();
         s.levels = () => [0, 1, 2, 3, 4].map(p => s.outpost.levelOf(p)).join(",");
         log(name + " hasCopperOre=" + Vars.indexer.hasOre(Items.copper) + " levels=" + s.levels() + " cap=" + s.outpost.unitCap() + " enemyCores=" + ENEMY.cores().size
-            + " titanium=" + s.ti0 + "->" + core.items.get(Items.titanium) + " thorium=" + s.th0 + "->" + core.items.get(Items.thorium));
+            + " titanium=" + s.ti0 + "->" + core.items.get(Items.titanium) + " copper=" + s.cu0 + "->" + core.items.get(Items.copper) + " lead=" + s.pb0 + "->" + core.items.get(Items.lead) + " spent=" + s.spent);
     }, (a, s) => {
         const core = TEAM.core(), d = drones(cfg.unitName);
         const delivered = core.items.get(Items.copper) - s.copper0;
@@ -519,9 +525,9 @@ mergeTest({ name: "outpost-mega", part: "outpost-small", unitName: "outpost-mega
 mergeTest({ name: "outpost-quad", part: "outpost", unitName: "outpost-quad-drone", subUnit: "outpost-small-drone", cap: 30 });
 
 outpostTest({ name: "outpost", unitName: "outpost-drone", size: 3, offset: 2, cap: 7, minUnits: 4,
-    titanium: 400, silicon: 280, thorium: 150, graphite: 100 });
+    titanium: 300, silicon: 280, thorium: 150, graphite: 0, copper: 100, lead: 100 });
 outpostTest({ name: "outpost-small", unitName: "outpost-small-drone", size: 2, offset: 1, cap: 3, minUnits: 3,
-    titanium: 290, silicon: 60, thorium: 0, graphite: 130 });
+    titanium: 240, silicon: 60, thorium: 0, graphite: 80, copper: 50, lead: 50 });
 
 // ── Driver ──────────────────────────────────────────────────────────────
 

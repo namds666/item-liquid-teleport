@@ -22,6 +22,15 @@ require("outpost").create({
         ItemStack.with(Items.plastanium, 240, Items.thorium, 200),
     ],
     tierCosts: [
-        ItemStack.with(Items.plastanium, 600, Items.phaseFabric, 240),
+        ItemStack.with(Items.plastanium, 600, Items.surgeAlloy, 240),
+    ],
+    erekirStatCosts: [
+        ItemStack.with(Items.beryllium, 240, Items.silicon, 120),
+        ItemStack.with(Items.beryllium, 480, Items.graphite, 320),
+        ItemStack.with(Items.tungsten, 320, Items.silicon, 240),
+        ItemStack.with(Items.oxide, 240, Items.tungsten, 200),
+    ],
+    erekirTierCosts: [
+        ItemStack.with(Items.beryllium, 600, Items.oxide, 240),
     ],
 });
