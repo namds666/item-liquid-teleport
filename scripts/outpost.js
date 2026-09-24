@@ -59,7 +59,7 @@ droneType.engineOffset = cfg.engineOffset;
 droneType.mineTier = Math.max(MAX_TIER, cfg.unitMineTier || 0);
 droneType.mineSpeed = PATHS[PATH_MINE].values[0];
 droneType.mineRange = Math.max(PATHS[PATH_RANGE].values[PATHS[PATH_RANGE].values.length - 1], cfg.unitMineRange || 0) * TILE;
-droneType.itemCapacity = PATHS[PATH_CAPACITY].values[PATHS[PATH_CAPACITY].values.length - 1];
+droneType.itemCapacity = Math.max(PATHS[PATH_CAPACITY].values[PATHS[PATH_CAPACITY].values.length - 1], cfg.unitItemCapacity || 0);
 droneType.mineWalls = false;
 droneType.mineFloor = true;
 droneType.useUnitCap = false;
@@ -127,9 +127,14 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
             orphanTimer = 0;
             if (cfg.subDrone != null && parentUnit == null) this.updateSubs(unit);
 
-            const stats = fixedStats != null
-                ? { speed: outpost.droneStats().speed, mineSpeed: fixedStats.mineSpeed, capacity: fixedStats.capacity, range: fixedStats.range, tier: outpost.mineTier() }
-                : outpost.droneStats();
+            let stats = outpost.droneStats();
+            if (fixedStats != null) stats = {
+                speed: stats.speed,
+                mineSpeed: fixedStats.mineSpeed,
+                capacity: fixedStats.capacity * stats.capacity / PATHS[PATH_CAPACITY].values[0],
+                range: fixedStats.range,
+                tier: stats.tier
+            };
             const core = unit.closestCore();
             const item = outpost.targetItem();
 
@@ -578,7 +583,7 @@ create({
         [5, 7, 9, 12, 15],
         [1.5, 1.8, 2.1, 2.4, 2.8],
         [0.5, 1.0, 1.75, 2.75, 4.0],
-        [20, 30, 40, 55, 70],
+        [5, 8, 10, 14, 18],
         [1, 2, 3, 4],
         [9, 11, 13, 16, 20],
     ],
