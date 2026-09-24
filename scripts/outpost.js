@@ -73,6 +73,7 @@ lib.enableAllEnvironments(droneType);
 function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
     let outpost = initialOutpost;
     let mining = true;
+    let approaching = false;
     let ore = null;
     let oreTimer = ORE_REFIND;
     let orphanTimer = 0;
@@ -168,7 +169,12 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
                         this.circle(outpost, CIRCLE_RADIUS, stats.speed);
                         return;
                     }
-                    this.moveToSpeed(ore, range - TILE, 20, stats.speed);
+                    // Any spot inside the range is fine; drones only fly in once pushed past it, and stop
+                    // well inside so they do not drift in and out at the edge.
+                    const settle = Math.max(range - 2 * TILE, range / 2);
+                    if (!unit.within(ore, range)) approaching = true;
+                    else if (unit.within(ore, settle)) approaching = false;
+                    if (approaching) this.moveToSpeed(ore, settle - TILE, 20, stats.speed);
                     if (unit.within(ore, range) && unit.validMine(ore)) unit.mineTile = ore;
                     return;
                 }
