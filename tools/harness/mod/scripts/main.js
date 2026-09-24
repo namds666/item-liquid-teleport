@@ -507,14 +507,17 @@ function mergeTest(cfg) {
         mega.configured(null, Items.copper);
         mega.configured(null, jint(0));
         log(name + " merged at t" + ticks + " selected=" + mega.selectedItem() + " levels=" + [0, 1, 2, 3, 4].map(p => mega.levelOf(p)).join(",") + " otherParts=" + s.partsBefore);
-    }, { long: true, track: (a, s) => { const m = s.mega(); s.units = m == null ? 0 : m.unitCount(); }, reload: (s) => {
+    }, { long: true, track: (a, s) => { const m = s.mega(); s.units = m == null ? 0 : m.unitCount(); s.subs = m == null ? 0 : m.subCount(); }, reload: (s) => {
         const build = Vars.world.build(s.x0 + 1, s.y0 + 1);
         if (build == null || build.block.name != "item-liquid-teleport-" + name) return [{ name: "reload", pass: false, info: "build=" + build }];
         const d = drones(cfg.unitName);
         const levelsOk = [0, 1, 2, 3, 4].map(p => build.levelOf(p)).join(",") == "1,0,0,0,0" && build.selectedItem() == Items.copper;
-        const adopted = build.unitCount() == s.units && d.alive == s.units;
-        const reload = { name: "reload", pass: levelsOk && adopted && d.mining > 0,
-            info: "levelsOk=" + levelsOk + " units=" + build.unitCount() + "/" + s.units + " drones=" + d.alive + " mining=" + d.mining };
+        // The saved spawn progress can finish during the reload wait, so one extra drone is allowed.
+        const adopted = build.unitCount() >= s.units && d.alive == build.unitCount();
+        const subsKept = cfg.subUnit == null || (s.subs > 0 && build.subCount() == s.subs);
+        const reload = { name: "reload", pass: levelsOk && adopted && subsKept && d.mining > 0,
+            info: "levelsOk=" + levelsOk + " units=" + build.unitCount() + "/" + s.units + " drones=" + d.alive + " mining=" + d.mining
+                + " subs=" + build.subCount() + "/" + s.subs };
         build.tile.remove();
         const after = drones(cfg.unitName);
         return [reload, { name: "remove", pass: after.alive == 0, info: "dronesAlive=" + after.alive }];

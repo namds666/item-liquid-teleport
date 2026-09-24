@@ -76,7 +76,6 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
     let ore = null;
     let oreTimer = ORE_REFIND;
     let orphanTimer = 0;
-    let subs = [];
     let subTimer = 0;
     const vec = new Vec2();
 
@@ -84,9 +83,8 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
         setOutpost(build) { outpost = build; },
 
         updateSubs(unit) {
-            subs = subs.filter(u => !u.dead && u.isAdded());
             let want = Math.min(cfg.subDrone.max, outpost.levelOf(cfg.subDrone.path));
-            if (subs.length >= want) { subTimer = 0; return; }
+            if (outpost.subCountOf(unit) >= want) { subTimer = 0; return; }
             subTimer += Time.delta;
             if (subTimer < cfg.subDrone.spawnTime || Vars.net.client()) return;
             subTimer = 0;
@@ -96,11 +94,9 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
             sub.set(unit.x, unit.y);
             sub.rotation = unit.rotation;
             sub.add();
-            sub.controller(makeDroneAI(outpost, cfg.subDrone.stats, unit));
-            outpost.registerSub(sub);
+            outpost.adoptSub(sub, unit);
             Fx.spawn.at(unit.x, unit.y);
             Events.fire(new EventType.UnitCreateEvent(sub, outpost, null));
-            subs.push(sub);
         },
 
         moveToSpeed(target, circleLength, smooth, speed) {
@@ -279,9 +275,13 @@ blockType.buildType = prov(() => {
     let progress = 0;
     let units = [];
     let pendingIds = null;
+    let pendingSubs = null;
 
     function pruneUnits() {
         units = units.filter(u => !u.dead && u.isAdded());
+    }
+    function pruneSubs() {
+        subs = subs.filter(s => !s.unit.dead && s.unit.isAdded());
     }
 
     return extend(Building, {
@@ -304,8 +304,12 @@ blockType.buildType = prov(() => {
         mineTier() { return PATHS[PATH_TIER].values[levels[PATH_TIER]]; },
         unitCap() { return PATHS[PATH_CAP].values[levels[PATH_CAP]]; },
         unitCount() { return units.length; },
-        registerSub(unit) { subs.push(unit); },
-        subCount() { subs = subs.filter(u => !u.dead && u.isAdded()); return subs.length; },
+        adoptSub(sub, parent) {
+            sub.controller(makeDroneAI(this, cfg.subDrone.stats, parent));
+            subs.push({ unit: sub, parent: parent });
+        },
+        subCount() { pruneSubs(); return subs.length; },
+        subCountOf(parent) { pruneSubs(); return subs.filter(s => s.parent == parent).length; },
         spawnFrac() { return units.length >= this.unitCap() ? 0 : Mathf.clamp(progress / SPAWN_TIME); },
         droneStats() {
             return {
@@ -343,6 +347,15 @@ blockType.buildType = prov(() => {
                 if (unit != null && unit.type == droneType && unit.team == this.team && !unit.dead) this.adoptUnit(unit);
             }
             pendingIds = null;
+            if (pendingSubs == null) return;
+            // Loaded subs get a fresh default AI with no outpost and would die as orphans.
+            for (let i = 0; i < pendingSubs.length; i += 2) {
+                let sub = Groups.unit.getByID(pendingSubs[i]);
+                let parent = Groups.unit.getByID(pendingSubs[i + 1]);
+                if (sub == null || sub.dead || sub.team != this.team || parent == null || units.indexOf(parent) < 0) continue;
+                this.adoptSub(sub, parent);
+            }
+            pendingSubs = null;
         },
         spawnUnit() {
             let unit = droneType.create(this.team);
@@ -382,7 +395,7 @@ blockType.buildType = prov(() => {
             this.super$onRemoved();
             if (!Vars.net.client()) {
                 for (let i = 0; i < units.length; i++) if (!units[i].dead) units[i].kill();
-                for (let i = 0; i < subs.length; i++) if (!subs[i].dead) subs[i].kill();
+                for (let i = 0; i < subs.length; i++) if (!subs[i].unit.dead) subs[i].unit.kill();
             }
             units = [];
             subs = [];
@@ -503,7 +516,7 @@ blockType.buildType = prov(() => {
 
         config() { return auto ? java.lang.Boolean.TRUE : item; },
 
-        version() { return 2; },
+        version() { return 3; },
 
         write(write) {
             this.super$write(write);
@@ -515,6 +528,9 @@ blockType.buildType = prov(() => {
             pruneUnits();
             write.s(units.length);
             for (let i = 0; i < units.length; i++) write.i(units[i].id);
+            pruneSubs();
+            write.s(subs.length);
+            for (let i = 0; i < subs.length; i++) { write.i(subs[i].unit.id); write.i(subs[i].parent.id); }
         },
 
         read(read, revision) {
@@ -532,6 +548,13 @@ blockType.buildType = prov(() => {
             pendingIds = [];
             for (let i = 0; i < count; i++) pendingIds.push(read.i());
             units = [];
+            subs = [];
+            pendingSubs = null;
+            if (revision >= 3) {
+                let subCount = read.s();
+                pendingSubs = [];
+                for (let i = 0; i < subCount * 2; i++) pendingSubs.push(read.i());
+            }
         }
     });
 });
