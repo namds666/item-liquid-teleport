@@ -14,6 +14,7 @@ require("outpost").create({
         [2, 3, 4, 6, 8],
         [80, 120, 160, 240, 320],
         [3, 4],
+        [11, 14, 18, 23, 30],
     ],
     statCosts: [
         ItemStack.with(Items.titanium, 240, Items.silicon, 120),

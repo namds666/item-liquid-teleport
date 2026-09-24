@@ -8,8 +8,8 @@ const ORE_REFIND = 60;
 const MERGE_CHECK = 120;
 const ORPHAN_TIME = 120;
 
-const PATH_CAP = 0, PATH_SPEED = 1, PATH_MINE = 2, PATH_CAPACITY = 3, PATH_TIER = 4;
-const PATH_KEYS = ["cap", "speed", "mine", "capacity", "tier"];
+const PATH_CAP = 0, PATH_SPEED = 1, PATH_MINE = 2, PATH_CAPACITY = 3, PATH_TIER = 4, PATH_RANGE = 5;
+const PATH_KEYS = ["cap", "speed", "mine", "capacity", "tier", "range"];
 
 function bundle(key, a, b) {
     let full = "outpost." + key;
@@ -58,6 +58,7 @@ droneType.hitSize = cfg.hitSize;
 droneType.engineOffset = cfg.engineOffset;
 droneType.mineTier = Math.max(MAX_TIER, cfg.unitMineTier || 0);
 droneType.mineSpeed = PATHS[PATH_MINE].values[0];
+droneType.mineRange = Math.max(PATHS[PATH_RANGE].values[PATHS[PATH_RANGE].values.length - 1], cfg.unitMineRange || 0) * TILE;
 droneType.itemCapacity = PATHS[PATH_CAPACITY].values[PATHS[PATH_CAPACITY].values.length - 1];
 droneType.mineWalls = false;
 droneType.mineFloor = true;
@@ -131,12 +132,13 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
             if (cfg.subDrone != null && parentUnit == null) this.updateSubs(unit);
 
             const stats = fixedStats != null
-                ? { speed: fixedStats.speed, mineSpeed: fixedStats.mineSpeed, capacity: fixedStats.capacity, tier: outpost.mineTier() }
+                ? { speed: outpost.droneStats().speed, mineSpeed: fixedStats.mineSpeed, capacity: fixedStats.capacity, range: fixedStats.range, tier: outpost.mineTier() }
                 : outpost.droneStats();
             const core = unit.closestCore();
             const item = outpost.targetItem();
 
-            if (unit.mineTile != null && !unit.validMine(unit.mineTile)) unit.mineTile = null;
+            const range = stats.range * TILE;
+            if (unit.mineTile != null && (!unit.validMine(unit.mineTile) || !unit.within(unit.mineTile, range))) unit.mineTile = null;
             if (unit.mineTile != null) unit.mineTimer += Time.delta * Math.max(0, stats.mineSpeed - unit.type.mineSpeed);
 
             if (core == null || (item == null && unit.stack.amount == 0)) {
@@ -165,8 +167,8 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
                         this.circle(outpost, CIRCLE_RADIUS, stats.speed);
                         return;
                     }
-                    this.moveToSpeed(ore, unit.type.mineRange / 2, 20, stats.speed);
-                    if (unit.within(ore, unit.type.mineRange) && unit.validMine(ore)) unit.mineTile = ore;
+                    this.moveToSpeed(ore, range - TILE, 20, stats.speed);
+                    if (unit.within(ore, range) && unit.validMine(ore)) unit.mineTile = ore;
                     return;
                 }
             }
@@ -273,7 +275,7 @@ blockType.buildType = prov(() => {
     let subs = [];
     let auto = false;
     let autoTimer = 0;
-    let levels = [0, 0, 0, 0, 0];
+    let levels = PATHS.map(() => 0);
     let progress = 0;
     let units = [];
     let pendingIds = null;
@@ -310,6 +312,7 @@ blockType.buildType = prov(() => {
                 speed: PATHS[PATH_SPEED].values[levels[PATH_SPEED]],
                 mineSpeed: PATHS[PATH_MINE].values[levels[PATH_MINE]],
                 capacity: PATHS[PATH_CAPACITY].values[levels[PATH_CAPACITY]],
+                range: PATHS[PATH_RANGE].values[levels[PATH_RANGE]],
                 tier: this.mineTier()
             };
         },
@@ -554,6 +557,7 @@ create({
         [0.5, 1.0, 1.75, 2.75, 4.0],
         [20, 30, 40, 55, 70],
         [1, 2, 3, 4],
+        [9, 11, 13, 16, 20],
     ],
     statCosts: [
         ItemStack.with(Items.titanium, 150, Items.silicon, 80),

@@ -8,13 +8,14 @@ require("outpost").create({
     unitHealth: 1600,
     hitSize: 36,
     engineOffset: 12,
-    subDrone: { unitName: "outpost-small-drone", path: 0, max: 4, spawnTime: 120, stats: { speed: 1.5, mineSpeed: 0.5, capacity: 20 } },
+    subDrone: { unitName: "outpost-small-drone", path: 0, max: 4, spawnTime: 120, stats: { mineSpeed: 0.5, capacity: 20, range: 9 } },
     paths: [
         [20, 30, 40, 60, 80],
         [6, 9, 12, 18, 24],
         [2, 3, 4, 6, 8],
         [80, 120, 160, 240, 320],
         [3, 4],
+        [11, 14, 18, 23, 30],
     ],
     statCosts: [
         ItemStack.with(Items.titanium, 600, Items.silicon, 320),

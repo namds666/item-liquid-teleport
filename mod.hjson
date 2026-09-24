@@ -2,8 +2,9 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code & Codex",
-  subtitle: "v1.4.2: Outpost tier upgrades cost only lower-tier items, Erekir costs",
+  subtitle: "v1.4.3: Outpost mine range upgrade, helper drones match parent speed",
   description: "Adds cheat-grade Chrono blocks for global item and liquid transport, terrain conversion, item conversion, repair, construction, overdrive, unit buffs, unit debuffs, and core placement, plus the Outpost drone mining base.
+  Update: new Mine range upgrade line makes the drone mining beam longer on every Outpost; Quad Outpost helper drones now move at the same speed as their parent drone.
   Update: Outpost mine tier upgrades never cost items above the tier they unlock; on Erekir every Outpost upgrade uses Erekir items.
   Update: Mega and Quad Outposts get their own building design with hangar pads, struts, and a central reactor.
   Update: four Small Outposts in a 2x2 square merge into a Mega Outpost (4x4) and four Outposts merge into a Quad Outpost (6x6); both build heavy drones with four times the stats and an upgrade ladder that reaches sixteen times; Quad drones deploy Mono helpers.
@@ -13,6 +14,6 @@
   Update: every block, unit, status, and menu string is translated into all 35 languages Mindustry supports; a check blocks commits that miss a translation.
   Update: new Small Outpost, a 2x2 mono-based Outpost with lower upgrade limits; ore selector shows one row per planet; upgrade cost colors update live.
   Update: new Outpost block builds flying mining drones that deliver a selected ore to the core; upgrade unit cap, speed, mine speed, carry capacity, and mine tier with items from the core.",
-  version: "1.4.2",
+  version: "1.4.3",
   minGameVersion: "146"
 }
