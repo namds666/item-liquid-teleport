@@ -3,13 +3,12 @@ const lib = require("lib");
 const TILE = Vars.tilesize;
 const SPAWN_TIME = 300;
 const CIRCLE_RADIUS = 3 * TILE;
-const DROP_RANGE = 40;
 const ORE_REFIND = 60;
 const MERGE_CHECK = 120;
 const ORPHAN_TIME = 120;
 
-const PATH_CAP = 0, PATH_SPEED = 1, PATH_MINE = 2, PATH_CAPACITY = 3, PATH_TIER = 4, PATH_RANGE = 5;
-const PATH_KEYS = ["cap", "speed", "mine", "capacity", "tier", "range"];
+const PATH_CAP = 0, PATH_SPEED = 1, PATH_MINE = 2, PATH_CAPACITY = 3, PATH_TIER = 4, PATH_RANGE = 5, PATH_DROP = 6, PATH_BEAM = 7;
+const PATH_KEYS = ["cap", "speed", "mine", "capacity", "tier", "range", "drop", "beam"];
 
 function bundle(key, a, b) {
     let full = "outpost." + key;
@@ -41,11 +40,19 @@ const MAX_TIER = PATHS[PATH_TIER].values[PATHS[PATH_TIER].values.length - 1];
 
 function upgradeCost(path, level) {
     let erekir = Vars.state.rules.planet == Planets.erekir;
-    let table = path == PATH_TIER ? (erekir ? cfg.erekirTierCosts : cfg.tierCosts) : (erekir ? cfg.erekirStatCosts : cfg.statCosts);
+    let table = path == PATH_TIER ? (erekir ? cfg.erekirTierCosts : cfg.tierCosts)
+        : path == PATH_BEAM ? (erekir ? cfg.erekirBeamCosts : cfg.beamCosts)
+        : (erekir ? cfg.erekirStatCosts : cfg.statCosts);
     return level < table.length && level < PATHS[path].values.length - 1 ? table[level] : null;
 }
 
-const droneType = extend(UnitType, cfg.unitName, {});
+const droneType = extend(UnitType, cfg.unitName, {
+    drawMining(unit) {
+        this.super$drawMining(unit);
+        let ai = unit.controller();
+        if (unit.mineTile != null && ai != null && typeof ai.drawBeams == "function") ai.drawBeams();
+    }
+});
 droneType.constructor = prov(() => UnitEntity.create());
 droneType.flying = true;
 droneType.lowAltitude = true;
@@ -78,10 +85,63 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
     let oreTimer = ORE_REFIND;
     let orphanTimer = 0;
     let subTimer = 0;
+    let beams = [];
+    let beamTimer = ORE_REFIND;
     const vec = new Vec2();
+
+    function hasBeam(t) {
+        for (let i = 0; i < beams.length; i++) if (beams[i] == t) return true;
+        return false;
+    }
+
+    // Extra beams each hold a distinct ore tile of the primary's item; rescans are rate-limited
+    // and walk rings outward from the drone so they stop as soon as enough tiles are found.
+    function updateBeams(unit, range, want) {
+        const tile = unit.mineTile;
+        if (tile == null || want <= 1) { beams = []; return; }
+        const item = tile.drop();
+        let kept = beams.filter(t => t != tile && t.drop() == item && unit.within(t, range) && unit.validMine(t));
+        if (kept.length < beams.length) beamTimer = ORE_REFIND;
+        beams = kept.slice(0, want - 1);
+        beamTimer += Time.delta;
+        if (beams.length >= want - 1 || beamTimer < ORE_REFIND) return;
+        beamTimer = 0;
+        const cx = Math.round(unit.x / TILE), cy = Math.round(unit.y / TILE), r = Math.ceil(range / TILE);
+        const consider = (x, y) => {
+            if (beams.length >= want - 1) return;
+            let t = Vars.world.tile(x, y);
+            if (t == null || t == tile || t.block() != Blocks.air || t.drop() != item || !unit.within(t, range) || !unit.validMine(t) || hasBeam(t)) return;
+            beams.push(t);
+        };
+        for (let d = 1; d <= r && beams.length < want - 1; d++) {
+            for (let k = -d; k <= d; k++) {
+                consider(cx + k, cy - d);
+                consider(cx + k, cy + d);
+                if (k > -d && k < d) { consider(cx - d, cy + k); consider(cx + d, cy + k); }
+            }
+        }
+    }
 
     return new JavaAdapter(AIController, {
         setOutpost(build) { outpost = build; },
+
+        activeBeams() { return this.unit == null || this.unit.mineTile == null ? 0 : 1 + beams.length; },
+
+        drawBeams() {
+            const unit = this.unit;
+            if (unit == null || unit.mineTile == null || beams.length == 0 || !droneType.drawMineBeam) return;
+            let focus = droneType.mineBeamOffset + Mathf.absin(Time.time, 1.1, 0.5);
+            let px = unit.x + Angles.trnsx(unit.rotation, focus), py = unit.y + Angles.trnsy(unit.rotation, focus);
+            Draw.z(Layer.flyingUnit + 0.1);
+            Draw.color(Color.lightGray, Color.white, 0.7 + Mathf.absin(Time.time, 0.5, 0.3));
+            Draw.alpha(Renderer.unitLaserOpacity);
+            for (let i = 0; i < beams.length; i++) {
+                let t = beams[i];
+                Drawf.laser(droneType.mineLaserRegion, droneType.mineLaserEndRegion, px, py,
+                    t.worldx() + Mathf.sin(Time.time + 48 + i * 17, 12, TILE / 8), t.worldy() + Mathf.sin(Time.time + 48 + i * 17, 14, TILE / 8), 0.75);
+            }
+            Draw.color();
+        },
 
         updateSubs(unit) {
             let want = Math.min(cfg.subDrone.max, outpost.levelOf(cfg.subDrone.path));
@@ -134,14 +194,17 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
                 mineSpeed: fixedStats.mineSpeed,
                 capacity: fixedStats.capacity * stats.capacity / PATHS[PATH_CAPACITY].values[0],
                 range: fixedStats.range,
-                tier: stats.tier
+                dropRange: stats.dropRange,
+                tier: stats.tier,
+                beams: 1 + outpost.levelOf(PATH_BEAM)
             };
             const core = unit.closestCore();
             const item = outpost.targetItem();
 
             const range = stats.range * TILE;
             if (unit.mineTile != null && (!unit.validMine(unit.mineTile) || !unit.within(unit.mineTile, range))) unit.mineTile = null;
-            if (unit.mineTile != null) unit.mineTimer += Time.delta * Math.max(0, stats.mineSpeed - unit.type.mineSpeed);
+            updateBeams(unit, range, stats.beams);
+            if (unit.mineTile != null) unit.mineTimer += Time.delta * Math.max(0, stats.mineSpeed * (1 + beams.length) - unit.type.mineSpeed);
 
             if (core == null || (item == null && unit.stack.amount == 0)) {
                 unit.mineTile = null;
@@ -182,7 +245,8 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
 
             unit.mineTile = null;
             if (unit.stack.amount == 0) { mining = true; return; }
-            if (unit.within(core, DROP_RANGE)) {
+            const dropRange = stats.dropRange * TILE + core.block.size * TILE / 2;
+            if (unit.within(core, dropRange)) {
                 if (core.acceptStack(unit.stack.item, unit.stack.amount, unit) > 0) {
                     Call.transferItemTo(unit, unit.stack.item, unit.stack.amount, unit.x, unit.y, core);
                 }
@@ -190,7 +254,7 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
                 mining = true;
                 return;
             }
-            this.moveToSpeed(core, DROP_RANGE / 2, 30, stats.speed);
+            this.moveToSpeed(core, dropRange / 2, 30, stats.speed);
         }
     });
 }
@@ -328,7 +392,9 @@ blockType.buildType = prov(() => {
                 mineSpeed: PATHS[PATH_MINE].values[levels[PATH_MINE]],
                 capacity: PATHS[PATH_CAPACITY].values[levels[PATH_CAPACITY]],
                 range: PATHS[PATH_RANGE].values[levels[PATH_RANGE]],
-                tier: this.mineTier()
+                dropRange: PATHS[PATH_DROP].values[levels[PATH_DROP]],
+                tier: this.mineTier(),
+                beams: PATHS[PATH_BEAM].values[levels[PATH_BEAM]]
             };
         },
         oreLocked() { return item != null && item.hardness > this.mineTier(); },
@@ -587,11 +653,13 @@ create({
     mergeInto: "outpost-quad",
     paths: [
         [5, 7, 9, 12, 15],
-        [1.5, 1.8, 2.1, 2.4, 2.8],
+        [1.5, 1.65, 1.8, 1.95, 2.15],
         [0.5, 1.0, 1.75, 2.75, 4.0],
         [5, 8, 10, 14, 18],
         [1, 2, 3, 4],
         [9, 11, 13, 16, 20],
+        [9, 11, 13, 16, 20],
+        [2, 3, 4, 5, 6, 7, 8],
     ],
     statCosts: [
         ItemStack.with(Items.titanium, 150, Items.silicon, 80),
@@ -614,5 +682,21 @@ create({
         ItemStack.with(Items.sand, 200),
         ItemStack.with(Items.graphite, 200, Items.silicon, 150),
         ItemStack.with(Items.beryllium, 150, Items.oxide, 60),
+    ],
+    beamCosts: [
+        ItemStack.with(Items.graphite, 100, Items.silicon, 60),
+        ItemStack.with(Items.titanium, 150, Items.silicon, 100),
+        ItemStack.with(Items.thorium, 150, Items.silicon, 150),
+        ItemStack.with(Items.plastanium, 120, Items.thorium, 120),
+        ItemStack.with(Items.phaseFabric, 100, Items.surgeAlloy, 80),
+        ItemStack.with(Items.phaseFabric, 200, Items.surgeAlloy, 160),
+    ],
+    erekirBeamCosts: [
+        ItemStack.with(Items.beryllium, 100, Items.silicon, 60),
+        ItemStack.with(Items.beryllium, 200, Items.silicon, 100),
+        ItemStack.with(Items.tungsten, 150, Items.silicon, 150),
+        ItemStack.with(Items.oxide, 120, Items.tungsten, 120),
+        ItemStack.with(Items.phaseFabric, 100, Items.surgeAlloy, 80),
+        ItemStack.with(Items.phaseFabric, 200, Items.surgeAlloy, 160),
     ],
 });

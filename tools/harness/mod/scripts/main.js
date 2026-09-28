@@ -404,7 +404,7 @@ function drones(unitName) {
 }
 
 // cfg: { name, unitName, size, offset, cap, minUnits, titanium, silicon, thorium, graphite, copper, lead }
-// Upgrades applied: cap L1, mine L1+L2, tier L1 -> levels "1,0,2,0,1".
+// Upgrades applied: cap L1, mine L1+L2, tier L1, drop L1, beam L1 -> levels "1,0,2,0,1,0,1,1".
 // The tier upgrade costs copper, so the delivery baseline is taken after the upgrades.
 function outpostTest(cfg) {
     const name = cfg.name;
@@ -431,21 +431,29 @@ function outpostTest(cfg) {
         s.spent = core.items.get(Items.titanium) == s.ti0 - cfg.titanium && core.items.get(Items.silicon) == s.si0 - cfg.silicon
             && core.items.get(Items.thorium) == s.th0 - cfg.thorium && core.items.get(Items.graphite) == s.gr0 - cfg.graphite
             && core.items.get(Items.copper) == s.cu0 - cfg.copper && core.items.get(Items.lead) == s.pb0 - cfg.lead;
+        s.outpost.configured(null, jint(6));
+        s.outpost.configured(null, jint(7));
+        s.maxBeams = 0;
         s.copper0 = core.items.get(Items.copper);
         s.pos = s.outpost.pos();
-        s.levels = () => [0, 1, 2, 3, 4].map(p => s.outpost.levelOf(p)).join(",");
+        s.levels = () => [0, 1, 2, 3, 4, 5, 6, 7].map(p => s.outpost.levelOf(p)).join(",");
         log(name + " hasCopperOre=" + Vars.indexer.hasOre(Items.copper) + " levels=" + s.levels() + " cap=" + s.outpost.unitCap() + " enemyCores=" + ENEMY.cores().size
             + " titanium=" + s.ti0 + "->" + core.items.get(Items.titanium) + " copper=" + s.cu0 + "->" + core.items.get(Items.copper) + " lead=" + s.pb0 + "->" + core.items.get(Items.lead) + " spent=" + s.spent);
     }, (a, s) => {
         const core = TEAM.core(), d = drones(cfg.unitName);
         const delivered = core.items.get(Items.copper) - s.copper0;
         const spawned = s.outpost.unitCount() >= cfg.minUnits && s.outpost.unitCount() == d.alive;
-        const upgraded = s.levels() == "1,0,2,0,1" && s.outpost.unitCap() == cfg.cap && s.spent;
+        const upgraded = s.levels() == "1,0,2,0,1,0,1,1" && s.outpost.unitCap() == cfg.cap && s.spent;
         s.units = s.outpost.unitCount();
-        return { pass: spawned && upgraded && delivered > 0,
+        return { pass: spawned && upgraded && delivered > 0 && s.maxBeams >= 2,
                  info: "units=" + s.units + "/" + s.outpost.unitCap() + " drones=" + d.alive + " mining=" + d.mining + " carried=" + d.carried
-                    + " delivered=" + delivered + " levels=" + s.levels() + " upgraded=" + upgraded };
+                    + " delivered=" + delivered + " levels=" + s.levels() + " upgraded=" + upgraded + " maxBeams=" + s.maxBeams };
     }, (a, s) => {
+        Groups.unit.each(cons(u => {
+            if (u.type.name != "item-liquid-teleport-" + cfg.unitName || u.team != TEAM || u.dead) return;
+            const c = u.controller();
+            if (c != null && typeof c.activeBeams == "function") s.maxBeams = Math.max(s.maxBeams, c.activeBeams());
+        }));
         if (ticks % 300 == 0) {
             let d = drones(cfg.unitName), enemies = "";
             Groups.unit.each(cons(u => { if (u.team != TEAM && !u.dead) enemies += u.type.name + "@" + Math.round(u.x / TS) + "," + Math.round(u.y / TS) + (u.disarmed ? "(disarmed)" : "") + " "; }));
@@ -456,7 +464,7 @@ function outpostTest(cfg) {
         const build = Vars.world.build(s.pos);
         if (build == null || build.block.name != "item-liquid-teleport-" + name) return [{ name: "reload", pass: false, info: "build=" + build }];
         const d = drones(cfg.unitName);
-        const levelsOk = [0, 1, 2, 3, 4].map(p => build.levelOf(p)).join(",") == "1,0,2,0,1" && build.selectedItem() == Items.copper;
+        const levelsOk = [0, 1, 2, 3, 4, 5, 6, 7].map(p => build.levelOf(p)).join(",") == "1,0,2,0,1,0,1,1" && build.selectedItem() == Items.copper;
         const adopted = build.unitCount() == s.units && d.alive == s.units;
         const reload = { name: "reload", pass: levelsOk && adopted && d.mining > 0,
             info: "levelsOk=" + levelsOk + " units=" + build.unitCount() + "/" + s.units + " drones=" + d.alive + " mining=" + d.mining };

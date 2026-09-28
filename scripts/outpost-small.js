@@ -12,11 +12,13 @@ require("outpost").create({
     mergeInto: "outpost-mega",
     paths: [
         [2, 3, 4, 5, 6],
-        [1.5, 1.7, 1.9, 2.1, 2.4],
+        [1.5, 1.6, 1.7, 1.8, 1.95],
         [0.5, 0.75, 1.0, 1.5, 2.0],
         [5, 6, 8, 10, 13],
         [1, 2],
         [9, 10, 11, 13, 15],
+        [9, 10, 11, 13, 15],
+        [1, 2, 3, 4, 5, 6, 7],
     ],
     statCosts: [
         ItemStack.with(Items.titanium, 60, Items.silicon, 30),
@@ -35,5 +37,21 @@ require("outpost").create({
     ],
     erekirTierCosts: [
         ItemStack.with(Items.sand, 100),
+    ],
+    beamCosts: [
+        ItemStack.with(Items.graphite, 40, Items.silicon, 20),
+        ItemStack.with(Items.titanium, 60, Items.silicon, 40),
+        ItemStack.with(Items.thorium, 60, Items.silicon, 60),
+        ItemStack.with(Items.plastanium, 50, Items.thorium, 50),
+        ItemStack.with(Items.phaseFabric, 40, Items.surgeAlloy, 30),
+        ItemStack.with(Items.phaseFabric, 80, Items.surgeAlloy, 60),
+    ],
+    erekirBeamCosts: [
+        ItemStack.with(Items.beryllium, 40, Items.silicon, 20),
+        ItemStack.with(Items.beryllium, 80, Items.silicon, 40),
+        ItemStack.with(Items.tungsten, 60, Items.silicon, 60),
+        ItemStack.with(Items.oxide, 50, Items.tungsten, 50),
+        ItemStack.with(Items.phaseFabric, 40, Items.surgeAlloy, 30),
+        ItemStack.with(Items.phaseFabric, 80, Items.surgeAlloy, 60),
     ],
 });
