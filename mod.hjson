@@ -2,7 +2,7 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code & Codex",
-  subtitle: "v1.4.7: Outpost drop range and mining beam upgrades, gentler speed upgrades",
+  subtitle: "v1.4.8: Outpost drop range and mining beam upgrades, gentler speed upgrades",
   description: "Adds cheat-grade Chrono blocks for global item and liquid transport, terrain conversion, item conversion, repair, construction, overdrive, unit buffs, unit debuffs, and core placement, plus the Outpost drone mining base.
   Update: Outpost drones now stay in place anywhere inside their mine range and fly closer only when they are farther than the range, so drones no longer push each other for one spot.
   Update: every Outpost carry capacity upgrade line is cut to one quarter; Quad Outpost helper drones now scale their carry capacity with the capacity level of their parent drone.
@@ -17,6 +17,6 @@
   Update: every block, unit, status, and menu string is translated into all 35 languages Mindustry supports; a check blocks commits that miss a translation.
   Update: new Small Outpost, a 2x2 mono-based Outpost with lower upgrade limits; ore selector shows one row per planet; upgrade cost colors update live.
   Update: new Outpost block builds flying mining drones that deliver a selected ore to the core; upgrade unit cap, speed, mine speed, carry capacity, and mine tier with items from the core.",
-  version: "1.4.7",
+  version: "1.4.8",
   minGameVersion: "146"
 }

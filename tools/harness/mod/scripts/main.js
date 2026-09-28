@@ -9,6 +9,7 @@ const TS = Vars.tilesize;
 
 let ticks = -1;
 let phase = 0;
+let saved = false;
 let claimed = [];
 let tests = [];
 
@@ -94,7 +95,8 @@ function disarmEnemies() {
     }));
 }
 
-// Runs every tick until the save so reload checks compare against the state that was written, not the LONG_TICK snapshot.
+// Runs every tick until the save starts writing (SaveWriteEvent), so reload checks compare against the state that was
+// written: the server keeps ticking for a few seconds after `save`, and a drone spawned then is not in the file.
 function trackAll() {
     for (let i = 0; i < tests.length; i++) {
         let t = tests[i];
@@ -520,9 +522,9 @@ function mergeTest(cfg) {
         if (build == null || build.block.name != "item-liquid-teleport-" + name) return [{ name: "reload", pass: false, info: "build=" + build }];
         const d = drones(cfg.unitName);
         const levelsOk = [0, 1, 2, 3, 4].map(p => build.levelOf(p)).join(",") == "1,0,0,0,0" && build.selectedItem() == Items.copper;
-        // The saved spawn progress can finish during the reload wait, so one extra drone is allowed.
+        // The saved spawn progress can finish during the reload wait, so extra drones and helpers are allowed.
         const adopted = build.unitCount() >= s.units && d.alive == build.unitCount();
-        const subsKept = cfg.subUnit == null || (s.subs > 0 && build.subCount() == s.subs);
+        const subsKept = cfg.subUnit == null || (s.subs > 0 && build.subCount() >= s.subs && build.subCount() <= build.unitCount() * build.levelOf(0));
         const reload = { name: "reload", pass: levelsOk && adopted && subsKept && d.mining > 0,
             info: "levelsOk=" + levelsOk + " units=" + build.unitCount() + "/" + s.units + " drones=" + d.alive + " mining=" + d.mining
                 + " subs=" + build.subCount() + "/" + s.subs };
@@ -611,6 +613,14 @@ Events.on(EventType.UnitDestroyEvent, cons(e => {
         + " health=" + u.health + " stack=" + u.stack.amount + " mine=" + (u.mineTile != null) + " ctrl=" + ctrl + " floor=" + (u.tileOn() == null ? "null" : u.tileOn().floor().name) + " near=[" + near.trim() + "]");
 }));
 
+Events.on(EventType.SaveWriteEvent, cons(e => {
+    if (phase != 1 || saved) return;
+    saved = true;
+    let units = "";
+    for (let i = 0; i < tests.length; i++) if (tests[i].track) units += tests[i].name + "=" + tests[i].state.units + " ";
+    log("save written at t" + ticks + " tracked units: " + units.trim());
+}));
+
 Events.on(EventType.WorldLoadEvent, cons(() => { phase++; ticks = 0; claimed = []; log("world loaded " + Vars.state.map.name() + " phase=" + phase); }));
 
 Events.run(EventType.Trigger.update, run(() => {
@@ -625,7 +635,7 @@ Events.run(EventType.Trigger.update, run(() => {
         if (phase != 1) return;
         disarmEnemies();
         if (ticks == SETUP_TICK) setupAll();
-        if (ticks > SETUP_TICK) trackAll();
+        if (ticks > SETUP_TICK && !saved) trackAll();
         if (ticks > SETUP_TICK && ticks < LONG_TICK && ticks % 15 == 0) pollAll();
         if (ticks == FINAL_TICK) checkAll(false, "RESULT");
         if (ticks == LONG_TICK) checkAll(true, "RESULT-LONG");
