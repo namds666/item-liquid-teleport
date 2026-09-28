@@ -8,7 +8,7 @@ per block plus a final `RESULT`.
 Covered: mender, unloader, pusher (container and crafter targets), liquid
 unloader, liquid pusher, item converter, liquid tiler, item tiler, repair
 point, build tower (rebuilds a destroyed wall), booster, buffer, debuffer,
-core. `api-types` is informational: it prints how Rhino resolves
+core, outpost range levels (11 mine range upgrades: level, range, cost tier switch). `api-types` is informational: it prints how Rhino resolves
 field-vs-method names on each Building subclass.
 
 `outpost` and `outpost-small` are long tests: they are checked at tick 1500 (`RESULT-LONG`) because

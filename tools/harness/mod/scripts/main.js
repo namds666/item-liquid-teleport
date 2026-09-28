@@ -542,6 +542,45 @@ outpostTest({ name: "outpost", unitName: "outpost-drone", size: 3, offset: 2, ca
 outpostTest({ name: "outpost-small", unitName: "outpost-small-drone", size: 2, offset: 1, cap: 3, minUnits: 3,
     titanium: 240, silicon: 60, thorium: 0, graphite: 80, copper: 50, lead: 50 });
 
+function costMap(cost) {
+    if (cost == null) return null;
+    let out = {}, isArray = cost.length !== undefined, n = isArray ? cost.length : cost.size;
+    for (let i = 0; i < n; i++) { let st = isArray ? cost[i] : cost.get(i); out[st.item.name] = Number(st.amount); }
+    return out;
+}
+function costIs(cost, want) {
+    let m = costMap(cost);
+    if (m == null) return false;
+    let keys = Object.keys(want);
+    return Object.keys(m).length == keys.length && keys.every(k => m[k] == want[k]);
+}
+
+// Everything runs in setup and the block is removed there, so its drones never join the "outpost" test's drone count.
+test("outpost-range-levels", 5, 5, (a, s) => {
+    const b = place(modBlock("outpost"), a.x + 2, a.y + 2);
+    const core = TEAM.core();
+    core.items.add(Items.titanium, 2000);
+    core.items.add(Items.silicon, 1200);
+    core.items.add(Items.thorium, 300);
+    const ti0 = core.items.get(Items.titanium), si0 = core.items.get(Items.silicon), th0 = core.items.get(Items.thorium);
+    s.firstCostOk = costIs(b.upgradeCost(5), { titanium: 150, silicon: 80 });
+    for (let i = 0; i < 11; i++) b.configured(null, jint(5));
+    s.level5 = Number(b.levelOf(5));
+    s.range = Number(b.droneStats().range);
+    s.cost5 = JSON.stringify(costMap(b.upgradeCost(5)));
+    s.cost5Ok = costIs(b.upgradeCost(5), { thorium: 150, silicon: 120 });
+    s.level6 = Number(b.levelOf(6));
+    s.dropRange = Number(b.droneStats().dropRange);
+    s.cost6 = JSON.stringify(costMap(b.upgradeCost(6)));
+    s.cost6Ok = costIs(b.upgradeCost(6), { titanium: 150, silicon: 80 });
+    s.spent = (ti0 - core.items.get(Items.titanium)) + "/" + (si0 - core.items.get(Items.silicon)) + "/" + (th0 - core.items.get(Items.thorium));
+    b.tile.remove();
+}, (a, s) => ({
+    pass: s.firstCostOk && s.level5 == 11 && s.range == 31 && s.cost5Ok && s.level6 == 0 && s.dropRange == 9 && s.cost6Ok && s.spent == "1500/920/150",
+    info: "firstCostOk=" + s.firstCostOk + " level5=" + s.level5 + " range=" + s.range + " cost5=" + s.cost5 + " level6=" + s.level6
+        + " dropRange=" + s.dropRange + " cost6=" + s.cost6 + " spent(ti/si/th)=" + s.spent
+}));
+
 // ── Driver ──────────────────────────────────────────────────────────────
 
 function setupAll() {

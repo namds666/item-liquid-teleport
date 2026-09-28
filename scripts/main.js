@@ -1,5 +1,6 @@
 const optionalScripts = [
     "lib",
+    "ore-index",
     "chrono-unloader",
     "chrono-pusher",
     "chrono-liquid-unloader",

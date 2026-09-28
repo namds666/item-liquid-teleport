@@ -1,4 +1,5 @@
 const lib = require("lib");
+const oreIndex = require("ore-index");
 
 const TILE = Vars.tilesize;
 const SPAWN_TIME = 300;
@@ -9,6 +10,13 @@ const ORPHAN_TIME = 120;
 
 const PATH_CAP = 0, PATH_SPEED = 1, PATH_MINE = 2, PATH_CAPACITY = 3, PATH_TIER = 4, PATH_RANGE = 5, PATH_DROP = 6, PATH_BEAM = 7;
 const PATH_KEYS = ["cap", "speed", "mine", "capacity", "tier", "range", "drop", "beam"];
+const LEVELS_PER_RANGE_COST = 10;
+
+function linear(start, step, count) {
+    let out = [];
+    for (let i = 0; i < count; i++) out.push(start + step * i);
+    return out;
+}
 
 function bundle(key, a, b) {
     let full = "outpost." + key;
@@ -43,7 +51,8 @@ function upgradeCost(path, level) {
     let table = path == PATH_TIER ? (erekir ? cfg.erekirTierCosts : cfg.tierCosts)
         : path == PATH_BEAM ? (erekir ? cfg.erekirBeamCosts : cfg.beamCosts)
         : (erekir ? cfg.erekirStatCosts : cfg.statCosts);
-    return level < table.length && level < PATHS[path].values.length - 1 ? table[level] : null;
+    let index = path == PATH_RANGE || path == PATH_DROP ? Math.floor(level / LEVELS_PER_RANGE_COST) : level;
+    return index < table.length && level < PATHS[path].values.length - 1 ? table[index] : null;
 }
 
 const droneType = extend(UnitType, cfg.unitName, {
@@ -94,8 +103,7 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
         return false;
     }
 
-    // Extra beams each hold a distinct ore tile of the primary's item; rescans are rate-limited
-    // and walk rings outward from the drone so they stop as soon as enough tiles are found.
+    // Extra beams each hold a distinct ore tile of the primary's item; rescans are rate-limited.
     function updateBeams(unit, range, want) {
         const tile = unit.mineTile;
         if (tile == null || want <= 1) { beams = []; return; }
@@ -106,20 +114,8 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
         beamTimer += Time.delta;
         if (beams.length >= want - 1 || beamTimer < ORE_REFIND) return;
         beamTimer = 0;
-        const cx = Math.round(unit.x / TILE), cy = Math.round(unit.y / TILE), r = Math.ceil(range / TILE);
-        const consider = (x, y) => {
-            if (beams.length >= want - 1) return;
-            let t = Vars.world.tile(x, y);
-            if (t == null || t == tile || t.block() != Blocks.air || t.drop() != item || !unit.within(t, range) || !unit.validMine(t) || hasBeam(t)) return;
-            beams.push(t);
-        };
-        for (let d = 1; d <= r && beams.length < want - 1; d++) {
-            for (let k = -d; k <= d; k++) {
-                consider(cx + k, cy - d);
-                consider(cx + k, cy + d);
-                if (k > -d && k < d) { consider(cx - d, cy + k); consider(cx + d, cy + k); }
-            }
-        }
+        beams = beams.concat(oreIndex.nearby(item, unit.x, unit.y, range, want - 1 - beams.length,
+            t => t != tile && !hasBeam(t) && unit.validMine(t)));
     }
 
     return new JavaAdapter(AIController, {
@@ -193,7 +189,7 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
                 speed: stats.speed,
                 mineSpeed: fixedStats.mineSpeed,
                 capacity: fixedStats.capacity * stats.capacity / PATHS[PATH_CAPACITY].values[0],
-                range: fixedStats.range,
+                range: fixedStats.range + stats.range - PATHS[PATH_RANGE].values[0],
                 dropRange: stats.dropRange,
                 tier: stats.tier,
                 beams: 1 + outpost.levelOf(PATH_BEAM)
@@ -640,6 +636,7 @@ return blockType;
 }
 
 exports.create = create;
+exports.linear = linear;
 
 create({
     name: "outpost",
@@ -657,8 +654,8 @@ create({
         [0.5, 1.0, 1.75, 2.75, 4.0],
         [5, 8, 10, 14, 18],
         [1, 2, 3, 4],
-        [9, 11, 13, 16, 20],
-        [9, 11, 13, 16, 20],
+        linear(9, 2, 41),
+        linear(9, 2, 41),
         [2, 3, 4, 5, 6, 7, 8],
     ],
     statCosts: [

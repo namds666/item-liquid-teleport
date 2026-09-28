@@ -1,4 +1,6 @@
-require("outpost").create({
+const outpost = require("outpost");
+
+outpost.create({
     name: "outpost-small",
     unitName: "outpost-small-drone",
     size: 2,
@@ -16,8 +18,8 @@ require("outpost").create({
         [0.5, 0.75, 1.0, 1.5, 2.0],
         [5, 6, 8, 10, 13],
         [1, 2],
-        [9, 10, 11, 13, 15],
-        [9, 10, 11, 13, 15],
+        outpost.linear(9, 2, 41),
+        outpost.linear(9, 2, 41),
         [1, 2, 3, 4, 5, 6, 7],
     ],
     statCosts: [
