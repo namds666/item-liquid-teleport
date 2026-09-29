@@ -303,12 +303,13 @@ blockType.config(java.lang.Boolean, lib.cons2((build, on) => build.setAuto(!!on)
 blockType.config(java.lang.Integer, lib.cons2((build, path) => build.tryUpgrade(path | 0)));
 
 // Four same-team parts in an aligned 2x2 square become one merged block; the merged origin is
-// the part square's bottom-left center shifted by (1, 1) for both size 2 and size 3 parts.
+// the part square's bottom-left center shifted by floor((2s-1)/2) - floor((s-1)/2) for part size s.
 function tryMerge(build) {
     if (cfg.mergeInto == null || Vars.net.client()) return false;
     let mega = Vars.content.block(lib.modName + "-" + cfg.mergeInto);
     if (mega == null) return false;
     let s = blockType.size;
+    let d = Math.floor((2 * s - 1) / 2) - Math.floor((s - 1) / 2);
     let bx = build.tileX(), by = build.tileY();
     for (let dx = 0; dx <= 1; dx++) {
         for (let dy = 0; dy <= 1; dy++) {
@@ -324,7 +325,7 @@ function tryMerge(build) {
                 }
             }
             if (parts == null) continue;
-            let origin = Vars.world.tile(x0 + 1, y0 + 1);
+            let origin = Vars.world.tile(x0 + d, y0 + d);
             if (origin == null) continue;
             let team = build.team;
             for (let k = 0; k < parts.length; k++) Call.removeTile(parts[k].tile);

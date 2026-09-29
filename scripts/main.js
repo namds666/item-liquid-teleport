@@ -18,6 +18,7 @@ const optionalScripts = [
     "chrono-debuffer",
     "outpost",
     "outpost-small",
+    "outpost-micro",
     "outpost-mega",
     "outpost-quad"
 ];

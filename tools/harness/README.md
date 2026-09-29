@@ -11,17 +11,20 @@ point, build tower (rebuilds a destroyed wall), booster, buffer, debuffer,
 core, outpost range levels (11 mine range upgrades: level, range, cost tier switch). `api-types` is informational: it prints how Rhino resolves
 field-vs-method names on each Building subclass.
 
-`outpost` and `outpost-small` are long tests: they are checked at tick 1500 (`RESULT-LONG`) because
+`outpost`, `outpost-small` and `outpost-micro` are long tests: they are checked at tick 1500 (`RESULT-LONG`) because
 drones spawn every 300 ticks and copper must reach the core. After that the
 runner saves, stops, and reloads the save; tests with a `reload` callback run
 again in the reloaded world (`RESULT-RELOAD`): the Outpost must keep its
 levels and re-adopt its drones, and removing it must kill them.
 
-`outpost-mega` and `outpost-quad` place 4 Small Outposts / 4 Outposts in a 2x2
+`outpost-mega`, `outpost-quad` and `outpost-small-from-micro` place 4 Small Outposts / 4 Outposts / 4 Micro Outposts in a 2x2
 square and expect the periodic merge check to replace them with one merged block
 within 120 ticks; the merged block is then configured and upgraded once. The
 Quad test also expects Mono helpers (`subCount()`), and the Small Outpost drone
-count subtracts those helpers because they share the unit type.
+count subtracts those helpers because they share the unit type. Drone counts
+also exclude drones of other builds of the same block (the merge test's
+`outpost-small` and the `outpost-small` test share a drone type), so the
+`mining` and `carried` figures may include those other drones.
 
 Add a test with `test(name, w, h, setup, check, poll?, opts?)` in
 `mod/scripts/main.js`; the harness claims a free `w`x`h` area near the core

@@ -393,7 +393,14 @@ function quadSubs() {
     return n;
 }
 
-function drones(unitName) {
+// Drones of other team builds of the owner's block, so tests sharing a drone type stay independent.
+function otherDrones(owner) {
+    let n = 0;
+    Groups.build.each(cons(b => { if (b.team == TEAM && b.block == owner.block && b != owner) n += b.unitCount(); }));
+    return n;
+}
+
+function drones(unitName, owner) {
     let out = { alive: 0, mining: 0, carried: 0 };
     Groups.unit.each(cons(u => {
         if (u.type.name != "item-liquid-teleport-" + unitName || u.team != TEAM || u.dead) return;
@@ -402,6 +409,7 @@ function drones(unitName) {
         if (u.mineTile != null) out.mining++;
     }));
     if (unitName == "outpost-small-drone") out.alive -= quadSubs();
+    if (owner != null) out.alive -= otherDrones(owner);
     return out;
 }
 
@@ -442,7 +450,7 @@ function outpostTest(cfg) {
         log(name + " hasCopperOre=" + Vars.indexer.hasOre(Items.copper) + " levels=" + s.levels() + " cap=" + s.outpost.unitCap() + " enemyCores=" + ENEMY.cores().size
             + " titanium=" + s.ti0 + "->" + core.items.get(Items.titanium) + " copper=" + s.cu0 + "->" + core.items.get(Items.copper) + " lead=" + s.pb0 + "->" + core.items.get(Items.lead) + " spent=" + s.spent);
     }, (a, s) => {
-        const core = TEAM.core(), d = drones(cfg.unitName);
+        const core = TEAM.core(), d = drones(cfg.unitName, s.outpost);
         const delivered = core.items.get(Items.copper) - s.copper0;
         const spawned = s.outpost.unitCount() >= cfg.minUnits && s.outpost.unitCount() == d.alive;
         const upgraded = s.levels() == "1,0,2,0,1,0,1,1" && s.outpost.unitCap() == cfg.cap && s.spent;
@@ -457,7 +465,7 @@ function outpostTest(cfg) {
             if (c != null && typeof c.activeBeams == "function") s.maxBeams = Math.max(s.maxBeams, c.activeBeams());
         }));
         if (ticks % 300 == 0) {
-            let d = drones(cfg.unitName), enemies = "";
+            let d = drones(cfg.unitName, s.outpost), enemies = "";
             Groups.unit.each(cons(u => { if (u.team != TEAM && !u.dead) enemies += u.type.name + "@" + Math.round(u.x / TS) + "," + Math.round(u.y / TS) + (u.disarmed ? "(disarmed)" : "") + " "; }));
             log(name + " t" + ticks + " units=" + s.outpost.unitCount() + " mining=" + d.mining + " carried=" + d.carried + " delivered=" + (TEAM.core().items.get(Items.copper) - s.copper0)
                 + " timeScale=" + s.outpost.timeScale + " delta=" + Time.delta + " eff=" + s.outpost.efficiency + " enemies=[" + enemies.trim() + "] wave=" + Vars.state.wave + " wavetime=" + Math.round(Vars.state.wavetime));
@@ -465,13 +473,13 @@ function outpostTest(cfg) {
     }, { long: true, track: (a, s) => { s.units = s.outpost.unitCount(); }, reload: (s) => {
         const build = Vars.world.build(s.pos);
         if (build == null || build.block.name != "item-liquid-teleport-" + name) return [{ name: "reload", pass: false, info: "build=" + build }];
-        const d = drones(cfg.unitName);
+        const d = drones(cfg.unitName, build);
         const levelsOk = [0, 1, 2, 3, 4, 5, 6, 7].map(p => build.levelOf(p)).join(",") == "1,0,2,0,1,0,1,1" && build.selectedItem() == Items.copper;
         const adopted = build.unitCount() == s.units && d.alive == s.units;
         const reload = { name: "reload", pass: levelsOk && adopted && d.mining > 0,
             info: "levelsOk=" + levelsOk + " units=" + build.unitCount() + "/" + s.units + " drones=" + d.alive + " mining=" + d.mining };
         build.tile.remove();
-        const after = drones(cfg.unitName);
+        const after = drones(cfg.unitName, build);
         return [reload, { name: "remove", pass: after.alive == 0, info: "dronesAlive=" + after.alive }];
     } });
 }
@@ -483,7 +491,7 @@ function mergeTest(cfg) {
     const name = cfg.name;
     const partSize = modBlock(cfg.part).size;
     const megaSize = partSize * 2;
-    test(name, megaSize + 2, megaSize + 2, (a, s) => {
+    test(cfg.label || name, megaSize + 2, megaSize + 2, (a, s) => {
         const part = modBlock(cfg.part);
         const off = Math.floor((partSize - 1) / 2) + 1;
         s.x0 = a.x + off; s.y0 = a.y + off;
@@ -497,8 +505,7 @@ function mergeTest(cfg) {
         s.mega = () => { const b = Vars.world.build(s.x0 + 1, s.y0 + 1); return b != null && b.block.name == "item-liquid-teleport-" + name ? b : null; };
         log(name + " parts placed at " + s.x0 + "," + s.y0 + " size " + partSize);
     }, (a, s) => {
-        const core = TEAM.core(), d = drones(cfg.unitName);
-        const mega = s.mega();
+        const mega = s.mega(), core = TEAM.core(), d = drones(cfg.unitName, mega);
         const delivered = core.items.get(Items.copper) - s.copper0;
         const merged = mega != null && mega.block.size == megaSize && Vars.world.build(s.x0, s.y0) == mega;
         const parts = Groups.build.count(boolf(b => b.block.name == "item-liquid-teleport-" + cfg.part && b.team == TEAM));
@@ -520,7 +527,7 @@ function mergeTest(cfg) {
     }, { long: true, track: (a, s) => { const m = s.mega(); s.units = m == null ? 0 : m.unitCount(); s.subs = m == null ? 0 : m.subCount(); }, reload: (s) => {
         const build = Vars.world.build(s.x0 + 1, s.y0 + 1);
         if (build == null || build.block.name != "item-liquid-teleport-" + name) return [{ name: "reload", pass: false, info: "build=" + build }];
-        const d = drones(cfg.unitName);
+        const d = drones(cfg.unitName, build);
         const levelsOk = [0, 1, 2, 3, 4].map(p => build.levelOf(p)).join(",") == "1,0,0,0,0" && build.selectedItem() == Items.copper;
         // The saved spawn progress can finish during the reload wait, so extra drones and helpers are allowed.
         const adopted = build.unitCount() >= s.units && d.alive == build.unitCount();
@@ -529,18 +536,21 @@ function mergeTest(cfg) {
             info: "levelsOk=" + levelsOk + " units=" + build.unitCount() + "/" + s.units + " drones=" + d.alive + " mining=" + d.mining
                 + " subs=" + build.subCount() + "/" + s.subs };
         build.tile.remove();
-        const after = drones(cfg.unitName);
+        const after = drones(cfg.unitName, build);
         return [reload, { name: "remove", pass: after.alive == 0, info: "dronesAlive=" + after.alive }];
     } });
 }
 
 mergeTest({ name: "outpost-mega", part: "outpost-small", unitName: "outpost-mega-drone", cap: 12 });
 mergeTest({ name: "outpost-quad", part: "outpost", unitName: "outpost-quad-drone", subUnit: "outpost-small-drone", cap: 30 });
+mergeTest({ name: "outpost-small", part: "outpost-micro", unitName: "outpost-small-drone", cap: 3, label: "outpost-small-from-micro" });
 
 outpostTest({ name: "outpost", unitName: "outpost-drone", size: 3, offset: 2, cap: 7, minUnits: 4,
     titanium: 300, silicon: 280, thorium: 150, graphite: 0, copper: 100, lead: 100 });
 outpostTest({ name: "outpost-small", unitName: "outpost-small-drone", size: 2, offset: 1, cap: 3, minUnits: 3,
     titanium: 240, silicon: 60, thorium: 0, graphite: 80, copper: 50, lead: 50 });
+outpostTest({ name: "outpost-micro", unitName: "outpost-micro-drone", size: 1, offset: 1, cap: 2, minUnits: 2,
+    titanium: 120, silicon: 30, thorium: 0, graphite: 40, copper: 25, lead: 25 });
 
 function costMap(cost) {
     if (cost == null) return null;
