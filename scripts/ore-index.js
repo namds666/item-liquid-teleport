@@ -59,9 +59,9 @@ exports.nearby = (item, x, y, radius, max, accept) => {
         const gx = axisGap(x, bx), gy = axisGap(y, by);
         if (gx * gx + gy * gy > r2) return;
         for (let i = 0; i < list.length; i++) {
-            const t = list[i];
+            let t = list[i];
             if (t.block() != Blocks.air || t.drop() != item) continue;
-            const dx = t.worldx() - x, dy = t.worldy() - y, d2 = dx * dx + dy * dy;
+            let dx = t.worldx() - x, dy = t.worldy() - y, d2 = dx * dx + dy * dy;
             if (d2 > r2 || (accept != null && !accept(t))) continue;
             found.push({ tile: t, d2: d2 });
         }
@@ -73,7 +73,7 @@ exports.nearby = (item, x, y, radius, max, accept) => {
             scan(cbx + k, cby + d);
             if (k > -d && k < d) { scan(cbx - d, cby + k); scan(cbx + d, cby + k); }
         }
-        const next = Math.max(0, Math.min(x - ((cbx - d) * SPAN - TILE), (cbx + d + 1) * SPAN - x,
+        let next = Math.max(0, Math.min(x - ((cbx - d) * SPAN - TILE), (cbx + d + 1) * SPAN - x,
             y - ((cby - d) * SPAN - TILE), (cby + d + 1) * SPAN - y));
         if (next > radius) break;
         if (found.length >= max) {
