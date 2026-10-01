@@ -8,7 +8,7 @@ per block plus a final `RESULT`.
 Covered: mender, unloader, pusher (container and crafter targets), liquid
 unloader, liquid pusher, item converter, liquid tiler, item tiler, repair
 point, build tower (rebuilds a destroyed wall), booster, buffer, debuffer,
-core, outpost range levels (11 mine range upgrades: level, range, cost tier switch). `api-types` is informational: it prints how Rhino resolves
+core, outpost range levels (11 mine range upgrades: level, range, cost tier switch), chrono-hypno-upgrade (3 upgrades: level, range, channel, exact core cost). `api-types` is informational: it prints how Rhino resolves
 field-vs-method names on each Building subclass.
 
 `outpost`, `outpost-small` and `outpost-micro` are long tests: they are checked at tick 1500 (`RESULT-LONG`) because
@@ -16,6 +16,13 @@ drones spawn every 300 ticks and copper must reach the core. After that the
 runner saves, stops, and reloads the save; tests with a `reload` callback run
 again in the reloaded world (`RESULT-RELOAD`): the Outpost must keep its
 levels and re-adopt its drones, and removing it must kill them.
+
+`chrono-hypno` is a long test (checked at tick 1500): the block respawns its
+Yuri from 25 silicon, Yuri converts an enemy wall, then an enemy fortress that
+the test moves beyond the 20 tile range after the tether exists (the tether must
+not break on range), and the enemy core stays enemy. The target unit is a
+fortress because `disarmEnemies` removes every other non-team unit each tick.
+Its reload callback expects the block to keep its level and a living Yuri.
 
 `outpost-mega`, `outpost-quad` and `outpost-small-from-micro` place 4 Small Outposts / 4 Outposts / 4 Micro Outposts in a 2x2
 square and expect the periodic merge check to replace them with one merged block

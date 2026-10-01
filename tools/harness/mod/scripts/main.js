@@ -590,6 +590,59 @@ test("outpost-range-levels", 5, 5, (a, s) => {
         + " dropRange=" + s.dropRange + " cost6=" + s.cost6 + " spent(ti/si/th)=" + s.spent
 }));
 
+// The fortress starts nearer than the wall, so Yuri tethers it first; the poll then moves it beyond range to prove the tether holds.
+test("chrono-hypno", 11, 6, (a, s) => {
+    s.block = place(modBlock("chrono-hypno"), a.x + 1, a.y + 2);
+    s.block.items.add(Items.silicon, 50);
+    s.pos = s.block.pos();
+    s.fortress = spawn(UnitTypes.fortress, ENEMY, a.x + 6, a.y + 2);
+    s.wall = place(Blocks.copperWall, a.x + 10, a.y + 5, ENEMY);
+    s.enemyCores = ENEMY.cores().size;
+    s.tetherSeen = false;
+    s.moved = false;
+}, (a, s) => {
+    const y = s.block.yuri();
+    const fortressOk = s.fortress.team == TEAM, wallOk = s.wall.team == TEAM;
+    const silicon = s.block.items.get(Items.silicon), cores = ENEMY.cores().size;
+    return { pass: y != null && fortressOk && wallOk && silicon == 25 && s.moved && cores == s.enemyCores,
+             info: "yuri=" + (y != null) + " fortressTeam=" + s.fortress.team + " wallTeam=" + s.wall.team + " silicon=" + silicon
+                + " tetherSeen=" + s.tetherSeen + " moved=" + s.moved + " enemyCores=" + cores + "/" + s.enemyCores };
+}, (a, s) => {
+    if (s.block.yuri() == null) return;
+    if (s.yuriAt == null) s.yuriAt = ticks;
+    if (!s.tetherSeen && s.fortress.team == ENEMY) s.tetherSeen = true;
+    if (!s.moved && ticks >= s.yuriAt + 15 && s.fortress.team == ENEMY) {
+        s.fortress.set((a.x + 28) * TS, (a.y + 2) * TS);
+        s.moved = true;
+        log("chrono-hypno fortress moved beyond range at t" + ticks);
+    }
+}, { long: true, track: (a, s) => {}, reload: (s) => {
+    const build = Vars.world.build(s.pos);
+    if (build == null || build.block.name != "item-liquid-teleport-chrono-hypno") return [{ name: "reload", pass: false, info: "build=" + build }];
+    const pass = Number(build.level()) == 0 && build.yuri() != null;
+    const r = { name: "reload", pass: pass, info: "level=" + build.level() + " yuri=" + (build.yuri() != null) };
+    build.tile.remove();
+    return [r];
+} });
+
+test("chrono-hypno-upgrade", 5, 5, (a, s) => {
+    const b = place(modBlock("chrono-hypno"), a.x + 2, a.y + 2);
+    const core = TEAM.core();
+    core.items.add(Items.titanium, 2000);
+    core.items.add(Items.silicon, 1200);
+    core.items.add(Items.thorium, 300);
+    const ti0 = core.items.get(Items.titanium), si0 = core.items.get(Items.silicon), th0 = core.items.get(Items.thorium);
+    for (let i = 0; i < 3; i++) b.configured(null, jint(0));
+    s.level = Number(b.level());
+    s.range = Number(b.hypnoRange());
+    s.channel = Number(b.hypnoChannel());
+    s.spent = (ti0 - core.items.get(Items.titanium)) + "/" + (si0 - core.items.get(Items.silicon)) + "/" + (th0 - core.items.get(Items.thorium));
+    b.tile.remove();
+}, (a, s) => ({
+    pass: s.level == 3 && s.range == 23 * TS && s.channel == 102 && s.spent == "300/280/150",
+    info: "level=" + s.level + " range=" + s.range + " channel=" + s.channel + " spent(ti/si/th)=" + s.spent
+}));
+
 // ── Driver ──────────────────────────────────────────────────────────────
 
 function setupAll() {
