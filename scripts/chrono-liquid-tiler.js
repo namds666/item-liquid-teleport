@@ -250,7 +250,7 @@ blockType.buildType = prov(() => {
             })).row();
 
             table.table(cons(t => {
-                t.label(prov(() => this.radiusLabel())).left().row();
+                t.label(prov(() => this.radiusLabel())).colspan(4).left().row();
                 for (let i = 0; i < RADIUS_LEVELS.length; i++) {
                     let value = RADIUS_LEVELS[i];
                     t.button("" + value, Styles.togglet, run(() => {
