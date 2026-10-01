@@ -69,12 +69,11 @@ function spawn(type, team, tx, ty) {
     return u;
 }
 
-function ringTiles(cx, cy, radius) {
+function squareTiles(cx, cy, radius) {
     let out = [];
     for (let dy = -radius; dy <= radius; dy++)
         for (let dx = -radius; dx <= radius; dx++) {
             if (dx == 0 && dy == 0) continue;
-            if (dx * dx + dy * dy > radius * radius) continue;
             let t = Vars.world.tile(cx + dx, cy + dy);
             if (t != null) out.push(t);
         }
@@ -278,22 +277,22 @@ test("item-converter", 6, 2, (a, s) => {
 
 test("liquid-tiler", 5, 5, (a, s) => {
     s.tiler = place(modBlock("chrono-liquid-tiler"), a.x + 2, a.y + 2);
-    s.tiler.configured(null, intSeq([Liquids.water.id, 2]));
+    s.tiler.configured(null, intSeq([Liquids.water.id, 1]));
     s.tiler.liquids.add(Liquids.water, 10);
 }, (a, s) => {
-    let tiles = ringTiles(a.x + 2, a.y + 2, 2), painted = 0;
+    let tiles = squareTiles(a.x + 2, a.y + 2, 1), painted = 0;
     for (let i = 0; i < tiles.length; i++) if (tiles[i].floor() == Blocks.water) painted++;
-    return { pass: painted >= 3, info: "painted=" + painted + "/" + tiles.length + " water=" + s.tiler.liquids.get(Liquids.water).toFixed(1) };
+    return { pass: painted == tiles.length, info: "painted=" + painted + "/" + tiles.length + " water=" + s.tiler.liquids.get(Liquids.water).toFixed(1) };
 });
 
 test("item-tiler", 5, 5, (a, s) => {
     s.tiler = place(modBlock("chrono-item-tiler"), a.x + 2, a.y + 2);
-    s.tiler.configured(null, intSeq([Items.copper.id, 2, 0, Blocks.oreCopper.id]));
+    s.tiler.configured(null, intSeq([Items.copper.id, 1, 0, Blocks.oreCopper.id]));
     s.tiler.items.add(Items.copper, 10);
 }, (a, s) => {
-    let tiles = ringTiles(a.x + 2, a.y + 2, 2), painted = 0;
+    let tiles = squareTiles(a.x + 2, a.y + 2, 1), painted = 0;
     for (let i = 0; i < tiles.length; i++) if (tiles[i].overlay() == Blocks.oreCopper) painted++;
-    return { pass: painted >= 3, info: "painted=" + painted + "/" + tiles.length + " copper=" + s.tiler.items.get(Items.copper) };
+    return { pass: painted == tiles.length, info: "painted=" + painted + "/" + tiles.length + " copper=" + s.tiler.items.get(Items.copper) };
 });
 
 test("repair-point", 4, 1, (a, s) => {

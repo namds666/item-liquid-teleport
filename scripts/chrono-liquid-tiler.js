@@ -40,22 +40,19 @@ function intervalLabel(ticks) {
     return Strings.autoFixed(ticks / 60, ticks % 60 == 0 ? 0 : 2) + "s";
 }
 
-function addOffset(out, x, y, limit2) {
+function addOffset(out, x, y) {
     if (x == 0 && y == 0) return;
-    if (x * x + y * y > limit2) return;
     out.push({ x: x, y: y });
 }
 
-function ringOffsets(radius) {
+function squareOffsets(radius) {
     let out = [];
-    let limit2 = radius * radius;
-
     for (let r = 1; r <= radius; r++) {
-        for (let y = 0; y <= r; y++) addOffset(out, r, y, limit2);
-        for (let x = r - 1; x >= -r; x--) addOffset(out, x, r, limit2);
-        for (let y = r - 1; y >= -r; y--) addOffset(out, -r, y, limit2);
-        for (let x = -r + 1; x <= r; x++) addOffset(out, x, -r, limit2);
-        for (let y = -r + 1; y < 0; y++) addOffset(out, r, y, limit2);
+        for (let y = 0; y <= r; y++) addOffset(out, r, y);
+        for (let x = r - 1; x >= -r; x--) addOffset(out, x, r);
+        for (let y = r - 1; y >= -r; y--) addOffset(out, -r, y);
+        for (let x = -r + 1; x <= r; x++) addOffset(out, x, -r);
+        for (let y = -r + 1; y < 0; y++) addOffset(out, r, y);
     }
 
     return out;
@@ -87,6 +84,11 @@ const blockType = extend(Block, "chrono-liquid-tiler", {
             prov(() => Core.bundle.get("bar.progress")),
             prov(() => Pal.ammo),
             floatp(() => e.progressFrac())
+        )));
+        this.addBar("radius", lib.func(e => new Bar(
+            prov(() => e.radiusLabel()),
+            prov(() => Pal.accent),
+            floatp(() => Math.min(1, e.radiusValue() / RADIUS_LEVELS[RADIUS_LEVELS.length - 1]))
         )));
     }
 });
@@ -133,6 +135,10 @@ blockType.buildType = prov(() => {
             return radius;
         },
 
+        radiusLabel() {
+            return Core.bundle.format("tiler.radius", radius, radius * 2 + 1);
+        },
+
         setTilerConfig(liquidId, radiusValue) {
             let liquids = Vars.content.liquids();
             selectedLiquid = (liquidId == null || liquidId < 0 || liquidId >= liquids.size) ? null : liquids.get(liquidId);
@@ -165,7 +171,7 @@ blockType.buildType = prov(() => {
         },
 
         nextTile() {
-            let offsets = ringOffsets(radius);
+            let offsets = squareOffsets(radius);
             if (offsets.length == 0) return null;
             let floor = this.selectedFloor();
 
@@ -232,24 +238,24 @@ blockType.buildType = prov(() => {
         },
 
         drawSelect() {
-            Drawf.dashCircle(this.x, this.y, radius * Vars.tilesize, selectedLiquid != null && selectedLiquid.color != null ? selectedLiquid.color : Pal.accent);
+            Drawf.dashSquare(selectedLiquid != null && selectedLiquid.color != null ? selectedLiquid.color : Pal.accent, this.x, this.y, (2 * radius + 1) * Vars.tilesize);
         },
 
         buildConfiguration(table) {
             table.table(cons(t => {
-                t.add("Liquid").left().row();
+                t.add(Core.bundle.get("tiler.liquid")).left().row();
                 lib.addResourceGrid(t, Vars.content.liquids(), () => selectedLiquid, v => {
                     this.configure(tilerConfig(v == null ? -1 : v.id, radius));
                 });
             })).row();
 
             table.table(cons(t => {
-                t.add("Radius").left().row();
+                t.label(prov(() => this.radiusLabel())).left().row();
                 for (let i = 0; i < RADIUS_LEVELS.length; i++) {
                     let value = RADIUS_LEVELS[i];
-                    t.button(value + "b", run(() => {
+                    t.button("" + value, Styles.togglet, run(() => {
                         this.configure(tilerConfig(selectedLiquid == null ? -1 : selectedLiquid.id, value));
-                    })).size(58, 40).pad(2);
+                    })).size(58, 40).pad(2).checked(boolf(b => radius == value));
                     if (i == 3) t.row();
                 }
             })).row();
