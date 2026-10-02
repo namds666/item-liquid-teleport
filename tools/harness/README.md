@@ -24,6 +24,11 @@ not break on range), and the enemy core stays enemy. The target unit is a
 fortress because `disarmEnemies` removes every other non-team unit each tick.
 Its reload callback expects the block to keep its level and a living Yuri.
 
+`chrono-hypno-big` places 4 Chrono Hypnos in a 2x2 square and expects one Big
+Chrono Hypno whose Big Yuri converts two enemy walls together (one tether each).
+`chrono-hypno-stack` puts two Yuri on one enemy wall and expects the conversion
+in less than the 120 tick level 0 channel time (two Yuri take half of it).
+
 `outpost-mega`, `outpost-quad` and `outpost-small-from-micro` place 4 Small Outposts / 4 Outposts / 4 Micro Outposts in a 2x2
 square and expect the periodic merge check to replace them with one merged block
 within 120 ticks; the merged block is then configured and upgraded once. The

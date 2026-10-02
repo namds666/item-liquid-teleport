@@ -4,80 +4,104 @@ const convertRules = require("hypno-convert");
 
 const CommandAIClass = Packages.mindustry.ai.types.CommandAI;
 const states = {};
+// Conversion progress belongs to the target, so every Yuri tethered to it adds its own rate: two Yuri convert twice as fast.
+const progress = {};
+const PROGRESS_KEEP = 30;
 
-const yuriType = extend(UnitType, "yuri", {
-    update(unit) {
-        this.super$update(unit);
-        if (Vars.net.client()) return;
-        pruneStates();
+function create(cfg) {
+    const yuriType = extend(UnitType, cfg.unitName, {
+        update(unit) {
+            this.super$update(unit);
+            if (Vars.net.client()) return;
+            pruneStates();
 
-        let st = stateOf(unit);
-        st.seen = true;
-        let owner = st.owner != null && st.owner.isValid() ? st.owner : null;
-        let range = (owner != null ? owner.hypnoRange() : rules.rangeTiles(0) * rules.TILE);
-        let channel = owner != null ? owner.hypnoChannel() : rules.channelTicks(0);
+            let st = stateOf(unit);
+            st.seen = true;
+            let owner = st.owner != null && st.owner.isValid() ? st.owner : null;
+            let range = (owner != null ? owner.hypnoRange() : rules.rangeTiles(0) * rules.TILE);
+            let channel = owner != null ? owner.hypnoChannel() : rules.channelTicks(0);
 
-        let ai = unit.controller();
-        if (ai instanceof CommandAIClass) {
-            let wanted = ai.attackTarget;
-            if (wanted != null && wanted !== st.target && convertRules.canConvert(wanted, unit.team)) {
-                st.target = wanted;
-                st.progress = 0;
+            let ai = unit.controller();
+            if (ai instanceof CommandAIClass) {
+                let wanted = ai.attackTarget;
+                if (wanted != null && !isTethered(st, wanted) && convertRules.canConvert(wanted, unit.team)) {
+                    if (st.tethers.length >= cfg.tethers) st.tethers.shift();
+                    st.tethers.push({ target: wanted });
+                }
             }
-        }
 
-        if (st.target != null && !convertRules.canConvert(st.target, unit.team)) {
-            st.target = null;
-            st.progress = 0;
-        }
+            st.tethers = st.tethers.filter(t => convertRules.canConvert(t.target, unit.team));
+            while (st.tethers.length < cfg.tethers) {
+                let target = acquire(unit, range, st);
+                if (target == null) break;
+                st.tethers.push({ target: target });
+            }
 
-        if (st.target == null) {
-            st.target = acquire(unit, range);
-            st.progress = 0;
-        }
+            for (let i = st.tethers.length - 1; i >= 0; i--) {
+                let target = st.tethers[i].target, entry = progressOf(target);
+                entry.frac += Time.delta / channel;
+                entry.time = Time.time;
+                if (entry.frac >= 1) {
+                    convertRules.convert(target, unit.team);
+                    delete progress[keyOf(target)];
+                    st.tethers.splice(i, 1);
+                }
+            }
+        },
 
-        if (st.target == null) return;
-        st.progress += Time.delta;
-        if (st.progress >= channel) {
-            convertRules.convert(st.target, unit.team);
-            st.target = null;
-            st.progress = 0;
+        draw(unit) {
+            this.super$draw(unit);
+            if (Vars.headless) return;
+            let st = states[unit.id];
+            if (st == null || st.unit !== unit || st.tethers.length == 0) return;
+            Draw.z(Layer.effect);
+            Draw.color(Pal.sapBullet);
+            for (let i = 0; i < st.tethers.length; i++) {
+                let target = st.tethers[i].target, entry = progress[keyOf(target)];
+                let radius = convertRules.isBuilding(target) ? target.block.size * rules.TILE / 2 + 2 : Math.max(target.hitSize / 2 + 2, 4);
+                Lines.stroke(1.5);
+                Lines.line(unit.x, unit.y, target.x, target.y);
+                Lines.stroke(2);
+                Lines.arc(target.x, target.y, radius, entry == null ? 0 : Mathf.clamp(entry.frac));
+            }
+            Draw.reset();
         }
-    },
+    });
+    yuriType.constructor = prov(() => MechUnit.create());
+    yuriType.health = cfg.health;
+    yuriType.speed = cfg.speed;
+    yuriType.hitSize = cfg.hitSize;
+    yuriType.drawCell = false;
+    yuriType.canBoost = false;
+    yuriType.useUnitCap = false;
+    yuriType.range = rules.RANGE_LEVELS[rules.MAX_LEVEL] * rules.TILE;
+    yuriType.maxRange = yuriType.range;
+    yuriType.alwaysUnlocked = true;
+    lib.enableAllEnvironments(yuriType);
+    return yuriType;
+}
 
-    draw(unit) {
-        this.super$draw(unit);
-        if (Vars.headless) return;
-        let st = states[unit.id];
-        if (st == null || st.unit !== unit || st.target == null) return;
-        let target = st.target;
-        let channel = st.owner != null && st.owner.isValid() ? st.owner.hypnoChannel() : rules.channelTicks(0);
-        let radius = convertRules.isBuilding(target) ? target.block.size * rules.TILE / 2 + 2 : Math.max(target.hitSize / 2 + 2, 4);
-        Draw.z(Layer.effect);
-        Draw.color(Pal.sapBullet);
-        Lines.stroke(1.5);
-        Lines.line(unit.x, unit.y, target.x, target.y);
-        Lines.stroke(2);
-        Lines.arc(target.x, target.y, radius, Mathf.clamp(st.progress / channel));
-        Draw.reset();
+function keyOf(target) {
+    return convertRules.isBuilding(target) ? "b" + target.pos() : "u" + target.id;
+}
+
+function progressOf(target) {
+    let key = keyOf(target), entry = progress[key];
+    if (entry == null || entry.target !== target) {
+        entry = { target: target, frac: 0, time: Time.time };
+        progress[key] = entry;
     }
-});
-yuriType.constructor = prov(() => MechUnit.create());
-yuriType.health = rules.YURI_HEALTH;
-yuriType.speed = rules.YURI_SPEED;
-yuriType.hitSize = rules.YURI_HIT_SIZE;
-yuriType.drawCell = false;
-yuriType.canBoost = false;
-yuriType.useUnitCap = false;
-yuriType.range = rules.RANGE_LEVELS[rules.MAX_LEVEL] * rules.TILE;
-yuriType.maxRange = yuriType.range;
-yuriType.alwaysUnlocked = true;
-lib.enableAllEnvironments(yuriType);
+    return entry;
+}
+
+function isTethered(st, target) {
+    return st.tethers.some(t => t.target === target);
+}
 
 function stateOf(unit) {
     let st = states[unit.id];
     if (st == null || st.unit !== unit) {
-        st = { unit: unit, owner: st != null && st.unit === unit ? st.owner : null, target: null, progress: 0, seen: false };
+        st = { unit: unit, owner: null, tethers: [], seen: false };
         states[unit.id] = st;
     }
     return st;
@@ -88,32 +112,44 @@ function pruneStates() {
         let st = states[id];
         if (st.unit.dead || (st.seen && !st.unit.isAdded())) delete states[id];
     }
+    for (let key in progress) {
+        if (Time.time - progress[key].time > PROGRESS_KEEP) delete progress[key];
+    }
 }
 
-function acquire(unit, range) {
+function acquire(unit, range, st) {
     let team = unit.team;
-    let u = Units.closestEnemy(team, unit.x, unit.y, range, boolf(e => convertRules.canConvert(e, team)));
-    let b = Vars.indexer.findEnemyTile(team, unit.x, unit.y, range, boolf(e => convertRules.canConvert(e, team)));
+    let ok = e => convertRules.canConvert(e, team) && !isTethered(st, e);
+    let u = Units.closestEnemy(team, unit.x, unit.y, range, boolf(ok));
+    let b = Vars.indexer.findEnemyTile(team, unit.x, unit.y, range, boolf(ok));
     if (u == null) return b;
     if (b == null) return u;
     return unit.dst2(u) <= unit.dst2(b) ? u : b;
 }
 
-exports.yuriType = yuriType;
+exports.yuriType = create({
+    unitName: "yuri",
+    health: rules.YURI_HEALTH,
+    speed: rules.YURI_SPEED,
+    hitSize: rules.YURI_HIT_SIZE,
+    tethers: rules.YURI_TETHERS
+});
+exports.yuriBigType = create({
+    unitName: "yuri-big",
+    health: rules.BIG_YURI_HEALTH,
+    speed: rules.BIG_YURI_SPEED,
+    hitSize: rules.BIG_YURI_HIT_SIZE,
+    tethers: rules.BIG_YURI_TETHERS
+});
 exports.adopt = function(unit, owner) {
-    let st = states[unit.id];
-    if (st == null || st.unit !== unit) {
-        st = { unit: unit, owner: null, target: null, progress: 0, seen: false };
-        states[unit.id] = st;
-    }
-    st.owner = owner;
+    stateOf(unit).owner = owner;
 };
 exports.ownerOf = function(unit) {
     let st = states[unit.id];
     return st != null && st.unit === unit ? st.owner : null;
 };
-exports.tetherOf = function(unit) {
+exports.tethersOf = function(unit) {
     let st = states[unit.id];
-    if (st == null || st.unit !== unit || st.target == null) return null;
-    return { target: st.target, progress: st.progress };
+    if (st == null || st.unit !== unit) return [];
+    return st.tethers.map(t => { let entry = progress[keyOf(t.target)]; return { target: t.target, progress: entry == null ? 0 : entry.frac }; });
 };

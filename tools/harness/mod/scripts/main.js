@@ -625,6 +625,42 @@ test("chrono-hypno", 11, 6, (a, s) => {
     return [r];
 } });
 
+// Four 1x1 Chrono Hypnos in a 2x2 square merge into a Big Chrono Hypno; its Big Yuri tethers two enemy walls
+// at once, so both convert within one channel time of each other.
+test("chrono-hypno-big", 10, 5, (a, s) => {
+    const part = modBlock("chrono-hypno");
+    s.x0 = a.x + 1; s.y0 = a.y + 1;
+    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) place(part, s.x0 + i, s.y0 + j);
+    s.walls = [place(Blocks.copperWall, a.x + 8, a.y, ENEMY), place(Blocks.copperWall, a.x + 8, a.y + 4, ENEMY)];
+    s.converted = [-1, -1];
+    s.big = () => { const b = Vars.world.build(s.x0, s.y0); return b != null && b.block.name == "item-liquid-teleport-chrono-hypno-big" ? b : null; };
+}, (a, s) => {
+    const big = s.big(), y = big == null ? null : big.yuri();
+    const parts = Groups.build.count(boolf(b => b.block.name == "item-liquid-teleport-chrono-hypno" && b.team == TEAM && Math.abs(b.tileX() - s.x0) <= 1 && Math.abs(b.tileY() - s.y0) <= 1));
+    const both = s.converted[0] >= 0 && s.converted[1] >= 0, together = both && Math.abs(s.converted[0] - s.converted[1]) < 60;
+    return { pass: big != null && big.block.size == 2 && parts == 0 && y != null && y.type.name == "item-liquid-teleport-yuri-big" && together,
+             info: "merged=" + (big != null) + " partsLeft=" + parts + " yuri=" + (y == null ? null : y.type.name) + " convertedAt=" + s.converted.join(",") };
+}, (a, s) => {
+    const big = s.big();
+    if (big == null) return;
+    if (!s.fed) { big.items.add(Items.silicon, 50); s.fed = true; log("chrono-hypno-big merged at t" + ticks); }
+    for (let i = 0; i < 2; i++) if (s.converted[i] < 0 && s.walls[i].team == TEAM) s.converted[i] = ticks;
+}, { long: true });
+
+// Two Yuri tethered to the same wall convert it in half the channel time (120 ticks at level 0).
+test("chrono-hypno-stack", 10, 5, (a, s) => {
+    s.blocks = [place(modBlock("chrono-hypno"), a.x + 1, a.y + 1), place(modBlock("chrono-hypno"), a.x + 1, a.y + 3)];
+    s.blocks.forEach(b => b.items.add(Items.silicon, 25));
+    s.wall = place(Blocks.copperWall, a.x + 8, a.y + 2, ENEMY);
+    s.spawnedAt = -1; s.convertedAt = -1;
+}, (a, s) => {
+    const took = s.convertedAt - s.spawnedAt;
+    return { pass: s.spawnedAt >= 0 && s.convertedAt >= 0 && took < 100, info: "spawnedAt=" + s.spawnedAt + " convertedAt=" + s.convertedAt + " took=" + took };
+}, (a, s) => {
+    if (s.spawnedAt < 0 && s.blocks[0].yuri() != null && s.blocks[1].yuri() != null) s.spawnedAt = ticks;
+    if (s.convertedAt < 0 && s.wall.team == TEAM) s.convertedAt = ticks;
+}, { long: true });
+
 test("chrono-hypno-upgrade", 5, 5, (a, s) => {
     const b = place(modBlock("chrono-hypno"), a.x + 2, a.y + 2);
     const core = TEAM.core();

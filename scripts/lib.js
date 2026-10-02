@@ -548,6 +548,38 @@ exports.loadRegion = (name) => {
     if (Vars.headless === true) return null;
     return Core.atlas.find(exports.modName + "-" + name, "error");
 };
+// Four same-team parts in an aligned 2x2 square become one merged block; the merged origin is
+// the part square's bottom-left center shifted by floor((2s-1)/2) - floor((s-1)/2) for part size s.
+exports.tryMergeSquare = (build, partBlock, mergedBlock) => {
+    if (mergedBlock == null || Vars.net.client()) return false;
+    let s = partBlock.size;
+    let d = Math.floor((2 * s - 1) / 2) - Math.floor((s - 1) / 2);
+    let bx = build.tileX(), by = build.tileY();
+    for (let dx = 0; dx <= 1; dx++) {
+        for (let dy = 0; dy <= 1; dy++) {
+            let x0 = bx - dx * s, y0 = by - dy * s;
+            let parts = [];
+            for (let i = 0; i < 2 && parts != null; i++) {
+                for (let j = 0; j < 2; j++) {
+                    let px = x0 + i * s, py = y0 + j * s;
+                    let t = Vars.world.tile(px, py);
+                    let b = t == null ? null : t.build;
+                    if (b == null || b.block != partBlock || b.team != build.team || b.tileX() != px || b.tileY() != py) { parts = null; break; }
+                    parts.push(b);
+                }
+            }
+            if (parts == null) continue;
+            let origin = Vars.world.tile(x0 + d, y0 + d);
+            if (origin == null) continue;
+            let team = build.team;
+            for (let k = 0; k < parts.length; k++) Call.removeTile(parts[k].tile);
+            Call.setTile(origin, mergedBlock, team, 0);
+            Fx.placeBlock.at(origin.worldx() + mergedBlock.offset, origin.worldy() + mergedBlock.offset, mergedBlock.size);
+            return true;
+        }
+    }
+    return false;
+};
 exports.teamBuildings = teamBuildings;
 exports.eachBuilding = eachBuilding;
 exports.enableAllEnvironments = (block) => {

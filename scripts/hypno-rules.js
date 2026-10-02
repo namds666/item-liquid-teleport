@@ -40,8 +40,8 @@ function clampLevel(level) {
 }
 
 exports.TILE = TILE;
-exports.BLOCK_SIZE = 3;
-exports.BLOCK_HEALTH = 600;
+exports.BLOCK_SIZE = 1;
+exports.BLOCK_HEALTH = 150;
 exports.ITEM_CAPACITY = 100;
 exports.REQUIREMENTS = ItemStack.with(Items.copper, 60, Items.lead, 70, Items.graphite, 40, Items.silicon, 40);
 exports.RESPAWN_TIME = 600;
@@ -50,6 +50,15 @@ exports.RESPAWN_COST = 25;
 exports.YURI_HEALTH = 300;
 exports.YURI_SPEED = 0.55;
 exports.YURI_HIT_SIZE = 8;
+exports.YURI_TETHERS = 1;
+exports.BIG_BLOCK_SIZE = 2;
+exports.BIG_BLOCK_HEALTH = 600;
+exports.BIG_REQUIREMENTS = ItemStack.with(Items.copper, 240, Items.lead, 280, Items.graphite, 160, Items.silicon, 160);
+exports.BIG_RESPAWN_COST = 50;
+exports.BIG_YURI_HEALTH = 900;
+exports.BIG_YURI_SPEED = 0.5;
+exports.BIG_YURI_HIT_SIZE = 14;
+exports.BIG_YURI_TETHERS = 2;
 exports.RANGE_LEVELS = RANGE_LEVELS;
 exports.CHANNEL_LEVELS = CHANNEL_LEVELS;
 exports.MAX_LEVEL = MAX_LEVEL;

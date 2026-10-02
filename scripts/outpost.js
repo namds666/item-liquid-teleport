@@ -302,39 +302,9 @@ blockType.configClear(build => build.setSelectedItem(null));
 blockType.config(java.lang.Boolean, lib.cons2((build, on) => build.setAuto(!!on)));
 blockType.config(java.lang.Integer, lib.cons2((build, path) => build.tryUpgrade(path | 0)));
 
-// Four same-team parts in an aligned 2x2 square become one merged block; the merged origin is
-// the part square's bottom-left center shifted by floor((2s-1)/2) - floor((s-1)/2) for part size s.
 function tryMerge(build) {
-    if (cfg.mergeInto == null || Vars.net.client()) return false;
-    let mega = Vars.content.block(lib.modName + "-" + cfg.mergeInto);
-    if (mega == null) return false;
-    let s = blockType.size;
-    let d = Math.floor((2 * s - 1) / 2) - Math.floor((s - 1) / 2);
-    let bx = build.tileX(), by = build.tileY();
-    for (let dx = 0; dx <= 1; dx++) {
-        for (let dy = 0; dy <= 1; dy++) {
-            let x0 = bx - dx * s, y0 = by - dy * s;
-            let parts = [];
-            for (let i = 0; i < 2 && parts != null; i++) {
-                for (let j = 0; j < 2; j++) {
-                    let px = x0 + i * s, py = y0 + j * s;
-                    let t = Vars.world.tile(px, py);
-                    let b = t == null ? null : t.build;
-                    if (b == null || b.block != blockType || b.team != build.team || b.tileX() != px || b.tileY() != py) { parts = null; break; }
-                    parts.push(b);
-                }
-            }
-            if (parts == null) continue;
-            let origin = Vars.world.tile(x0 + d, y0 + d);
-            if (origin == null) continue;
-            let team = build.team;
-            for (let k = 0; k < parts.length; k++) Call.removeTile(parts[k].tile);
-            Call.setTile(origin, mega, team, 0);
-            Fx.placeBlock.at(origin.worldx() + mega.offset, origin.worldy() + mega.offset, mega.size);
-            return true;
-        }
-    }
-    return false;
+    if (cfg.mergeInto == null) return false;
+    return lib.tryMergeSquare(build, blockType, Vars.content.block(lib.modName + "-" + cfg.mergeInto));
 }
 
 blockType.buildType = prov(() => {

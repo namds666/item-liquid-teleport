@@ -2,8 +2,8 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code & Codex",
-  subtitle: "v1.4.16: Shorter mod description with changes listed by version",
-  description: "Cheat-grade Chrono blocks for global item and liquid transport, terrain and item conversion, repair, construction, overdrive, unit buffs and debuffs, mind control, and core placement, plus the Outpost, a base that builds mining drones.\n\n[accent]v1.4.16[]\nShorter mod description with changes listed by version.\n\n[accent]v1.4.15[]\nOutpost, Quad Outpost, and Mega Outpost: the mine tier 4 upgrade costs titanium and silicon.\n\n[accent]v1.4.14[]\nNew Chrono Hypno: Yuri converts enemy units and buildings to your side.\n\n[accent]v1.4.13[]\nExtra Outpost mining beams target different ore tiles.\n\n[accent]v1.4.11 - 1.4.12[]\nChrono Item Tiler and Chrono Liquid Tiler paint a square and show their radius.",
-  version: "1.4.16",
+  subtitle: "v1.4.17: Chrono Hypno is 1x1, four merge into a Big Chrono Hypno",
+  description: "Cheat-grade Chrono blocks for global item and liquid transport, terrain and item conversion, repair, construction, overdrive, unit buffs and debuffs, mind control, and core placement, plus the Outpost, a base that builds mining drones.\n\n[accent]v1.4.17[]\nChrono Hypno is now 1x1. Four in a 2x2 square merge into a Big Chrono Hypno, whose Big Yuri tethers two targets at once. More Yuri on one target convert it faster: two Yuri take half the time.\n\n[accent]v1.4.16[]\nShorter mod description with changes listed by version.\n\n[accent]v1.4.15[]\nOutpost, Quad Outpost, and Mega Outpost: the mine tier 4 upgrade costs titanium and silicon.\n\n[accent]v1.4.14[]\nNew Chrono Hypno: Yuri converts enemy units and buildings to your side.\n\n[accent]v1.4.13[]\nExtra Outpost mining beams target different ore tiles.",
+  version: "1.4.17",
   minGameVersion: "146"
 }
