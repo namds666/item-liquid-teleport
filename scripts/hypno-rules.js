@@ -7,7 +7,6 @@ function levels(base, step) {
     return out;
 }
 
-const RANGE_LEVELS = levels(20, 1);
 const CHANNEL_LEVELS = levels(120, -6);
 
 function pairCosts(rows) {
@@ -59,7 +58,7 @@ exports.BIG_YURI_HEALTH = 900;
 exports.BIG_YURI_SPEED = 0.5;
 exports.BIG_YURI_HIT_SIZE = 14;
 exports.BIG_YURI_TETHERS = 2;
-exports.RANGE_LEVELS = RANGE_LEVELS;
+exports.YURI_RANGE = 30;
 exports.CHANNEL_LEVELS = CHANNEL_LEVELS;
 exports.MAX_LEVEL = MAX_LEVEL;
 exports.COSTS = COSTS;
@@ -68,9 +67,6 @@ exports.upgradeCost = function(level) {
     if (level >= MAX_LEVEL) return null;
     let table = Vars.state.rules.planet == Planets.erekir ? EREKIR_COSTS : COSTS;
     return table[Math.max(0, Math.floor(level) || 0)];
-};
-exports.rangeTiles = function(level) {
-    return RANGE_LEVELS[clampLevel(level)];
 };
 exports.channelTicks = function(level) {
     return CHANNEL_LEVELS[clampLevel(level)];

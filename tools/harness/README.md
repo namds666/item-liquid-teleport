@@ -8,7 +8,7 @@ per block plus a final `RESULT`.
 Covered: mender, unloader, pusher (container and crafter targets), liquid
 unloader, liquid pusher, item converter, liquid tiler, item tiler, repair
 point, build tower (rebuilds a destroyed wall), booster, buffer, debuffer,
-core, outpost range levels (11 mine range upgrades: level, range, cost tier switch), chrono-hypno-upgrade (3 upgrades: level, range, channel, exact core cost). `api-types` is informational: it prints how Rhino resolves
+core, outpost range levels (11 mine range upgrades: level, range, cost tier switch), chrono-hypno-upgrade (3 upgrades: level, channel, exact core cost). `api-types` is informational: it prints how Rhino resolves
 field-vs-method names on each Building subclass.
 
 `outpost`, `outpost-small` and `outpost-micro` are long tests: they are checked at tick 1500 (`RESULT-LONG`) because
@@ -19,13 +19,15 @@ levels and re-adopt its drones, and removing it must kill them.
 
 `chrono-hypno` is a long test (checked at tick 1500): the block respawns its
 Yuri from 25 silicon, Yuri converts an enemy wall, then an enemy fortress that
-the test moves beyond the 20 tile range after the tether exists (the tether must
-not break on range), and the enemy core stays enemy. The target unit is a
+the test holds next to Yuri and then moves to a free tile beyond Yuri's 30 tile
+range after the tether exists (the tether must not break on range), and the enemy core stays enemy. The target unit is a
 fortress because `disarmEnemies` removes every other non-team unit each tick.
 Its reload callback expects the block to keep its level and a living Yuri.
 
 `chrono-hypno-big` places 4 Chrono Hypnos in a 2x2 square and expects one Big
 Chrono Hypno whose Big Yuri converts two enemy walls together (one tether each).
+The walls appear only after Big Yuri spawns at tick 900, because Yuri of the other
+tests reach 30 tiles and would otherwise convert them or hold a tether.
 `chrono-hypno-stack` puts two Yuri on one enemy wall and expects the conversion
 in less than the 120 tick level 0 channel time (two Yuri take half of it).
 

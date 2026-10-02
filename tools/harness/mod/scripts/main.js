@@ -608,11 +608,16 @@ test("chrono-hypno", 11, 6, (a, s) => {
              info: "yuri=" + (y != null) + " fortressTeam=" + s.fortress.team + " wallTeam=" + s.wall.team + " silicon=" + silicon
                 + " tetherSeen=" + s.tetherSeen + " moved=" + s.moved + " enemyCores=" + cores + "/" + s.enemyCores };
 }, (a, s) => {
+    // A fortress walks on its own; hold it closer to Yuri than the wall so Yuri tethers it first.
+    if (!s.moved) s.fortress.set((a.x + 6) * TS, (a.y + 2) * TS);
     if (s.block.yuri() == null) return;
     if (s.yuriAt == null) s.yuriAt = ticks;
     if (!s.tetherSeen && s.fortress.team == ENEMY) s.tetherSeen = true;
     if (!s.moved && ticks >= s.yuriAt + 15 && s.fortress.team == ENEMY) {
-        s.fortress.set((a.x + 28) * TS, (a.y + 2) * TS);
+        // Ground units on a solid tile die at once, so the fortress goes to the first free tile past Yuri's 30 tile range.
+        let tx = a.x + 34;
+        while (tx < a.x + 80 && (Vars.world.tile(tx, a.y + 2) == null || Vars.world.tile(tx, a.y + 2).solid() || Vars.world.tile(tx, a.y + 2).floor().isDeep())) tx++;
+        s.fortress.set(tx * TS, (a.y + 2) * TS);
         s.moved = true;
         log("chrono-hypno fortress moved beyond range at t" + ticks);
     }
@@ -626,24 +631,31 @@ test("chrono-hypno", 11, 6, (a, s) => {
 } });
 
 // Four 1x1 Chrono Hypnos in a 2x2 square merge into a Big Chrono Hypno; its Big Yuri tethers two enemy walls
-// at once, so both convert within one channel time of each other.
+// at once, so both convert within one channel time (120 ticks) of their placement. The walls appear only after
+// Big Yuri exists, so other tests' Yuri (30 tile range) cannot convert them earlier. Big Yuri spawns only at tick 900,
+// after the other Yuri tests have converted their own targets, so no other target holds one of its tethers.
 test("chrono-hypno-big", 10, 5, (a, s) => {
     const part = modBlock("chrono-hypno");
     s.x0 = a.x + 1; s.y0 = a.y + 1;
     for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) place(part, s.x0 + i, s.y0 + j);
-    s.walls = [place(Blocks.copperWall, a.x + 8, a.y, ENEMY), place(Blocks.copperWall, a.x + 8, a.y + 4, ENEMY)];
+    s.walls = null;
     s.converted = [-1, -1];
     s.big = () => { const b = Vars.world.build(s.x0, s.y0); return b != null && b.block.name == "item-liquid-teleport-chrono-hypno-big" ? b : null; };
 }, (a, s) => {
     const big = s.big(), y = big == null ? null : big.yuri();
     const parts = Groups.build.count(boolf(b => b.block.name == "item-liquid-teleport-chrono-hypno" && b.team == TEAM && Math.abs(b.tileX() - s.x0) <= 1 && Math.abs(b.tileY() - s.y0) <= 1));
-    const both = s.converted[0] >= 0 && s.converted[1] >= 0, together = both && Math.abs(s.converted[0] - s.converted[1]) < 60;
+    const both = s.converted[0] >= 0 && s.converted[1] >= 0, together = both && Math.max(s.converted[0], s.converted[1]) - s.placedAt <= 135;
     return { pass: big != null && big.block.size == 2 && parts == 0 && y != null && y.type.name == "item-liquid-teleport-yuri-big" && together,
-             info: "merged=" + (big != null) + " partsLeft=" + parts + " yuri=" + (y == null ? null : y.type.name) + " convertedAt=" + s.converted.join(",") };
+             info: "merged=" + (big != null) + " partsLeft=" + parts + " yuri=" + (y == null ? null : y.type.name) + " placedAt=" + s.placedAt + " convertedAt=" + s.converted.join(",") };
 }, (a, s) => {
     const big = s.big();
     if (big == null) return;
-    if (!s.fed) { big.items.add(Items.silicon, 50); s.fed = true; log("chrono-hypno-big merged at t" + ticks); }
+    if (!s.fed && ticks >= 900) { big.items.add(Items.silicon, 50); s.fed = true; log("chrono-hypno-big fed at t" + ticks); }
+    if (s.walls == null) {
+        if (big.yuri() == null) return;
+        s.walls = [place(Blocks.copperWall, a.x + 8, a.y, ENEMY), place(Blocks.copperWall, a.x + 8, a.y + 4, ENEMY)];
+        s.placedAt = ticks;
+    }
     for (let i = 0; i < 2; i++) if (s.converted[i] < 0 && s.walls[i].team == TEAM) s.converted[i] = ticks;
 }, { long: true });
 
@@ -651,7 +663,8 @@ test("chrono-hypno-big", 10, 5, (a, s) => {
 test("chrono-hypno-stack", 10, 5, (a, s) => {
     s.blocks = [place(modBlock("chrono-hypno"), a.x + 1, a.y + 1), place(modBlock("chrono-hypno"), a.x + 1, a.y + 3)];
     s.blocks.forEach(b => b.items.add(Items.silicon, 25));
-    s.wall = place(Blocks.copperWall, a.x + 8, a.y + 2, ENEMY);
+    // Next to the Yuri spawn tiles, so it is their closest enemy before any other test's target.
+    s.wall = place(Blocks.copperWall, a.x + 4, a.y + 2, ENEMY);
     s.spawnedAt = -1; s.convertedAt = -1;
 }, (a, s) => {
     const took = s.convertedAt - s.spawnedAt;
@@ -670,13 +683,12 @@ test("chrono-hypno-upgrade", 5, 5, (a, s) => {
     const ti0 = core.items.get(Items.titanium), si0 = core.items.get(Items.silicon), th0 = core.items.get(Items.thorium);
     for (let i = 0; i < 3; i++) b.configured(null, jint(0));
     s.level = Number(b.level());
-    s.range = Number(b.hypnoRange());
     s.channel = Number(b.hypnoChannel());
     s.spent = (ti0 - core.items.get(Items.titanium)) + "/" + (si0 - core.items.get(Items.silicon)) + "/" + (th0 - core.items.get(Items.thorium));
     b.tile.remove();
 }, (a, s) => ({
-    pass: s.level == 3 && s.range == 23 * TS && s.channel == 102 && s.spent == "300/280/150",
-    info: "level=" + s.level + " range=" + s.range + " channel=" + s.channel + " spent(ti/si/th)=" + s.spent
+    pass: s.level == 3 && s.channel == 102 && s.spent == "300/280/150",
+    info: "level=" + s.level + " channel=" + s.channel + " spent(ti/si/th)=" + s.spent
 }));
 
 // ── Driver ──────────────────────────────────────────────────────────────

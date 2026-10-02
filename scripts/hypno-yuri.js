@@ -18,7 +18,6 @@ function create(cfg) {
             let st = stateOf(unit);
             st.seen = true;
             let owner = st.owner != null && st.owner.isValid() ? st.owner : null;
-            let range = (owner != null ? owner.hypnoRange() : rules.rangeTiles(0) * rules.TILE);
             let channel = owner != null ? owner.hypnoChannel() : rules.channelTicks(0);
 
             let ai = unit.controller();
@@ -32,7 +31,7 @@ function create(cfg) {
 
             st.tethers = st.tethers.filter(t => convertRules.canConvert(t.target, unit.team));
             while (st.tethers.length < cfg.tethers) {
-                let target = acquire(unit, range, st);
+                let target = acquire(unit, unit.type.range, st);
                 if (target == null) break;
                 st.tethers.push({ target: target });
             }
@@ -74,7 +73,7 @@ function create(cfg) {
     yuriType.drawCell = false;
     yuriType.canBoost = false;
     yuriType.useUnitCap = false;
-    yuriType.range = rules.RANGE_LEVELS[rules.MAX_LEVEL] * rules.TILE;
+    yuriType.range = rules.YURI_RANGE * rules.TILE;
     yuriType.maxRange = yuriType.range;
     yuriType.alwaysUnlocked = true;
     lib.enableAllEnvironments(yuriType);

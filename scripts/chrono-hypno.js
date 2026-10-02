@@ -16,7 +16,7 @@ function create(cfg) {
 
         setStats() {
             this.super$setStats();
-            this.stats.add(Stat.range, rules.rangeTiles(0), StatUnit.blocks);
+            this.stats.add(Stat.range, rules.YURI_RANGE, StatUnit.blocks);
             this.stats.add(Stat.output, yuriType.emoji() + " " + yuriType.localizedName);
             this.stats.add(Stat.productionTime, rules.RESPAWN_TIME / 60, StatUnit.seconds);
         },
@@ -28,11 +28,6 @@ function create(cfg) {
                 prov(() => Pal.ammo),
                 floatp(() => e.respawnFrac())
             )));
-        },
-
-        drawPlace(x, y, rotation, valid) {
-            this.super$drawPlace(x, y, rotation, valid);
-            Drawf.dashCircle(x * TILE + this.offset, y * TILE + this.offset, rules.rangeTiles(0) * TILE, Pal.sapBullet);
         }
     });
 
@@ -69,7 +64,6 @@ function create(cfg) {
 
         return extend(Building, {
             level() { return level; },
-            hypnoRange() { return rules.rangeTiles(level) * TILE; },
             hypnoChannel() { return rules.channelTicks(level); },
             yuri() { return alive(unit) ? unit : null; },
             respawnFrac() { return alive(unit) ? 0 : Mathf.clamp(progress / rules.RESPAWN_TIME); },
@@ -153,8 +147,8 @@ function create(cfg) {
 
             drawSelect() {
                 this.super$drawSelect();
-                Drawf.dashCircle(this.x, this.y, this.hypnoRange(), Pal.sapBullet);
                 if (!alive(unit)) return;
+                Drawf.dashCircle(unit.x, unit.y, unit.type.range, Pal.sapBullet);
                 let tethers = yuriModule.tethersOf(unit);
                 if (tethers.length == 0) return;
                 Draw.z(Layer.effect);
@@ -187,7 +181,7 @@ function create(cfg) {
 
                 function valueText() {
                     let seconds = Strings.autoFixed(self.hypnoChannel() / 60, 2);
-                    return Core.bundle.format("hypno.value", rules.rangeTiles(level), seconds);
+                    return Core.bundle.format("hypno.value", rules.YURI_RANGE, seconds);
                 }
 
                 function rebuild() {
