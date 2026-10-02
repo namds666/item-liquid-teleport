@@ -2,8 +2,9 @@
   name: "item-liquid-teleport",
   displayName: "Item Liquid Teleport",
   author: "namds666 & Claude Code & Codex",
-  subtitle: "v1.4.14: new Chrono Hypno, Yuri converts enemies to your side",
+  subtitle: "v1.4.15: Outpost mine tier 4 upgrade costs titanium and silicon",
   description: "Adds cheat-grade Chrono blocks for global item and liquid transport, terrain conversion, item conversion, repair, construction, overdrive, unit buffs, unit debuffs, mind control, and core placement, plus the Outpost drone mining base.
+  Update: the Outpost, Quad Outpost, and Mega Outpost mine tier 4 upgrade now costs titanium and silicon instead of plastanium and surge alloy.
   Update: new Chrono Hypno keeps one Yuri alive; Yuri tethers one enemy unit or building at a time and converts it to your side; 10 upgrade levels add range and speed up the conversion.
   Update: new Micro Outpost, a 1x1 Outpost that mines tier 1 ore and coal after one upgrade; four Micro Outposts in a 2x2 square merge into a Small Outpost.
   Update: Outpost drones now stay in place anywhere inside their mine range and fly closer only when they are farther than the range, so drones no longer push each other for one spot.
@@ -19,6 +20,6 @@
   Update: every block, unit, status, and menu string is translated into all 35 languages Mindustry supports; a check blocks commits that miss a translation.
   Update: new Small Outpost, a 2x2 mono-based Outpost with lower upgrade limits; ore selector shows one row per planet; upgrade cost colors update live.
   Update: new Outpost block builds flying mining drones that deliver a selected ore to the core; upgrade unit cap, speed, mine speed, carry capacity, and mine tier with items from the core.",
-  version: "1.4.14",
+  version: "1.4.15",
   minGameVersion: "146"
 }

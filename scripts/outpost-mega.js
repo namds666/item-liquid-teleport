@@ -27,7 +27,7 @@ outpost.create({
         ItemStack.with(Items.plastanium, 240, Items.thorium, 200),
     ],
     tierCosts: [
-        ItemStack.with(Items.plastanium, 600, Items.surgeAlloy, 240),
+        ItemStack.with(Items.titanium, 1000, Items.silicon, 600),
     ],
     erekirStatCosts: [
         ItemStack.with(Items.beryllium, 240, Items.silicon, 120),

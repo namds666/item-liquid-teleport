@@ -668,7 +668,7 @@ create({
     tierCosts: [
         ItemStack.with(Items.copper, 100, Items.lead, 100),
         ItemStack.with(Items.graphite, 200, Items.silicon, 150),
-        ItemStack.with(Items.plastanium, 150, Items.surgeAlloy, 60),
+        ItemStack.with(Items.titanium, 250, Items.silicon, 150),
     ],
     erekirStatCosts: [
         ItemStack.with(Items.beryllium, 150, Items.silicon, 80),
