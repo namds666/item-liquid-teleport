@@ -66,6 +66,7 @@ function create(cfg) {
             level() { return level; },
             hypnoChannel() { return rules.channelTicks(level); },
             yuri() { return alive(unit) ? unit : null; },
+            tethers() { return alive(unit) ? yuriModule.tethersOf(unit) : []; },
             respawnFrac() { return alive(unit) ? 0 : Mathf.clamp(progress / rules.RESPAWN_TIME); },
             upgradeCost() { return rules.upgradeCost(level); },
             canUpgrade() {
@@ -149,7 +150,7 @@ function create(cfg) {
                 this.super$drawSelect();
                 if (!alive(unit)) return;
                 Drawf.dashCircle(unit.x, unit.y, unit.type.range, Pal.sapBullet);
-                let tethers = yuriModule.tethersOf(unit);
+                let tethers = this.tethers();
                 if (tethers.length == 0) return;
                 Draw.z(Layer.effect);
                 Draw.color(Pal.sapBullet);

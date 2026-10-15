@@ -590,10 +590,9 @@ test("outpost-range-levels", 5, 5, (a, s) => {
         + " dropRange=" + s.dropRange + " cost6=" + s.cost6 + " spent(ti/si/th)=" + s.spent
 }));
 
-// The fortress starts nearer than the wall, so Yuri tethers it first; the poll then moves it beyond range to prove the tether holds.
+// The fortress starts nearer than the wall, so Yuri tethers it first; track then moves it beyond range to prove the tether holds.
 test("chrono-hypno", 11, 6, (a, s) => {
     s.block = place(modBlock("chrono-hypno"), a.x + 1, a.y + 2);
-    s.block.items.add(Items.silicon, 50);
     s.pos = s.block.pos();
     s.fortress = spawn(UnitTypes.fortress, ENEMY, a.x + 6, a.y + 2);
     s.wall = place(Blocks.copperWall, a.x + 10, a.y + 5, ENEMY);
@@ -604,24 +603,26 @@ test("chrono-hypno", 11, 6, (a, s) => {
     const y = s.block.yuri();
     const fortressOk = s.fortress.team == TEAM, wallOk = s.wall.team == TEAM;
     const silicon = s.block.items.get(Items.silicon), cores = ENEMY.cores().size;
-    return { pass: y != null && fortressOk && wallOk && silicon == 25 && s.moved && cores == s.enemyCores,
+    return { pass: y != null && fortressOk && wallOk && silicon == 25 && s.tetherSeen && s.moved && cores == s.enemyCores,
              info: "yuri=" + (y != null) + " fortressTeam=" + s.fortress.team + " wallTeam=" + s.wall.team + " silicon=" + silicon
                 + " tetherSeen=" + s.tetherSeen + " moved=" + s.moved + " enemyCores=" + cores + "/" + s.enemyCores };
-}, (a, s) => {
-    // A fortress walks on its own; hold it closer to Yuri than the wall so Yuri tethers it first.
+}, null, { long: true, track: (a, s) => {
+    // Runs every tick: the server can lag to delta 4, so a 15 tick poll may come after one channel time,
+    // and other tests' Yuri now reach 60 tiles. A fortress walks on its own; hold it nearer to Yuri than the wall.
     if (!s.moved) s.fortress.set((a.x + 6) * TS, (a.y + 2) * TS);
+    // Yuri reaches 60 tiles, so it spawns only after the short tests' check and cannot convert their enemy blocks.
+    if (!s.fed && ticks >= FINAL_TICK) { s.block.items.add(Items.silicon, 50); s.fed = true; }
     if (s.block.yuri() == null) return;
-    if (s.yuriAt == null) s.yuriAt = ticks;
-    if (!s.tetherSeen && s.fortress.team == ENEMY) s.tetherSeen = true;
-    if (!s.moved && ticks >= s.yuriAt + 15 && s.fortress.team == ENEMY) {
-        // Ground units on a solid tile die at once, so the fortress goes to the first free tile past Yuri's 30 tile range.
-        let tx = a.x + 34;
-        while (tx < a.x + 80 && (Vars.world.tile(tx, a.y + 2) == null || Vars.world.tile(tx, a.y + 2).solid() || Vars.world.tile(tx, a.y + 2).floor().isDeep())) tx++;
+    if (!s.tetherSeen && s.fortress.team == ENEMY) s.tetherSeen = s.block.tethers().some(t => t.target == s.fortress);
+    if (!s.moved && s.tetherSeen && s.fortress.team == ENEMY) {
+        // Ground units on a solid tile die at once, so the fortress goes to the first free tile past Yuri's 60 tile range.
+        let tx = a.x + 64;
+        while (tx < a.x + 110 && (Vars.world.tile(tx, a.y + 2) == null || Vars.world.tile(tx, a.y + 2).solid() || Vars.world.tile(tx, a.y + 2).floor().isDeep())) tx++;
         s.fortress.set(tx * TS, (a.y + 2) * TS);
         s.moved = true;
         log("chrono-hypno fortress moved beyond range at t" + ticks);
     }
-}, { long: true, track: (a, s) => {}, reload: (s) => {
+}, reload: (s) => {
     const build = Vars.world.build(s.pos);
     if (build == null || build.block.name != "item-liquid-teleport-chrono-hypno") return [{ name: "reload", pass: false, info: "build=" + build }];
     const pass = Number(build.level()) == 0 && build.yuri() != null;
@@ -632,7 +633,7 @@ test("chrono-hypno", 11, 6, (a, s) => {
 
 // Four 1x1 Chrono Hypnos in a 2x2 square merge into a Big Chrono Hypno; its Big Yuri tethers two enemy walls
 // at once, so both convert within one channel time (120 ticks) of their placement. The walls appear only after
-// Big Yuri exists, so other tests' Yuri (30 tile range) cannot convert them earlier. Big Yuri spawns only at tick 900,
+// Big Yuri exists, so other tests' Yuri (60 tile range) cannot convert them earlier. Big Yuri spawns only at tick 900,
 // after the other Yuri tests have converted their own targets, so no other target holds one of its tethers.
 test("chrono-hypno-big", 10, 5, (a, s) => {
     const part = modBlock("chrono-hypno");
@@ -662,7 +663,6 @@ test("chrono-hypno-big", 10, 5, (a, s) => {
 // Two Yuri tethered to the same wall convert it in half the channel time (120 ticks at level 0).
 test("chrono-hypno-stack", 10, 5, (a, s) => {
     s.blocks = [place(modBlock("chrono-hypno"), a.x + 1, a.y + 1), place(modBlock("chrono-hypno"), a.x + 1, a.y + 3)];
-    s.blocks.forEach(b => b.items.add(Items.silicon, 25));
     // Next to the Yuri spawn tiles, so it is their closest enemy before any other test's target.
     s.wall = place(Blocks.copperWall, a.x + 4, a.y + 2, ENEMY);
     s.spawnedAt = -1; s.convertedAt = -1;
@@ -670,6 +670,7 @@ test("chrono-hypno-stack", 10, 5, (a, s) => {
     const took = s.convertedAt - s.spawnedAt;
     return { pass: s.spawnedAt >= 0 && s.convertedAt >= 0 && took < 100, info: "spawnedAt=" + s.spawnedAt + " convertedAt=" + s.convertedAt + " took=" + took };
 }, (a, s) => {
+    if (!s.fed && ticks >= FINAL_TICK) { s.blocks.forEach(b => b.items.add(Items.silicon, 25)); s.fed = true; }
     if (s.spawnedAt < 0 && s.blocks[0].yuri() != null && s.blocks[1].yuri() != null) s.spawnedAt = ticks;
     if (s.convertedAt < 0 && s.wall.team == TEAM) s.convertedAt = ticks;
 }, { long: true });

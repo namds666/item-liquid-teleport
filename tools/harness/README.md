@@ -19,7 +19,7 @@ levels and re-adopt its drones, and removing it must kill them.
 
 `chrono-hypno` is a long test (checked at tick 1500): the block respawns its
 Yuri from 25 silicon, Yuri converts an enemy wall, then an enemy fortress that
-the test holds next to Yuri and then moves to a free tile beyond Yuri's 30 tile
+the test holds next to Yuri and then moves to a free tile beyond Yuri's 60 tile
 range after the tether exists (the tether must not break on range), and the enemy core stays enemy. The target unit is a
 fortress because `disarmEnemies` removes every other non-team unit each tick.
 Its reload callback expects the block to keep its level and a living Yuri.
@@ -27,7 +27,7 @@ Its reload callback expects the block to keep its level and a living Yuri.
 `chrono-hypno-big` places 4 Chrono Hypnos in a 2x2 square and expects one Big
 Chrono Hypno whose Big Yuri converts two enemy walls together (one tether each).
 The walls appear only after Big Yuri spawns at tick 900, because Yuri of the other
-tests reach 30 tiles and would otherwise convert them or hold a tether.
+tests reach 60 tiles and would otherwise convert them or hold a tether.
 `chrono-hypno-stack` puts two Yuri on one enemy wall and expects the conversion
 in less than the 120 tick level 0 channel time (two Yuri take half of it).
 
