@@ -53,6 +53,8 @@ blockType.range = BASE_RANGE;
 blockType.speedBoost = BASE_SPEED;
 blockType.useTime = BASE_USE_TIME;
 blockType.reload = APPLY_RELOAD;
+blockType.baseColor = Color.valueOf("ffcd66");
+blockType.phaseColor = Color.valueOf("ffffa3");
 blockType.ambientSoundVolume = 0.12;
 blockType.hasBoost = false;
 blockType.hasLiquids = true;
@@ -71,6 +73,11 @@ blockType.buildType = prov(() => {
 
     return new JavaAdapter(OverdriveProjectorClass.OverdriveBuild, {
         version() { return 1; },
+
+        created() {
+            this.super$created();
+            this.charge = blockType.reload;
+        },
 
         realRange() {
             return boostRules.realRange(blockType.range, activeItems, activeLiquids);
@@ -95,6 +102,10 @@ blockType.buildType = prov(() => {
 
             for (let i = 0; i < activeItems.length; i++) activeItems[i] = Math.max(0, activeItems[i] - Time.delta);
             for (let i = 0; i < activeLiquids.length; i++) activeLiquids[i] = Math.max(0, activeLiquids[i] - Time.delta);
+
+            if (this.efficiency > 0 && boostRules.consumeNewBoosters(this, activeItems, activeLiquids)) {
+                this.charge = blockType.reload;
+            }
 
             if (this.efficiency > 0) {
                 boostTimer += Time.delta;

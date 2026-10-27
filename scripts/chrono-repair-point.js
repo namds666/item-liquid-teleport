@@ -9,8 +9,22 @@ const cfg = {
     rotateSpeed: 360,
     shootCone: 30
 };
+const LASER_COLOR = Color.valueOf("98ffa9");
+let baseRegion, laser, laserEnd, laserTop, laserTopEnd;
 
 const chronoRepairPoint = extend(Block, "chrono-repair-point", {
+    load() {
+        this.super$load();
+        if (Vars.headless) return;
+        baseRegion = lib.loadRegion("chrono-repair-point-base");
+        laser = Core.atlas.find("laser-white");
+        laserEnd = Core.atlas.find("laser-white-end");
+        laserTop = Core.atlas.find("laser-top");
+        laserTopEnd = Core.atlas.find("laser-top-end");
+    },
+    icons() {
+        return [baseRegion, this.region];
+    },
     setStats() {
         this.super$setStats();
         try {
@@ -41,7 +55,7 @@ chronoRepairPoint.consumePower(cfg.powerUse);
 chronoRepairPoint.buildType = prov(() => extend(Building, {
     target: null,
     strength: 0,
-    rotation: 90,
+    aim: 90,
 
     range() { return Number.MAX_VALUE; },
 
@@ -78,9 +92,9 @@ chronoRepairPoint.buildType = prov(() => extend(Building, {
         let active = false;
         if (this.target != null && this.efficiency > 0) {
             let angle = Angles.angle(this.x, this.y, this.target.x, this.target.y);
-            this.rotation = Angles.moveToward(this.rotation, angle, chronoRepairPoint.rotateSpeed * this.edelta());
+            this.aim = Angles.moveToward(this.aim, angle, chronoRepairPoint.rotateSpeed * this.edelta());
 
-            if (Angles.within(this.rotation, angle, chronoRepairPoint.shootCone)) {
+            if (Angles.within(this.aim, angle, chronoRepairPoint.shootCone)) {
                 let amount = this.maxHealthOf(this.target) * chronoRepairPoint.repairPercentPerSecond / 100 / 60 * this.edelta();
                 this.target.heal(amount);
                 if (typeof this.target.recentlyHealed === "function") this.target.recentlyHealed();
@@ -94,14 +108,20 @@ chronoRepairPoint.buildType = prov(() => extend(Building, {
     },
 
     draw() {
-        this.super$draw();
+        if (Vars.headless) return;
+        Draw.rect(baseRegion, this.x, this.y);
+        Draw.z(Layer.turret);
+        Drawf.shadow(chronoRepairPoint.region, this.x - 1, this.y - 1, this.aim - 90);
+        Draw.rect(chronoRepairPoint.region, this.x, this.y, this.aim - 90);
 
-        if (this.target != null && this.strength > 0.001 && !Vars.headless) {
+        if (this.target != null && this.strength > 0.001) {
+            let width = chronoRepairPoint.beamWidth * this.strength;
             Draw.z(Layer.bullet);
-            Draw.color(Pal.heal);
-            Lines.stroke(chronoRepairPoint.beamWidth * this.strength);
-            Lines.line(this.x, this.y, this.target.x, this.target.y);
+            Draw.color(LASER_COLOR);
+            Drawf.laser(laser, laserEnd, this.x, this.y, this.target.x, this.target.y, width);
             Fill.circle(this.target.x, this.target.y, 2.5 * this.strength);
+            Draw.color(Color.white);
+            Drawf.laser(laserTop, laserTopEnd, this.x, this.y, this.target.x, this.target.y, width);
             Draw.reset();
         }
     },
@@ -110,7 +130,7 @@ chronoRepairPoint.buildType = prov(() => extend(Building, {
         // Global range is intentionally not drawn.
     },
 
-    buildRotation() { return this.rotation; },
+    buildRotation() { return this.aim; },
     shouldConsume() { return this.target != null; },
     status() { return this.target == null ? BlockStatus.noInput : this.super$status(); },
 }));

@@ -2,15 +2,8 @@
 const lib = require("lib");
 const warmupSpeed = 0.05;
 let topRegion, bottomRegion, rotatorRegion;
-const BLUE = Color.valueOf("#0068fc");
-const outEffect = lib.newEffect(38, e => {
-    Draw.color(BLUE);
-    Angles.randLenVectors(e.id, 1, 8 * e.fout(), 0, 360, new Floatc2({ get: (x, y) => {
-        let a = Angles.angle(0, 0, x, y);
-        Fill.circle(e.x + Angles.trnsx(a,2) + x + Angles.trnsx(a,4)*e.fout(),
-                    e.y + Angles.trnsy(a,2) + y + Angles.trnsy(a,4)*e.fout(), e.fslope()*0.8);
-    }}));
-});
+const HUE = lib.chronoHue("chrono-unloader"), WELL = lib.chronoWell("chrono-unloader");
+const outEffect = lib.transferEffect(HUE, false);
 const blockType = extend(StorageBlock, "chrono-unloader", {
     load() {
         this.super$load();
@@ -163,7 +156,7 @@ blockType.buildType = prov(() => {
         },
         setItemTypeId(v) { itemType = (!v && v !== 0 || v < 0) ? null : Vars.content.items().get(v); },
         updateTile() {
-            let hasItem = false;
+            let linksMoved = 0;
             if (timer.get(1, FRAME_DELAY)) {
                 consValid = this.efficiency > 0;
                 if (consValid) {
@@ -174,20 +167,20 @@ blockType.buildType = prov(() => {
                         let lt = Vars.world.build(pos);
                         if (!lvt(this, lt)) { this.deadLink(pos); if (--max <= 0) break; continue; }
                         if (!sourceFilterFor(this, lt)) continue;
+                        let moved = false;
                         if (itemType != null) {
-                            if (transferItem(this, lt, itemType)) hasItem = true;
+                            moved = transferItem(this, lt, itemType);
                         } else {
                             for (let j = 0; j < Vars.content.items().size; j++) {
-                                let item = Vars.content.items().get(j);
-                                if (transferItem(this, lt, item)) hasItem = true;
+                                if (transferItem(this, lt, Vars.content.items().get(j))) moved = true;
                             }
                         }
+                        if (moved) linksMoved++;
                     }
                 }
-                if (consValid && hasItem) slowdownDelay = 60;
+                if (consValid && linksMoved > 0) slowdownDelay = 60;
                 else if (!consValid) slowdownDelay = 0;
-                if (this.enabled && rotateSpeed > 0.5 && Mathf.random(60) > 12)
-                    Time.run(Mathf.random(10), run(() => { outEffect.at(this.x, this.y, 0); }));
+                if (this.enabled && rotateSpeed > 0.5) lib.transferPulse(this, outEffect, linksMoved);
                 for (let i = 0; i < FRAME_DELAY; i++) dumpStored(this);
             }
             scanJob.tick(this, () => links, lvt, clearFn, batchApply, b => sourceFilterFor(this, b));
@@ -198,10 +191,9 @@ blockType.buildType = prov(() => {
         },
         draw() {
             this.super$draw();
-            Draw.color(Color.valueOf("#0a156e")); Draw.alpha(warmup);
-            Draw.rect(bottomRegion, this.x, this.y); Draw.color();
-            Draw.alpha(warmup); Draw.rect(rotatorRegion, this.x, this.y, rotateDeg);
-            Draw.alpha(1); Draw.rect(topRegion, this.x, this.y);
+            Draw.color(WELL, warmup); Draw.rect(bottomRegion, this.x, this.y);
+            Draw.color(HUE, warmup); Draw.rect(rotatorRegion, this.x, this.y, rotateDeg);
+            Draw.color(); Draw.rect(topRegion, this.x, this.y);
             Draw.color(itemType == null ? Color.clear : itemType.color);
             Draw.rect("unloader-center", this.x, this.y); Draw.color();
         },

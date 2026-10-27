@@ -1,0 +1,14 @@
+# Art ledger
+- 2026-10-27  MAJOR  booster-buffer-debuffer-twins  own glyph and baseColor/phaseColor per block  →  sprites/blocks/effect/*, scripts/chrono-booster.js, chrono-buffer.js, chrono-debuffer.js
+- 2026-10-27  MAJOR  tiler-liquid-pusher-twins  own glyph and hue per block  →  sprites/blocks/{distribution,liquid,crafting}/*
+- 2026-10-27  MAJOR  status-icons-identical  4 glyphs by stat; lubed/ignite tints raised  →  sprites/statuses/*, tools/gen-status-sprites.py, scripts/chrono-buffer.js
+- 2026-10-27  MAJOR  rgb-black-centres  RGBA, palette centres, core corners transparent  →  sprites/blocks/**
+- 2026-10-27  MAJOR  repair-point-head-only  base + rotating head + laser  →  scripts/chrono-repair-point.js
+- 2026-10-27  MAJOR  yuri-flat-disc  shaded mech body with team cell  →  tools/gen-yuri-sprites.py, gen-yuri-mech-sprites.py, gen-hypno-sprites.py, scripts/hypno-yuri.js, sprites/units/yuri*
+- 2026-10-27  MAJOR  drone-sharded-stripe  stripe through the cell  →  tools/gen-mega-sprites.py, sprites/units/outpost-*-drone.png
+- 2026-10-27  MAJOR  particle-hue-drift  CHRONO_HUES table  →  scripts/lib.js
+- 2026-10-27  MAJOR  chrono-family-frame  1 px #a35bd8 inner frame on every Chrono base  →  sprites/blocks/**
+- 2026-10-27  MINOR  rim-crossed-by-accents, booster-family-dark-edge  px 0 is the grey bevel on every Chrono base  →  sprites/blocks/**
+- 2026-10-27  MINOR  pusher-debuffer-same-red  pusher hue #ff7a59  →  scripts/lib.js, sprites/blocks/distribution/chrono-pusher.png
+- 2026-10-27  MINOR  mega-drone-plate-outline  plates outlined #565666  →  tools/gen-mega-sprites.py
+- 2026-10-27  MINOR  orphan-sprites, outpost-drone-size  deleted chrono-mender-base/glow, drone 56x56 RGBA  →  sprites/

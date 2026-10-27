@@ -70,7 +70,6 @@ function create(cfg) {
     yuriType.health = cfg.health;
     yuriType.speed = cfg.speed;
     yuriType.hitSize = cfg.hitSize;
-    yuriType.drawCell = false;
     yuriType.canBoost = false;
     yuriType.useUnitCap = false;
     yuriType.range = rules.YURI_RANGE * rules.TILE;

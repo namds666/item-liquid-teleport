@@ -324,7 +324,7 @@ test("build-tower", 6, 1, (a, s) => {
 });
 
 // 4 towers and one builder with 4 queued Impact Reactors: each tower must take a different plan, not copy the builder's current one.
-test("build-tower-parallel", 21, 6, (a, s) => {
+test("build-tower-parallel", 9, 10, (a, s) => {
     s.towers = [];
     for (let i = 0; i < 4; i++) s.towers.push(place(modBlock("chrono-build-tower"), a.x + i, a.y));
     const core = TEAM.core();
@@ -333,7 +333,7 @@ test("build-tower-parallel", 21, 6, (a, s) => {
     s.builder = spawn(UnitTypes.alpha, TEAM, a.x + 5, a.y);
     s.spots = [];
     for (let i = 0; i < 4; i++) {
-        let x = a.x + 2 + i * 5, y = a.y + 3;
+        let x = a.x + 2 + (i % 2) * 4, y = a.y + 3 + Math.floor(i / 2) * 4;
         s.spots.push({ x: x, y: y });
         s.builder.addBuild(new Packages.mindustry.entities.units.BuildPlan(x, y, 0, Blocks.impactReactor));
     }
@@ -341,18 +341,17 @@ test("build-tower-parallel", 21, 6, (a, s) => {
 }, (a, s) => {
     let built = s.spots.filter(p => { let b = Vars.world.build(p.x, p.y); return b != null && b.block == Blocks.impactReactor; }).length;
     return { pass: built == 4 && s.maxDistinct >= 2, info: "built=" + built + "/4 maxDistinct=" + s.maxDistinct };
-}, (a, s) => {
+}, null, { track: (a, s) => {
     let seen = {};
     let distinct = 0;
     for (let i = 0; i < s.towers.length; i++) {
-        let tu = num(s.towers[i], "unit");
-        let p = tu.buildPlan();
+        let p = num(s.towers[i], "unit").buildPlan();
         if (p == null || seen[p.x + "," + p.y]) continue;
         seen[p.x + "," + p.y] = true;
         distinct++;
     }
     s.maxDistinct = Math.max(s.maxDistinct, distinct);
-});
+} });
 
 test("booster", 6, 5, (a, s) => {
     s.power = place(Blocks.powerSource, a.x, a.y);
@@ -630,26 +629,41 @@ test("chrono-hypno", 11, 6, (a, s) => {
     s.enemyCores = ENEMY.cores().size;
     s.tetherSeen = false;
     s.moved = false;
+    s.holdX = a.x + 6; s.holdY = a.y + 2;
 }, (a, s) => {
     const y = s.block.yuri();
     const fortressOk = s.fortress.team == TEAM, wallOk = s.wall.team == TEAM;
     const silicon = s.block.items.get(Items.silicon), cores = ENEMY.cores().size;
     return { pass: y != null && fortressOk && wallOk && silicon == 25 && s.tetherSeen && s.moved && cores == s.enemyCores,
              info: "yuri=" + (y != null) + " fortressTeam=" + s.fortress.team + " wallTeam=" + s.wall.team + " silicon=" + silicon
-                + " tetherSeen=" + s.tetherSeen + " moved=" + s.moved + " enemyCores=" + cores + "/" + s.enemyCores };
+                + " tetherSeen=" + s.tetherSeen + " moved=" + s.moved + " enemyCores=" + cores + "/" + s.enemyCores
+                + " fortressDead=" + s.fortress.dead + " added=" + s.fortress.isAdded() + " at=" + s.fortress.tileX() + "," + s.fortress.tileY()
+                + " tethers=" + (y == null ? "-" : s.block.tethers().map(t => t.target.toString()).join("|")) };
 }, null, { long: true, track: (a, s) => {
     // Runs every tick: the server can lag to delta 4, so a 15 tick poll may come after one channel time,
     // and other tests' Yuri now reach 60 tiles. A fortress walks on its own; hold it nearer to Yuri than the wall.
-    if (!s.moved) s.fortress.set((a.x + 6) * TS, (a.y + 2) * TS);
+    // After the move it is held there too, or it walks off toward our core and can drown or die before Yuri converts it.
+    if (s.fortress.team == ENEMY) s.fortress.set(s.holdX * TS, s.holdY * TS);
     // Yuri reaches 60 tiles, so it spawns only after the short tests' check and cannot convert their enemy blocks.
     if (!s.fed && ticks >= FINAL_TICK) { s.block.items.add(Items.silicon, 50); s.fed = true; }
     if (s.block.yuri() == null) return;
     if (!s.tetherSeen && s.fortress.team == ENEMY) s.tetherSeen = s.block.tethers().some(t => t.target == s.fortress);
     if (!s.moved && s.tetherSeen && s.fortress.team == ENEMY) {
-        // Ground units on a solid tile die at once, so the fortress goes to the first free tile past Yuri's 60 tile range.
-        let tx = a.x + 64;
-        while (tx < a.x + 110 && (Vars.world.tile(tx, a.y + 2) == null || Vars.world.tile(tx, a.y + 2).solid() || Vars.world.tile(tx, a.y + 2).floor().isDeep())) tx++;
-        s.fortress.set(tx * TS, (a.y + 2) * TS);
+        // Ground units on a solid tile or off the map die at once, so the fortress goes to the first free tile
+        // past Yuri's 60 tile range, in whichever direction the map has room.
+        const free = t => t != null && !t.solid() && !t.floor().isDeep();
+        const ox = a.x + 1, oy = a.y + 2;
+        let spot = null;
+        for (let d = 64; spot == null && d < 110; d++) {
+            const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+            for (let k = 0; k < dirs.length && spot == null; k++) {
+                let x = ox + dirs[k][0] * d, y = oy + dirs[k][1] * d;
+                if (free(Vars.world.tile(x, y))) spot = [x, y];
+            }
+        }
+        if (spot == null) return;
+        s.holdX = spot[0]; s.holdY = spot[1];
+        s.fortress.set(s.holdX * TS, s.holdY * TS);
         s.moved = true;
         log("chrono-hypno fortress moved beyond range at t" + ticks);
     }

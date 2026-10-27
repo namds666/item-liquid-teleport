@@ -7,6 +7,7 @@ const TARGET_OVERLAY = 0;
 const TARGET_FLOOR = 1;
 
 let topRegion, bottomRegion, rotatorRegion;
+const HUE = lib.chronoHue("chrono-item-tiler"), WELL = lib.chronoWell("chrono-item-tiler");
 
 const tileTargets = [
     { item: Items.copper, type: TARGET_OVERLAY, block: Blocks.oreCopper },
@@ -280,14 +281,17 @@ blockType.buildType = prov(() => {
 
         draw() {
             this.super$draw();
-            Draw.alpha(warmup);
+            let selectedColor = selectedItem != null && selectedItem.color != null ? selectedItem.color : null;
+            Draw.color(WELL, warmup);
             Draw.rect(bottomRegion, this.x, this.y);
-            Draw.color(selectedItem != null && selectedItem.color != null ? selectedItem.color : Color.clear);
+            Draw.color(selectedColor == null ? HUE : selectedColor, warmup);
             Draw.rect(rotatorRegion, this.x, this.y, rotateDeg);
-            Draw.alpha(1);
+            Draw.color();
             Draw.rect(topRegion, this.x, this.y);
-            Draw.color(selectedItem != null && selectedItem.color != null ? selectedItem.color : Color.clear);
-            Draw.rect("unloader-center", this.x, this.y);
+            if (selectedColor != null) {
+                Draw.color(selectedColor);
+                Draw.rect("unloader-center", this.x, this.y);
+            }
             Draw.reset();
         },
 

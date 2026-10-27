@@ -1,4 +1,14 @@
+const lib = require("lib");
+
 const CoreBlockClass = Packages.mindustry.world.blocks.storage.CoreBlock;
+const CONVERT_RING_GROWTH = 16;
+
+const CONVERT_EFFECT = lib.newEffect(40, e => {
+    Draw.color(Pal.sapBullet);
+    Lines.stroke(3 * e.fout());
+    Lines.circle(e.x, e.y, e.rotation + CONVERT_RING_GROWTH * e.fin());
+    Draw.reset();
+});
 
 function isUnit(target) {
     return target != null && target instanceof Unit;
@@ -24,10 +34,12 @@ function convert(target, team) {
         // Rhino maps `team` to the field and a plain assignment does not stick, so call the setter by reflection.
         target.getClass().getMethod("team", Team).invoke(target, team);
         target.resetController();
+        CONVERT_EFFECT.at(target.x, target.y, target.hitSize / 2 + 2);
         Fx.spawn.at(target.x, target.y);
         return true;
     }
     Call.setTeam(target, team);
+    CONVERT_EFFECT.at(target.x, target.y, target.block.size * Vars.tilesize / 2 + 2);
     Fx.placeBlock.at(target.x, target.y, target.block.size);
     return true;
 }

@@ -2,15 +2,8 @@
 const lib = require("lib");
 const warmupSpeed = 0.05;
 let topRegion, bottomRegion, rotatorRegion;
-const ORANGE = Color.valueOf("#fea947");
-const inEffect = lib.newEffect(38, e => {
-    Draw.color(ORANGE);
-    Angles.randLenVectors(e.id, 1, 8 * e.fin(), 0, 360, new Floatc2({ get: (x, y) => {
-        let a = Angles.angle(0, 0, x, y);
-        Fill.circle(e.x + Angles.trnsx(a,2) + x + Angles.trnsx(a,4)*e.fin(),
-                    e.y + Angles.trnsy(a,2) + y + Angles.trnsy(a,4)*e.fin(), e.fslope()*0.8);
-    }}));
-});
+const HUE = lib.chronoHue("chrono-pusher"), WELL = lib.chronoWell("chrono-pusher");
+const inEffect = lib.transferEffect(HUE, true);
 const blockType = extend(StorageBlock, "chrono-pusher", {
     load() {
         this.super$load();
@@ -172,6 +165,7 @@ blockType.buildType = prov(() => {
             tmpHave.splice(0, tmpHave.length);
             if (timer.get(1, FRAME_DELAY)) {
                 itemSent = false; consValid = this.efficiency > 0;
+                let linksMoved = 0;
                 if (consValid) {
                     this.consume();
                     if (selectedItem != null) {
@@ -192,9 +186,10 @@ blockType.buildType = prov(() => {
                         let lt = Vars.world.build(pos);
                         if (!lvt(this, lt)) { this.deadLink(pos); if (--max <= 0) break; continue; }
                         if (!targetFilter(lt)) continue;
-                        if (this.sendItems(lt, tmpHave)) itemSent = true;
+                        if (this.sendItems(lt, tmpHave)) { itemSent = true; linksMoved++; }
                     }
                 }
+                if (this.enabled && rotateSpeed > 0.5) lib.transferPulse(this, inEffect, linksMoved);
             }
             if (consValid) {
                 warmup = Mathf.lerpDelta(warmup, links.isEmpty() ? 0 : 1, warmupSpeed);
@@ -208,9 +203,9 @@ blockType.buildType = prov(() => {
         },
         draw() {
             this.super$draw();
-            Draw.alpha(warmup); Draw.rect(bottomRegion, this.x, this.y); Draw.color();
-            Draw.alpha(warmup); Draw.rect(rotatorRegion, this.x, this.y, -rotateDeg);
-            Draw.alpha(1); Draw.rect(topRegion, this.x, this.y);
+            Draw.color(WELL, warmup); Draw.rect(bottomRegion, this.x, this.y);
+            Draw.color(HUE, warmup); Draw.rect(rotatorRegion, this.x, this.y, -rotateDeg);
+            Draw.color(); Draw.rect(topRegion, this.x, this.y);
         },
         display(table) {
             this.super$display(table);
@@ -238,8 +233,6 @@ blockType.buildType = prov(() => {
                 let pos = links.get(i);
                 if (lv(this, pos)) { let lt = Vars.world.build(pos); Drawf.square(lt.x, lt.y, lt.block.size*Vars.tilesize/2+1, Pal.place); }
             }
-            if (this.enabled && rotateSpeed > 0.5 && Mathf.random(60) > 48)
-                Time.run(Mathf.random(10), run(() => { inEffect.at(this.x, this.y, 0); }));
         },
         onConfigureBuildTapped(other) {
             if (this == other) return false;

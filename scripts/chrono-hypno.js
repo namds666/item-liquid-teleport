@@ -104,7 +104,7 @@ function create(cfg) {
                 u.add();
                 yuriModule.adopt(u, this);
                 unit = u;
-                Fx.spawn.at(this.x, this.y);
+                Fx.spawn.at(t.worldx(), t.worldy());
                 Events.fire(new EventType.UnitCreateEvent(u, this, null));
             },
 
@@ -155,7 +155,7 @@ function create(cfg) {
                 Draw.z(Layer.effect);
                 Draw.color(Pal.sapBullet);
                 Lines.stroke(1);
-                for (let i = 0; i < tethers.length; i++) Lines.line(this.x, this.y, tethers[i].target.x, tethers[i].target.y);
+                for (let i = 0; i < tethers.length; i++) Lines.line(unit.x, unit.y, tethers[i].target.x, tethers[i].target.y);
                 Draw.reset();
             },
 

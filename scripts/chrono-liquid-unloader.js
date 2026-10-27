@@ -2,15 +2,8 @@
 const lib = require("lib");
 const warmupSpeed = 0.05, TRANSFER_RATE = 5000;
 let topRegion, bottomRegion, rotatorRegion;
-const TEAL = Color.valueOf("#00c8c8");
-const outEffect = lib.newEffect(38, e => {
-    Draw.color(TEAL);
-    Angles.randLenVectors(e.id, 1, 8 * e.fout(), 0, 360, new Floatc2({ get: (x, y) => {
-        let a = Angles.angle(0, 0, x, y);
-        Fill.circle(e.x + Angles.trnsx(a,2) + x + Angles.trnsx(a,4)*e.fout(),
-                    e.y + Angles.trnsy(a,2) + y + Angles.trnsy(a,4)*e.fout(), e.fslope()*0.8);
-    }}));
-});
+const HUE = lib.chronoHue("chrono-liquid-unloader"), WELL = lib.chronoWell("chrono-liquid-unloader");
+const outEffect = lib.transferEffect(HUE, false);
 const blockType = extend(Block, "chrono-liquid-unloader", {
     load() {
         this.super$load();
@@ -148,7 +141,7 @@ blockType.buildType = prov(() => {
             liquidType = (v == null || v < 0 || v >= liquids.size) ? null : liquids.get(v);
         },
         updateTile() {
-            let hasLiquid = false;
+            let linksMoved = 0;
             if (timer.get(0, FRAME_DELAY)) {
                 if (liquidType != null && this.efficiency > 0) {
                     let max = links.size;
@@ -165,14 +158,13 @@ blockType.buildType = prov(() => {
                             lt.liquids.remove(liquidType, amount);
                             this.liquids.add(liquidType, amount);
                             this.dumpLiquid(liquidType);
-                            hasLiquid = true;
+                            linksMoved++;
                         }
                     }
                 }
-                if (hasLiquid) {
+                if (linksMoved > 0) {
                     slowdownDelay = 60;
-                    if (rotateSpeed > 0.5 && Mathf.random(60) > 12)
-                        Time.run(Mathf.random(10), run(() => { outEffect.at(this.x, this.y, 0); }));
+                    if (rotateSpeed > 0.5) lib.transferPulse(this, outEffect, linksMoved);
                 }
                 if (liquidType != null && this.liquids.get(liquidType) > 0.001) this.dumpLiquid(liquidType);
             }
@@ -184,10 +176,9 @@ blockType.buildType = prov(() => {
         },
         draw() {
             this.super$draw();
-            Draw.color(Color.valueOf("#0a156e")); Draw.alpha(warmup);
-            Draw.rect(bottomRegion, this.x, this.y); Draw.color();
-            Draw.alpha(warmup); Draw.rect(rotatorRegion, this.x, this.y, rotateDeg);
-            Draw.alpha(1); Draw.rect(topRegion, this.x, this.y);
+            Draw.color(WELL, warmup); Draw.rect(bottomRegion, this.x, this.y);
+            Draw.color(HUE, warmup); Draw.rect(rotatorRegion, this.x, this.y, rotateDeg);
+            Draw.color(); Draw.rect(topRegion, this.x, this.y);
             Draw.color(liquidType == null ? Color.clear : liquidType.color);
             Draw.rect("unloader-center", this.x, this.y); Draw.color();
         },

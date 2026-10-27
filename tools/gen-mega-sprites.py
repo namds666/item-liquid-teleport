@@ -5,7 +5,7 @@ Blocks:  outpost-small 2x -> outpost-mega 128x128
          outpost 2x -> outpost-quad 192x192
 Drones:  vanilla mega 1:1 -> outpost-mega-drone 100x100
          vanilla quad 1:1 -> outpost-quad-drone 220x220
-         (plus accent treatment: yellow stripe pair, small side armour plates)
+         (plus accent treatment: team-colour stripe pair in the cell, small side armour plates)
 
 Vanilla references live in tools/vanilla-ref/ for reproducibility.
 """
@@ -25,6 +25,8 @@ ARMOUR_MID = (0x98, 0x9A, 0xA4, 255)
 ARMOUR_DARK = (0x6E, 0x70, 0x80, 255)
 ACCENT_YELLOW = (0xFF, 0xD3, 0x7F, 255)
 ACCENT_ORANGE = (0xFF, 0xA6, 0x65, 255)
+CELL_UNDER = (0x84, 0xF4, 0x90, 255)
+UNIT_OUTLINE = (0x56, 0x56, 0x66, 255)
 
 
 
@@ -204,7 +206,7 @@ def add_vanilla_drone_accents(img, cell, stripe_y, stripe_w, plate_size, plate_y
     draw_cell = ImageDraw.Draw(cell)
     cx = w // 2
 
-    # --- Yellow stripe pair ---
+    # --- Stripe pair (team colour via the cell, vanilla under-cell green in the body) ---
     gap = stripe_w + 2
     for dy in (0, gap):
         sy = stripe_y + dy
@@ -217,7 +219,7 @@ def add_vanilla_drone_accents(img, cell, stripe_y, stripe_w, plate_size, plate_y
             left, right = span
             inset = max(3, (right - left) // 8)
             x1, x2 = left + inset, right - inset
-            draw.line([(x1, row), (x2, row)], fill=ACCENT_YELLOW)
+            draw.line([(x1, row), (x2, row)], fill=CELL_UNDER)
             draw_cell.line([(x1, row), (x2, row)], fill=(255, 255, 255, 255))
 
     # --- Side armour plates ---
@@ -234,7 +236,7 @@ def add_vanilla_drone_accents(img, cell, stripe_y, stripe_w, plate_size, plate_y
                 bx = edge + 2
             by = plate_y - ph // 2
 
-            draw.rectangle([bx - 1, by - 1, bx + pw, by + ph], fill=ARMOUR_DARK)
+            draw.rectangle([bx - 1, by - 1, bx + pw, by + ph], fill=UNIT_OUTLINE)
             draw.rectangle([bx, by, bx + pw - 1, by + ph - 1], fill=ARMOUR_MID)
             hl_x = bx if side == -1 else bx + pw - 1
             draw.line([(hl_x, by), (hl_x, by + ph - 1)], fill=ARMOUR_LIGHT)

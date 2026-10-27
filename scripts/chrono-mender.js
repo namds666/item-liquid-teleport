@@ -3,8 +3,12 @@ const lib = require("lib");
 
 // ── Config ─────────────────────────────────────────────────────────────────
 const HEAL_PERCENT          = 50;   // % of max health healed per pulse (insane)
-const RELOAD                = 10;   // ticks between pulses (0.5 s — fully heals twice/sec)
+const RELOAD                = 10;   // ticks between pulses (0.17 s — fully heals 3 times/sec)
 const MAX_EFFECTS_PER_PULSE = 24;
+// Pulses come faster than the flash fades, so chip damage heals without a flash to avoid a strobe on the front line.
+const FLASH_MIN_MISSING     = 0.25;
+const FLASH_COOLDOWN        = 60;
+const lastFlashByPos = {};
 const MAX_HEALS_PER_PULSE   = 512;  // buildings inspected per pulse
 const nextPulseByTeam = {};
 const MAX_ERROR_LOGS        = 20;
@@ -50,7 +54,7 @@ const chronoMender = extend(Block, "chrono-mender", {
 
     setStats() {
         this.super$setStats();
-        this.stats.add(Stat.repairTime, (100 / HEAL_PERCENT * RELOAD / 60) | 0, StatUnit.seconds);
+        this.stats.add(Stat.repairTime, 100 / HEAL_PERCENT * RELOAD / 60, StatUnit.seconds);
     }
 });
 
@@ -100,10 +104,16 @@ chronoMender.buildType = prov(() => extend(Building, {
                 try {
                     if (!canHealBuilding(b)) continue;
 
-                    b.heal(maxHealthOf(b) * HEAL_PERCENT / 100.0);
+                    let max = maxHealthOf(b);
+                    let bigHit = b.health <= max * (1 - FLASH_MIN_MISSING);
+                    b.heal(max * HEAL_PERCENT / 100.0);
                     b.recentlyHealed();
 
-                    if (effectsLeft-- > 0 && b.block != null) {
+                    let pos = b.pos(), lastFlash = lastFlashByPos[pos];
+                    let flashReady = lastFlash == null || Time.time - lastFlash >= FLASH_COOLDOWN;
+                    if (bigHit && flashReady && effectsLeft > 0 && b.block != null) {
+                        effectsLeft--;
+                        lastFlashByPos[pos] = Time.time;
                         Fx.healBlockFull.at(b.x, b.y, b.block.size, Pal.heal, b.block);
                     }
                 } catch (e) {
@@ -157,6 +167,7 @@ chronoMender.buildType = prov(() => extend(Building, {
 Events.on(EventType.WorldLoadEvent, cons(() => {
     for (let k in nextPulseByTeam) delete nextPulseByTeam[k];
     for (let k in nextIndexByTeam) delete nextIndexByTeam[k];
+    for (let k in lastFlashByPos) delete lastFlashByPos[k];
     errorsLogged = 0;
 }));
 

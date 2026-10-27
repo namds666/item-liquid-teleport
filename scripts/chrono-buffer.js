@@ -31,7 +31,7 @@ const chronoStatuses = {
     focus: makeStatus("chrono-focus", "a8d8ff", { damage: 1.20 }),
     precision: makeStatus("chrono-precision", "9da3ad", { reload: 1.20 }),
     slip: makeStatus("chrono-slip", "e4c98a", { speed: 1.08 }),
-    ignite: makeStatus("chrono-ignite", "4a3a33", { damage: 1.25 }),
+    ignite: makeStatus("chrono-ignite", "a67964", { damage: 1.25 }),
     alloyed: makeStatus("chrono-alloyed", "8aa8ff", { health: 1.30 }),
     jagged: makeStatus("chrono-jagged", "c2b7a1", { damage: 1.10 }),
     elastic: makeStatus("chrono-elastic", "d887ff", { health: 1.60 }),
@@ -40,7 +40,7 @@ const chronoStatuses = {
     blast: makeStatus("chrono-blast", "ff5d5d", { damage: 2.50 }),
     cooled: makeStatus("chrono-cooled", "6aa7ff", { reload: 1.20 }),
     molten: makeStatus("chrono-molten", "ffb45d", { damage: 1.45 }),
-    lubed: makeStatus("chrono-lubed", "303030", { speed: 1.30 }),
+    lubed: makeStatus("chrono-lubed", "7a7a7a", { speed: 1.30 }),
     cryo: makeStatus("chrono-cryo", "7fefff", { reload: 1.80 }),
 };
 
@@ -116,6 +116,8 @@ blockType.range = BASE_RANGE;
 blockType.effectBoost = BASE_EFFECT;
 blockType.useTime = BASE_USE_TIME;
 blockType.reload = APPLY_RELOAD;
+blockType.baseColor = Color.valueOf("80a9ff");
+blockType.phaseColor = Color.valueOf("7fefff");
 blockType.ambientSoundVolume = 0.12;
 blockType.hasBoost = false;
 blockType.hasLiquids = true;
@@ -134,6 +136,11 @@ blockType.buildType = prov(() => {
 
     return new JavaAdapter(OverdriveProjectorClass.OverdriveBuild, {
         version() { return 1; },
+
+        created() {
+            this.super$created();
+            this.charge = blockType.reload;
+        },
 
         realRange() {
             return boostRules.realRange(blockType.range, activeItems, activeLiquids);
@@ -183,6 +190,10 @@ blockType.buildType = prov(() => {
 
             for (let i = 0; i < activeItems.length; i++) activeItems[i] = Math.max(0, activeItems[i] - Time.delta);
             for (let i = 0; i < activeLiquids.length; i++) activeLiquids[i] = Math.max(0, activeLiquids[i] - Time.delta);
+
+            if (this.efficiency > 0 && boostRules.consumeNewBoosters(this, activeItems, activeLiquids)) {
+                this.charge = blockType.reload;
+            }
 
             if (this.efficiency > 0) {
                 boostTimer += Time.delta;

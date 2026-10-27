@@ -541,6 +541,31 @@ exports.addAutoConnectButtons = (table, the, getLinks, lvt, clearFn, autoFlags, 
     table.button("Clear All Links", run(() => { the.configure(clearFn()); })).size(bw * 2 + cw * 2 + sp, bh).colspan(4).padTop(4).row();
 };
 exports.newEffect = (lifetime, renderer) => new Effect(lifetime, cons(renderer));
+// One hue per block: the base sprite glyph, the rotator tint and the transfer particles all use it.
+const CHRONO_HUES = {
+    "chrono-unloader": "#80a9ff",
+    "chrono-pusher": "#ff7a59",
+    "chrono-liquid-unloader": "#54d67d",
+    "chrono-liquid-pusher": "#f3e979",
+    "chrono-item-tiler": "#ffaa5f",
+    "chrono-liquid-tiler": "#f08dd5",
+};
+exports.chronoHue = name => Color.valueOf(CHRONO_HUES[name]);
+exports.chronoWell = name => Color.valueOf(CHRONO_HUES[name]).mul(0.45, 0.45, 0.45, 1);
+exports.transferEffect = (color, outward) => exports.newEffect(38, e => {
+    let f = outward ? e.fin() : e.fout();
+    Draw.color(color);
+    Angles.randLenVectors(e.id, 1, 8 * f, 0, 360, new Floatc2({ get: (x, y) => {
+        let a = Angles.angle(0, 0, x, y);
+        Fill.circle(e.x + Angles.trnsx(a, 2) + x + Angles.trnsx(a, 4) * f,
+                    e.y + Angles.trnsy(a, 2) + y + Angles.trnsy(a, 4) * f, e.fslope() * 0.8);
+    }}));
+});
+exports.transferPulse = (build, effect, linksMoved) => {
+    if (linksMoved <= 0 || !Mathf.chance(0.3 + 0.7 * Math.min(1, linksMoved / 20))) return;
+    for (let i = linksMoved >= 20 ? 2 : 1; i > 0; i--)
+        Time.run(Mathf.random(10), run(() => { effect.at(build.x, build.y, 0); }));
+};
 exports.cons2 = (func) => new Cons2({ get: (v1, v2) => func(v1, v2) });
 exports.func = (getter) => new Func({ get: getter });
 exports.int = (v) => new java.lang.Integer(v);

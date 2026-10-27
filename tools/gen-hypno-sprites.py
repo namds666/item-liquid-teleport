@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the chrono-hypno (1x1) and chrono-hypno-big (2x2) block sprites and the Big Yuri unit sprites."""
+"""Generate the chrono-hypno (1x1) and chrono-hypno-big (2x2) block sprites."""
 
 from PIL import Image, ImageDraw
 import math
@@ -7,7 +7,6 @@ import os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BLOCK_DIR = os.path.join(ROOT, "sprites", "blocks", "units")
-UNIT_DIR = os.path.join(ROOT, "sprites", "units")
 
 OUTLINE = (24, 20, 32, 255)
 BASE = (62, 62, 68, 255)
@@ -43,13 +42,6 @@ def block(name, size):
     img.save(os.path.join(BLOCK_DIR, name + ".png"))
 
 
-def big_unit(part):
-    src = Image.open(os.path.join(UNIT_DIR, "yuri" + part + ".png")).convert("RGBA")
-    src.resize((src.width * 2, src.height * 2), Image.NEAREST).save(os.path.join(UNIT_DIR, "yuri-big" + part + ".png"))
-
-
 if __name__ == "__main__":
     block("chrono-hypno", 32)
     block("chrono-hypno-big", 64)
-    for part in ("", "-base", "-leg"):
-        big_unit(part)

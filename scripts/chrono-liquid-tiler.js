@@ -6,6 +6,7 @@ const TILE_INTERVAL = 30;
 const RADIUS_LEVELS = [2, 4, 6, 8, 12, 16, 24, 32];
 
 let topRegion, bottomRegion, rotatorRegion;
+const HUE = lib.chronoHue("chrono-liquid-tiler"), WELL = lib.chronoWell("chrono-liquid-tiler");
 
 function liquidFloor(liquid) {
     if (liquid == Liquids.water) return Blocks.water;
@@ -226,14 +227,17 @@ blockType.buildType = prov(() => {
 
         draw() {
             this.super$draw();
-            Draw.alpha(warmup);
+            let selectedColor = selectedLiquid != null && selectedLiquid.color != null ? selectedLiquid.color : null;
+            Draw.color(WELL, warmup);
             Draw.rect(bottomRegion, this.x, this.y);
-            Draw.color(selectedLiquid != null && selectedLiquid.color != null ? selectedLiquid.color : Color.clear);
+            Draw.color(selectedColor == null ? HUE : selectedColor, warmup);
             Draw.rect(rotatorRegion, this.x, this.y, rotateDeg);
-            Draw.alpha(1);
+            Draw.color();
             Draw.rect(topRegion, this.x, this.y);
-            Draw.color(selectedLiquid != null && selectedLiquid.color != null ? selectedLiquid.color : Color.clear);
-            Draw.rect("unloader-center", this.x, this.y);
+            if (selectedColor != null) {
+                Draw.color(selectedColor);
+                Draw.rect("unloader-center", this.x, this.y);
+            }
             Draw.reset();
         },
 

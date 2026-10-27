@@ -128,6 +128,28 @@ function consumeBoosters(build, activeItems, activeLiquids) {
     }
 }
 
+// Boosters that just arrived start at once instead of waiting for the next APPLY_RELOAD sweep.
+function consumeNewBoosters(build, activeItems, activeLiquids) {
+    let started = false;
+    for (let i = 0; i < itemBoosters.length; i++) {
+        let b = itemBoosters[i];
+        if (activeItems[i] <= 0 && build.items != null && build.items.get(b.item) >= b.amount) {
+            build.items.remove(b.item, b.amount);
+            activeItems[i] = BOOST_DURATION;
+            started = true;
+        }
+    }
+    for (let i = 0; i < liquidBoosters.length; i++) {
+        let b = liquidBoosters[i];
+        if (activeLiquids[i] <= 0 && build.liquids != null && build.liquids.get(b.liquid) >= b.amount) {
+            build.liquids.remove(b.liquid, b.amount);
+            activeLiquids[i] = BOOST_DURATION;
+            started = true;
+        }
+    }
+    return started;
+}
+
 function rangeStatText(booster) {
     let out = "[lightgray]+[stat]" + Strings.autoFixed(boosterRangeFlat(booster) / TILE, 2) + "[lightgray] " + StatUnit.blocks.localized();
     let mul = boosterRangeMul(booster);
@@ -183,5 +205,6 @@ module.exports = {
     realRange: realRange,
     activeBoost: activeBoost,
     consumeBoosters: consumeBoosters,
+    consumeNewBoosters: consumeNewBoosters,
     addBoosterStats: addBoosterStats,
 };

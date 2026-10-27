@@ -2,15 +2,8 @@
 const lib = require("lib");
 const warmupSpeed = 0.05, TRANSFER_RATE = 5000;
 let topRegion, bottomRegion, rotatorRegion;
-const GREEN = Color.valueOf("#00e070");
-const inEffect = lib.newEffect(38, e => {
-    Draw.color(GREEN);
-    Angles.randLenVectors(e.id, 1, 8 * e.fin(), 0, 360, new Floatc2({ get: (x, y) => {
-        let a = Angles.angle(0, 0, x, y);
-        Fill.circle(e.x + Angles.trnsx(a,2) + x + Angles.trnsx(a,4)*e.fin(),
-                    e.y + Angles.trnsy(a,2) + y + Angles.trnsy(a,4)*e.fin(), e.fslope()*0.8);
-    }}));
-});
+const HUE = lib.chronoHue("chrono-liquid-pusher"), WELL = lib.chronoWell("chrono-liquid-pusher");
+const inEffect = lib.transferEffect(HUE, true);
 const blockType = extend(Block, "chrono-liquid-pusher", {
     load() {
         this.super$load();
@@ -147,6 +140,7 @@ blockType.buildType = prov(() => {
         updateTile() {
             if (timer.get(0, FRAME_DELAY)) {
                 liquidSent = false;
+                let linksMoved = 0;
                 if (this.efficiency > 0) {
                     if (selectedLiquid != null) {
                         // Filter mode: only push the selected liquid
@@ -167,6 +161,7 @@ blockType.buildType = prov(() => {
                                     this.liquids.remove(selectedLiquid, amount);
                                     have -= amount;
                                     liquidSent = true;
+                                    linksMoved++;
                                 }
                                 if (have <= 0.001) break;
                             }
@@ -192,12 +187,14 @@ blockType.buildType = prov(() => {
                                     this.liquids.remove(liq, amount);
                                     have -= amount;
                                     liquidSent = true;
+                                    linksMoved++;
                                 }
                                 if (have <= 0.001) break;
                             }
                         }
                     }
                 }
+                if (this.enabled && rotateSpeed > 0.5) lib.transferPulse(this, inEffect, linksMoved);
             }
             if (this.efficiency > 0) {
                 warmup = Mathf.lerpDelta(warmup, links.isEmpty() ? 0 : 1, warmupSpeed);
@@ -208,14 +205,12 @@ blockType.buildType = prov(() => {
             }
             if (warmup > 0) rotateDeg += rotateSpeed;
             scanJob.tick(this, () => links, lvt, clearFn, batchApply, targetFilter);
-            if (liquidSent && rotateSpeed > 0.5 && Mathf.random(60) > 48)
-                Time.run(Mathf.random(10), run(() => { inEffect.at(this.x, this.y, 0); }));
         },
         draw() {
             this.super$draw();
-            Draw.alpha(warmup); Draw.rect(bottomRegion, this.x, this.y); Draw.color();
-            Draw.alpha(warmup); Draw.rect(rotatorRegion, this.x, this.y, -rotateDeg);
-            Draw.alpha(1); Draw.rect(topRegion, this.x, this.y);
+            Draw.color(WELL, warmup); Draw.rect(bottomRegion, this.x, this.y);
+            Draw.color(HUE, warmup); Draw.rect(rotatorRegion, this.x, this.y, -rotateDeg);
+            Draw.color(); Draw.rect(topRegion, this.x, this.y);
             let displayLiquid = selectedLiquid;
             if (displayLiquid == null) {
                 let domAmt = 0;
@@ -234,8 +229,6 @@ blockType.buildType = prov(() => {
                 let pos = links.get(i);
                 if (lv(this, pos)) { let lt = Vars.world.build(pos); Drawf.square(lt.x, lt.y, lt.block.size*Vars.tilesize/2+1, Pal.place); }
             }
-            if (this.enabled && rotateSpeed > 0.5 && Mathf.random(60) > 48)
-                Time.run(Mathf.random(10), run(() => { inEffect.at(this.x, this.y, 0); }));
         },
         onConfigureBuildTapped(other) {
             if (this == other) return false;
