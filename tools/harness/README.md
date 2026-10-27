@@ -7,7 +7,7 @@ per block plus a final `RESULT`.
 
 Covered: mender, unloader, pusher (container and crafter targets), liquid
 unloader, liquid pusher, item converter, liquid tiler, item tiler, repair
-point, build tower (rebuilds a destroyed wall), booster, buffer, debuffer,
+point, build tower (rebuilds a destroyed wall), build tower parallel (4 towers take 4 different queued plans of one builder), booster, buffer, debuffer,
 core, outpost range levels (11 mine range upgrades: level, range, cost tier switch), chrono-hypno-upgrade (3 upgrades: level, channel, exact core cost). `api-types` is informational: it prints how Rhino resolves
 field-vs-method names on each Building subclass.
 

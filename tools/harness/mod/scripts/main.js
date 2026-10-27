@@ -323,6 +323,37 @@ test("build-tower", 6, 1, (a, s) => {
     if (b == null || b != s.wall) s.sawGone = true;
 });
 
+// 4 towers and one builder with 4 queued Impact Reactors: each tower must take a different plan, not copy the builder's current one.
+test("build-tower-parallel", 21, 6, (a, s) => {
+    s.towers = [];
+    for (let i = 0; i < 4; i++) s.towers.push(place(modBlock("chrono-build-tower"), a.x + i, a.y));
+    const core = TEAM.core();
+    const req = Blocks.impactReactor.requirements;
+    for (let i = 0; i < req.length; i++) core.items.add(req[i].item, req[i].amount * 6);
+    s.builder = spawn(UnitTypes.alpha, TEAM, a.x + 5, a.y);
+    s.spots = [];
+    for (let i = 0; i < 4; i++) {
+        let x = a.x + 2 + i * 5, y = a.y + 3;
+        s.spots.push({ x: x, y: y });
+        s.builder.addBuild(new Packages.mindustry.entities.units.BuildPlan(x, y, 0, Blocks.impactReactor));
+    }
+    s.maxDistinct = 0;
+}, (a, s) => {
+    let built = s.spots.filter(p => { let b = Vars.world.build(p.x, p.y); return b != null && b.block == Blocks.impactReactor; }).length;
+    return { pass: built == 4 && s.maxDistinct >= 2, info: "built=" + built + "/4 maxDistinct=" + s.maxDistinct };
+}, (a, s) => {
+    let seen = {};
+    let distinct = 0;
+    for (let i = 0; i < s.towers.length; i++) {
+        let tu = num(s.towers[i], "unit");
+        let p = tu.buildPlan();
+        if (p == null || seen[p.x + "," + p.y]) continue;
+        seen[p.x + "," + p.y] = true;
+        distinct++;
+    }
+    s.maxDistinct = Math.max(s.maxDistinct, distinct);
+});
+
 test("booster", 6, 5, (a, s) => {
     s.power = place(Blocks.powerSource, a.x, a.y);
     s.booster = place(modBlock("chrono-booster"), a.x + 1, a.y);
