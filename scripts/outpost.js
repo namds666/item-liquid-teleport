@@ -10,6 +10,7 @@ const CLAIM_TIME = 30;
 const SPOT_RADIUS = 6 * TILE;
 const SPOT_RANGE_FRAC = 0.4;
 const SETTLE_INSET = TILE;
+const HOLD_MARGIN = TILE;
 const MERGE_CHECK = 120;
 const ORPHAN_TIME = 120;
 
@@ -150,7 +151,7 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
         center.scl(1 / tiles.length);
         let reach = 0;
         tiles.forEach(t => { reach = Math.max(reach, center.dst(t.worldx(), t.worldy())); });
-        spot = { item: item, want: want, tiles: tiles, center: center, hold: Math.max(TILE, range - reach - TILE) };
+        spot = { item: item, want: want, tiles: tiles, center: center, hold: Math.max(TILE, range - reach - HOLD_MARGIN) };
         tiles.forEach(t => claim(t, unit));
     }
 
@@ -263,7 +264,11 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
                         spotTimer = 0;
                         let old = spot;
                         pickSpot(unit, item, range, stats.beams);
-                        if (spot == null || old == null || spot.tiles[0] != old.tiles[0]) unit.mineTile = null;
+                        if (spot == null || old == null || spot.tiles[0] != old.tiles[0]) {
+                            unit.mineTile = null;
+                            beams = [];
+                            beamTimer = ORE_REFIND;
+                        }
                     }
                     if (spot == null) {
                         unit.mineTile = null;

@@ -10,3 +10,5 @@
 - 2026-10-28  MINOR  outpost-settle-creep  approach aims SETTLE_INSET inside the hold/2 exit radius  →  scripts/outpost.js
 - 2026-10-28  MINOR  outpost-beam-upgrade-repick  spot stores want; a beam upgrade repicks at once  →  scripts/outpost.js
 - 2026-10-28  MINOR  outpost-midload-switch  timed repick only with an empty stack  →  scripts/outpost.js
+- 2026-10-28  MINOR  outpost-beam-upgrade-arrival  beams cleared and beamTimer ready on spot change  →  scripts/outpost.js
+- 2026-10-28  MINOR  outpost-hold-margin  inline hold margin moved to HOLD_MARGIN  →  scripts/outpost.js
