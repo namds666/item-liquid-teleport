@@ -6,3 +6,7 @@
 - 2026-10-27  MINOR  yuri-spawn-fx-origin, hypno-select-origin  spawn fx at Yuri tile, select lines from Yuri  →  scripts/chrono-hypno.js
 - 2026-10-27  MINOR  mender-stat-zero  repair time stat shows 0.33 s  →  scripts/chrono-mender.js
 - 2026-10-27  MINOR  repair-beam-thin  vanilla laser beam  →  scripts/chrono-repair-point.js
+- 2026-10-28  BLOCK  outpost-spot-frac-inline  spot radius fraction moved to SPOT_RANGE_FRAC  →  scripts/outpost.js
+- 2026-10-28  MINOR  outpost-settle-creep  approach aims SETTLE_INSET inside the hold/2 exit radius  →  scripts/outpost.js
+- 2026-10-28  MINOR  outpost-beam-upgrade-repick  spot stores want; a beam upgrade repicks at once  →  scripts/outpost.js
+- 2026-10-28  MINOR  outpost-midload-switch  timed repick only with an empty stack  →  scripts/outpost.js

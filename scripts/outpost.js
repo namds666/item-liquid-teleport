@@ -5,6 +5,11 @@ const TILE = Vars.tilesize;
 const SPAWN_TIME = 300;
 const CIRCLE_RADIUS = 3 * TILE;
 const ORE_REFIND = 60;
+const SPOT_REPICK = 300;
+const CLAIM_TIME = 30;
+const SPOT_RADIUS = 6 * TILE;
+const SPOT_RANGE_FRAC = 0.4;
+const SETTLE_INSET = TILE;
 const MERGE_CHECK = 120;
 const ORPHAN_TIME = 120;
 
@@ -40,6 +45,15 @@ function oreItems(maxTier) {
     out.sort((a, b) => a.hardness != b.hardness ? a.hardness - b.hardness : a.id - b.id);
     oreCaches[maxTier] = out;
     return out;
+}
+
+// Ore tiles held by a drone (its spot and beams), so other drones pick other tiles. Owners refresh every tick.
+let claims = {};
+Events.on(EventType.WorldLoadEvent, cons(() => { claims = {}; }));
+function claim(t, unit) { claims[t.pos()] = { unit: unit, id: unit.id, time: Time.time }; }
+function claimedByOther(t, unit) {
+    const c = claims[t.pos()];
+    return c != null && c.id != unit.id && c.unit.isAdded() && !c.unit.dead && Time.time - c.time < CLAIM_TIME;
 }
 
 function create(cfg) {
@@ -90,8 +104,8 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
     let outpost = initialOutpost;
     let mining = true;
     let approaching = false;
-    let ore = null;
-    let oreTimer = ORE_REFIND;
+    let spot = null;
+    let spotTimer = 0;
     let orphanTimer = 0;
     let subTimer = 0;
     let beams = [];
@@ -103,19 +117,41 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
         return false;
     }
 
-    // Extra beams each hold a distinct ore tile of the primary's item; rescans are rate-limited.
+    // Extra beams each hold a distinct ore tile of the primary's item, spot tiles first; rescans are rate-limited.
     function updateBeams(unit, range, want) {
         const tile = unit.mineTile;
         if (tile == null || want <= 1) { beams = []; return; }
         const item = tile.drop();
-        let kept = beams.filter(t => t != tile && t.drop() == item && unit.within(t, range) && unit.validMine(t));
+        const usable = t => t != tile && t.drop() == item && unit.within(t, range) && unit.validMine(t) && !claimedByOther(t, unit);
+        let kept = beams.filter(usable);
         if (kept.length < beams.length) beamTimer = ORE_REFIND;
         beams = kept.slice(0, want - 1);
         beamTimer += Time.delta;
         if (beams.length >= want - 1 || beamTimer < ORE_REFIND) return;
         beamTimer = 0;
+        if (spot != null) spot.tiles.forEach(t => { if (beams.length < want - 1 && !hasBeam(t) && usable(t)) beams.push(t); });
+        if (beams.length >= want - 1) return;
         beams = beams.concat(oreIndex.nearby(item, unit.x, unit.y, range, want - 1 - beams.length,
-            t => t != tile && !hasBeam(t) && unit.validMine(t)));
+            t => t != tile && !hasBeam(t) && unit.validMine(t) && !claimedByOther(t, unit)));
+    }
+
+    function spotValid(unit, item, want) {
+        const t = spot.tiles[0];
+        return spot.item == item && spot.want == want && t.block() == Blocks.air && t.drop() == item && !claimedByOther(t, unit);
+    }
+
+    // Nearest spot to the home core with a free tile for every beam, inside a circle the drone can hover over.
+    function pickSpot(unit, item, range, want) {
+        const home = outpost.closestCore() || outpost;
+        const tiles = oreIndex.cluster(item, home.x, home.y, want, Math.min(range * SPOT_RANGE_FRAC, SPOT_RADIUS), t => !claimedByOther(t, unit));
+        if (tiles == null || tiles.length == 0) { spot = null; return; }
+        const center = new Vec2();
+        tiles.forEach(t => center.add(t.worldx(), t.worldy()));
+        center.scl(1 / tiles.length);
+        let reach = 0;
+        tiles.forEach(t => { reach = Math.max(reach, center.dst(t.worldx(), t.worldy())); });
+        spot = { item: item, want: want, tiles: tiles, center: center, hold: Math.max(TILE, range - reach - TILE) };
+        tiles.forEach(t => claim(t, unit));
     }
 
     return new JavaAdapter(AIController, {
@@ -200,6 +236,10 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
             const range = stats.range * TILE;
             if (unit.mineTile != null && (!unit.validMine(unit.mineTile) || !unit.within(unit.mineTile, range))) unit.mineTile = null;
             updateBeams(unit, range, stats.beams);
+            if (spot != null) {
+                if (spot.item != item) spot = null;
+                else { spot.tiles.forEach(t => claim(t, unit)); beams.forEach(t => claim(t, unit)); }
+            }
             if (unit.mineTile != null) unit.mineTimer += Time.delta * Math.max(0, stats.mineSpeed * (1 + beams.length) - unit.type.mineSpeed);
 
             if (core == null || (item == null && unit.stack.amount == 0)) {
@@ -218,22 +258,24 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
                 if (unit.stack.amount >= stats.capacity || (unit.stack.amount > 0 && unit.stack.item != item) || !unit.acceptsItem(item)) {
                     mining = false;
                 } else {
-                    oreTimer += Time.delta;
-                    if (ore == null || oreTimer >= ORE_REFIND || ore.block() != Blocks.air || ore.drop() != item) {
-                        oreTimer = 0;
-                        ore = Vars.indexer.findClosestOre(outpost.x, outpost.y, item);
+                    spotTimer += Time.delta;
+                    if (spot == null || !spotValid(unit, item, stats.beams) || (spotTimer >= SPOT_REPICK && unit.stack.amount == 0)) {
+                        spotTimer = 0;
+                        let old = spot;
+                        pickSpot(unit, item, range, stats.beams);
+                        if (spot == null || old == null || spot.tiles[0] != old.tiles[0]) unit.mineTile = null;
                     }
-                    if (ore == null) {
+                    if (spot == null) {
                         unit.mineTile = null;
                         this.circle(outpost, CIRCLE_RADIUS, stats.speed);
                         return;
                     }
-                    // Any spot inside the range is fine; drones only fly in once pushed past it, and stop
-                    // well inside so they do not drift in and out at the edge.
-                    const settle = Math.max(range - 2 * TILE, range / 2);
-                    if (!unit.within(ore, range)) approaching = true;
-                    else if (unit.within(ore, settle)) approaching = false;
-                    if (approaching) this.moveToSpeed(ore, settle - TILE, 20, stats.speed);
+                    // Hovering anywhere within `hold` of the center keeps every spot tile in range; drones only
+                    // fly in once pushed past it, and stop well inside so they do not drift in and out at the edge.
+                    const ore = spot.tiles[0];
+                    if (!unit.within(spot.center, spot.hold)) approaching = true;
+                    else if (unit.within(spot.center, spot.hold / 2)) approaching = false;
+                    if (approaching) this.moveToSpeed(spot.center, Math.max(0, spot.hold / 2 - SETTLE_INSET), 20, stats.speed);
                     if (unit.within(ore, range) && unit.validMine(ore)) unit.mineTile = ore;
                     return;
                 }

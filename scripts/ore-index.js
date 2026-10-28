@@ -2,6 +2,7 @@
 const TILE = Vars.tilesize;
 const CHUNK = 8;
 const SPAN = CHUNK * TILE;
+const CLUSTER_STARTS = 64;
 
 let tiles = null;
 let bw = 0, bh = 0;
@@ -84,4 +85,21 @@ exports.nearby = (item, x, y, radius, max, accept) => {
     found.sort((a, b) => a.d2 - b.d2);
     for (let i = 0; i < found.length && i < max; i++) out.push(found[i].tile);
     return out;
+};
+
+// The nearest-to-(x, y) group of `want` free tiles that fit within `radius` of their first tile.
+// Tiles of a too-small group are skipped as later starts; if no group is big enough, the biggest wins.
+exports.cluster = (item, x, y, want, radius, accept) => {
+    const starts = exports.nearby(item, x, y, Infinity, CLUSTER_STARTS, accept);
+    const seen = {};
+    let best = null;
+    for (let i = 0; i < starts.length; i++) {
+        let s = starts[i];
+        if (seen[s.pos()]) continue;
+        let group = exports.nearby(item, s.worldx(), s.worldy(), radius, want, accept);
+        if (group.length >= want) return group;
+        for (let j = 0; j < group.length; j++) seen[group[j].pos()] = true;
+        if (best == null || group.length > best.length) best = group;
+    }
+    return best;
 };
