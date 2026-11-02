@@ -6,6 +6,7 @@ const SPAWN_TIME = 300;
 const CIRCLE_RADIUS = 3 * TILE;
 const ORE_REFIND = 60;
 const SPOT_REPICK = 300;
+const SPOT_RETRY = 60;
 const CLAIM_TIME = 30;
 const SPOT_RADIUS = 6 * TILE;
 const SPOT_RANGE_FRAC = 0.4;
@@ -50,7 +51,10 @@ function oreItems(maxTier) {
 
 // Ore tiles held by a drone (its spot and beams), so other drones pick other tiles. Owners refresh every tick.
 let claims = {};
-Events.on(EventType.WorldLoadEvent, cons(() => { claims = {}; }));
+// Item id -> time until which every free tile of that item is known to be held, so drones share tiles
+// instead of each repeating the full-map search for a free spot.
+let exhaustedUntil = {};
+Events.on(EventType.WorldLoadEvent, cons(() => { claims = {}; exhaustedUntil = {}; }));
 function claim(t, unit) { claims[t.pos()] = { unit: unit, id: unit.id, time: Time.time }; }
 function claimedByOther(t, unit) {
     const c = claims[t.pos()];
@@ -106,7 +110,7 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
     let mining = true;
     let approaching = false;
     let spot = null;
-    let spotTimer = 0;
+    let spotTimer = SPOT_RETRY;
     let orphanTimer = 0;
     let subTimer = 0;
     let beams = [];
@@ -118,12 +122,19 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
         return false;
     }
 
+    // Tiles of a shared spot are held by another drone; this drone mines them without claiming them.
+    function sharedTile(t) {
+        if (spot == null || !spot.shared) return false;
+        for (let i = 0; i < spot.tiles.length; i++) if (spot.tiles[i] == t) return true;
+        return false;
+    }
+
     // Extra beams each hold a distinct ore tile of the primary's item, spot tiles first; rescans are rate-limited.
     function updateBeams(unit, range, want) {
         const tile = unit.mineTile;
         if (tile == null || want <= 1) { beams = []; return; }
         const item = tile.drop();
-        const usable = t => t != tile && t.drop() == item && unit.within(t, range) && unit.validMine(t) && !claimedByOther(t, unit);
+        const usable = t => t != tile && t.drop() == item && unit.within(t, range) && unit.validMine(t) && (sharedTile(t) || !claimedByOther(t, unit));
         let kept = beams.filter(usable);
         if (kept.length < beams.length) beamTimer = ORE_REFIND;
         beams = kept.slice(0, want - 1);
@@ -138,21 +149,29 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
 
     function spotValid(unit, item, want) {
         const t = spot.tiles[0];
-        return spot.item == item && spot.want == want && t.block() == Blocks.air && t.drop() == item && !claimedByOther(t, unit);
+        return spot.item == item && spot.want == want && t.block() == Blocks.air && t.drop() == item && (spot.shared || !claimedByOther(t, unit));
     }
 
     // Nearest spot to the home core with a free tile for every beam, inside a circle the drone can hover over.
+    // Once other drones hold every free tile, the nearest spot is shared without claiming it.
     function pickSpot(unit, item, range, want) {
         const home = outpost.closestCore() || outpost;
-        const tiles = oreIndex.cluster(item, home.x, home.y, want, Math.min(range * SPOT_RANGE_FRAC, SPOT_RADIUS), t => !claimedByOther(t, unit));
+        const radius = Math.min(range * SPOT_RANGE_FRAC, SPOT_RADIUS);
+        let shared = Time.time < (exhaustedUntil[item.id] || 0);
+        let tiles = shared ? null : oreIndex.cluster(item, home.x, home.y, want, radius, t => !claimedByOther(t, unit));
+        if (!shared && (tiles == null || tiles.length == 0)) {
+            exhaustedUntil[item.id] = Time.time + SPOT_RETRY;
+            shared = true;
+        }
+        if (shared) tiles = oreIndex.cluster(item, home.x, home.y, want, radius, null);
         if (tiles == null || tiles.length == 0) { spot = null; return; }
         const center = new Vec2();
         tiles.forEach(t => center.add(t.worldx(), t.worldy()));
         center.scl(1 / tiles.length);
         let reach = 0;
         tiles.forEach(t => { reach = Math.max(reach, center.dst(t.worldx(), t.worldy())); });
-        spot = { item: item, want: want, tiles: tiles, center: center, hold: Math.max(TILE, range - reach - HOLD_MARGIN) };
-        tiles.forEach(t => claim(t, unit));
+        spot = { item: item, want: want, tiles: tiles, center: center, hold: Math.max(TILE, range - reach - HOLD_MARGIN), shared: shared };
+        if (!shared) tiles.forEach(t => claim(t, unit));
     }
 
     return new JavaAdapter(AIController, {
@@ -238,8 +257,11 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
             if (unit.mineTile != null && (!unit.validMine(unit.mineTile) || !unit.within(unit.mineTile, range))) unit.mineTile = null;
             updateBeams(unit, range, stats.beams);
             if (spot != null) {
-                if (spot.item != item) spot = null;
-                else { spot.tiles.forEach(t => claim(t, unit)); beams.forEach(t => claim(t, unit)); }
+                if (spot.item != item) { spot = null; spotTimer = SPOT_RETRY; }
+                else {
+                    if (!spot.shared) spot.tiles.forEach(t => claim(t, unit));
+                    beams.forEach(t => { if (!sharedTile(t)) claim(t, unit); });
+                }
             }
             if (unit.mineTile != null) unit.mineTimer += Time.delta * Math.max(0, stats.mineSpeed * (1 + beams.length) - unit.type.mineSpeed);
 
@@ -260,7 +282,7 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
                     mining = false;
                 } else {
                     spotTimer += Time.delta;
-                    if (spot == null || !spotValid(unit, item, stats.beams) || (spotTimer >= SPOT_REPICK && unit.stack.amount == 0)) {
+                    if (spot == null ? spotTimer >= SPOT_RETRY : !spotValid(unit, item, stats.beams) || (spotTimer >= SPOT_REPICK && unit.stack.amount == 0)) {
                         spotTimer = 0;
                         let old = spot;
                         pickSpot(unit, item, range, stats.beams);
