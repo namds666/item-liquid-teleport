@@ -16,6 +16,7 @@ const MERGE_CHECK = 120;
 const ORPHAN_TIME = 120;
 
 const PATH_CAP = 0, PATH_SPEED = 1, PATH_MINE = 2, PATH_CAPACITY = 3, PATH_TIER = 4, PATH_RANGE = 5, PATH_DROP = 6, PATH_BEAM = 7;
+const CONFIG_RESCAN = -1;
 const PATH_KEYS = ["cap", "speed", "mine", "capacity", "tier", "range", "drop", "beam"];
 const LEVELS_PER_RANGE_COST = 10;
 
@@ -55,6 +56,9 @@ let claims = {};
 // instead of each repeating the full-map search for a free spot.
 let exhaustedUntil = {};
 Events.on(EventType.WorldLoadEvent, cons(() => { claims = {}; exhaustedUntil = {}; }));
+function releaseClaims(unit) {
+    for (let k in claims) if (claims[k].id == unit.id) delete claims[k];
+}
 function claim(t, unit) { claims[t.pos()] = { unit: unit, id: unit.id, time: Time.time }; }
 function claimedByOther(t, unit) {
     const c = claims[t.pos()];
@@ -177,6 +181,15 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
     return new JavaAdapter(AIController, {
         setOutpost(build) { outpost = build; },
 
+        rescan() {
+            if (this.unit != null) { releaseClaims(this.unit); this.unit.mineTile = null; }
+            spot = null;
+            beams = [];
+            approaching = false;
+            spotTimer = Mathf.random(SPOT_RETRY);
+            beamTimer = ORE_REFIND;
+        },
+
         activeBeams() { return this.unit == null || this.unit.mineTile == null ? 0 : 1 + beams.length; },
 
         drawBeams() {
@@ -257,7 +270,8 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
             if (unit.mineTile != null && (!unit.validMine(unit.mineTile) || !unit.within(unit.mineTile, range))) unit.mineTile = null;
             updateBeams(unit, range, stats.beams);
             if (spot != null) {
-                if (spot.item != item) { spot = null; spotTimer = SPOT_RETRY; }
+                // Every drone drops its spot on an ore switch; random delays spread the searches over frames.
+                if (spot.item != item) { spot = null; spotTimer = Mathf.random(SPOT_RETRY); }
                 else {
                     if (!spot.shared) spot.tiles.forEach(t => claim(t, unit));
                     beams.forEach(t => { if (!sharedTile(t)) claim(t, unit); });
@@ -369,7 +383,10 @@ lib.enableAllEnvironments(blockType);
 blockType.config(Item, lib.cons2((build, item) => build.setSelectedItem(item)));
 blockType.configClear(build => build.setSelectedItem(null));
 blockType.config(java.lang.Boolean, lib.cons2((build, on) => build.setAuto(!!on)));
-blockType.config(java.lang.Integer, lib.cons2((build, path) => build.tryUpgrade(path | 0)));
+blockType.config(java.lang.Integer, lib.cons2((build, path) => {
+    if ((path | 0) == CONFIG_RESCAN) build.rescan();
+    else build.tryUpgrade(path | 0);
+}));
 
 function tryMerge(build) {
     if (cfg.mergeInto == null) return false;
@@ -400,6 +417,18 @@ blockType.buildType = prov(() => {
         selectedItem() { return item; },
         setAuto(v) { auto = v; if (auto) this.pickLowest(); },
         isAuto() { return auto; },
+        // Rebuilds the ore index (e.g. after a Chrono Item Tiler painted ore) and sends every drone to a fresh spot.
+        rescan() {
+            oreIndex.reset();
+            exhaustedUntil = {};
+            pruneUnits();
+            pruneSubs();
+            const drones = units.concat(subs.map(s => s.unit));
+            for (let i = 0; i < drones.length; i++) {
+                let ai = drones[i].controller();
+                if (ai != null && typeof ai.rescan == "function") ai.rescan();
+            }
+        },
         pickLowest() {
             let core = this.team.core();
             if (core == null) return;
@@ -582,6 +611,8 @@ blockType.buildType = prov(() => {
                         head.add(bundle("ore")).left().padRight(8);
                         head.button(bundle("lowest"), Styles.togglet, run(() => build.configure(auto ? null : java.lang.Boolean.TRUE)))
                             .height(32).minWidth(90).checked(boolf(b => auto)).tooltip(bundle("lowest.tooltip"));
+                        head.button(bundle("rescan"), run(() => build.configure(lib.int(CONFIG_RESCAN))))
+                            .height(32).minWidth(90).padLeft(6).tooltip(bundle("rescan.tooltip"));
                     })).left().colspan(2).row();
                     let ores = oreItems(MAX_TIER);
                     let rows = [

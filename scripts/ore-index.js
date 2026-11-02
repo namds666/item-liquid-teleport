@@ -32,6 +32,7 @@ function ensure() {
 }
 
 Events.on(EventType.WorldLoadEvent, cons(() => { tiles = null; }));
+exports.reset = () => { tiles = null; };
 const onFloorChange = cons(e => { if (tiles != null && e.tile != null) add(e.tile); });
 Events.on(EventType.TileFloorChangeEvent, onFloorChange);
 Events.on(EventType.TileOverlayChangeEvent, onFloorChange);
