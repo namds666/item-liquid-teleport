@@ -213,19 +213,34 @@ function blockOutputsLiquidAny(block) {
     if (callBool(block, "outputsLiquid", [])) return true;
     return false;
 }
+// Block consumers never change after load, and the reflective checks cost too much to repeat per frame.
+const blockItemCache = {};
+const blockAnyItemCache = {};
 exports.blockConsumesItem = (block, item) => {
     if (block == null || item == null) return false;
-    if (mapHasKey(block.ammoTypes, item)) return true;
-    let consumer = consumerByType(block, "item");
-    return anyStackField(consumer, ["items"], item, "item") ||
-           anyConsumer(block, c => anyStackField(c, ["items"], item, "item"));
+    let key = block.id * 65536 + item.id;
+    let cached = blockItemCache[key];
+    if (cached !== undefined) return cached;
+    let out = mapHasKey(block.ammoTypes, item);
+    if (!out) {
+        let consumer = consumerByType(block, "item");
+        out = anyStackField(consumer, ["items"], item, "item") ||
+              anyConsumer(block, c => anyStackField(c, ["items"], item, "item"));
+    }
+    return blockItemCache[key] = out;
 };
 exports.blockConsumesAnyItem = block => {
     if (block == null) return false;
-    try { if (block.ammoTypes != null && block.ammoTypes.size > 0) return true; } catch (e) {}
-    let consumer = consumerByType(block, "item");
-    return anyStackField(consumer, ["items"], null, "item") ||
-           anyConsumer(block, c => anyStackField(c, ["items"], null, "item"));
+    let cached = blockAnyItemCache[block.id];
+    if (cached !== undefined) return cached;
+    let out = false;
+    try { out = block.ammoTypes != null && block.ammoTypes.size > 0; } catch (e) {}
+    if (!out) {
+        let consumer = consumerByType(block, "item");
+        out = anyStackField(consumer, ["items"], null, "item") ||
+              anyConsumer(block, c => anyStackField(c, ["items"], null, "item"));
+    }
+    return blockAnyItemCache[block.id] = out;
 };
 exports.blockOutputsItem = (block, item) => {
     if (block == null || item == null) return false;
@@ -267,22 +282,23 @@ exports.blockOutputsAnyLiquid = block => {
            anyStackField(block, ["outputLiquid", "outputLiquids"], null, "liquid") ||
            directResourceField(block, ["liquidDrop", "pumpLiquid", "outputLiquid"], null);
 };
+function buildAcceptsNow(build, item) {
+    try { if (build.acceptStack(item, 1, null) > 0) return true; } catch (e) {}
+    try { if (build.acceptItem(null, item)) return true; } catch (e) {}
+    return false;
+}
 exports.buildConsumesItem = (build, item) => {
     if (build == null || item == null) return false;
     try { if (build.chronoConsumesItem && build.chronoConsumesItem(item)) return true; } catch (e) {}
-    if (callNumber(build, "acceptStack", [item, 1, null]) > 0) return true;
-    if (callBool(build, "acceptItem", [null, item])) return true;
-    return exports.blockConsumesItem(build.block, item);
+    return exports.blockConsumesItem(build.block, item) || buildAcceptsNow(build, item);
 };
 exports.buildConsumesAnyItem = build => {
     if (build == null) return false;
     try { if (build.chronoConsumesAnyItem && build.chronoConsumesAnyItem()) return true; } catch (e) {}
-    try {
-        for (let i = 0; i < Vars.content.items().size; i++) {
-            if (exports.buildConsumesItem(build, Vars.content.items().get(i))) return true;
-        }
-    } catch (e) {}
-    return exports.blockConsumesAnyItem(build.block);
+    if (exports.blockConsumesAnyItem(build.block)) return true;
+    let items = Vars.content.items();
+    for (let i = 0; i < items.size; i++) if (buildAcceptsNow(build, items.get(i))) return true;
+    return false;
 };
 exports.buildOutputsItem = (build, item) => {
     if (build == null || item == null) return false;
@@ -432,22 +448,23 @@ exports.makeScanJob = (autoFlags, chunkSize) => {
                 for (let si = idx; si < end; si++) {
                     let b = snapshot[si];
                     if (!b || b == the) continue;
-                    if (CHRONO_NAMES.indexOf(b.block.name) >= 0) continue;
-                    if (b.getClass().getSimpleName() === "ConstructBuild") continue;
 
                     let pos = b.pos() | 0;
                     let hasLink = linkSet.has(pos);
 
                     let cat = b.block.category;
-                    let isValidTarget = (
+                    let inCategory =
                           (autoFlags[0] && cat == Category.effect) ||
                           (autoFlags[1] && cat == Category.turret) ||
                           (autoFlags[2] && cat == Category.crafting) ||
                           (autoFlags[3] && cat == Category.power) ||
                           (autoFlags[4] && cat == Category.units) ||
                           (autoFlags[5] && cat == Category.production) ||
-                          (autoFlags[6] && cat == Category.liquid)
-                    ) && lvt(the, b) && (!targetFilter || targetFilter(b));
+                          (autoFlags[6] && cat == Category.liquid);
+                    if (!inCategory && !hasLink) continue;
+                    if (CHRONO_NAMES.indexOf(b.block.name) >= 0) continue;
+                    if (b.block instanceof Packages.mindustry.world.blocks.ConstructBlock) continue;
+                    let isValidTarget = inCategory && lvt(the, b) && (!targetFilter || targetFilter(b));
 
                     if (isValidTarget && !hasLink) {
                         if (batchApply) { toAdd.push(pos); linkSet.add(pos); }

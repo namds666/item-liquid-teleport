@@ -151,7 +151,6 @@ blockType.buildType = prov(() => {
             let s = false;
             for (let i = have.length-1; i >= 0; i--) {
                 let h = have[i], item = h.item, cnt = h.count;
-                if (!lib.buildConsumesItem(target, item)) continue;
                 let acc = Math.min(cnt, target.acceptStack(item, Math.min(cnt, 500), this));
                 if (acc > 0) {
                     s = true; target.handleStack(item, acc, this);
@@ -185,7 +184,6 @@ blockType.buildType = prov(() => {
                         if (pos == null || pos == -1) { this.configure(lib.int(pos)); continue; }
                         let lt = Vars.world.build(pos);
                         if (!lvt(this, lt)) { this.deadLink(pos); if (--max <= 0) break; continue; }
-                        if (!targetFilter(lt)) continue;
                         if (this.sendItems(lt, tmpHave)) { itemSent = true; linksMoved++; }
                     }
                 }
