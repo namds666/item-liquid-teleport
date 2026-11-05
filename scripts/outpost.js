@@ -16,7 +16,7 @@ const MERGE_CHECK = 120;
 const ORPHAN_TIME = 120;
 
 const PATH_CAP = 0, PATH_SPEED = 1, PATH_MINE = 2, PATH_CAPACITY = 3, PATH_TIER = 4, PATH_RANGE = 5, PATH_DROP = 6, PATH_BEAM = 7;
-const CONFIG_RESCAN = -1;
+const CONFIG_RESCAN = -1, CONFIG_STOP = -2, CONFIG_KILL = -3;
 const PATH_KEYS = ["cap", "speed", "mine", "capacity", "tier", "range", "drop", "beam"];
 const LEVELS_PER_RANGE_COST = 10;
 
@@ -210,7 +210,7 @@ function makeDroneAI(initialOutpost, fixedStats, parentUnit) {
 
         updateSubs(unit) {
             let want = Math.min(cfg.subDrone.max, outpost.levelOf(cfg.subDrone.path));
-            if (outpost.subCountOf(unit) >= want) { subTimer = 0; return; }
+            if (outpost.isStopped() || outpost.subCountOf(unit) >= want) { subTimer = 0; return; }
             subTimer += Time.delta;
             if (subTimer < cfg.subDrone.spawnTime || Vars.net.client()) return;
             subTimer = 0;
@@ -384,8 +384,11 @@ blockType.config(Item, lib.cons2((build, item) => build.setSelectedItem(item)));
 blockType.configClear(build => build.setSelectedItem(null));
 blockType.config(java.lang.Boolean, lib.cons2((build, on) => build.setAuto(!!on)));
 blockType.config(java.lang.Integer, lib.cons2((build, path) => {
-    if ((path | 0) == CONFIG_RESCAN) build.rescan();
-    else build.tryUpgrade(path | 0);
+    let code = path | 0;
+    if (code == CONFIG_RESCAN) build.rescan();
+    else if (code == CONFIG_STOP) build.setStopped(!build.isStopped());
+    else if (code == CONFIG_KILL) build.killDrones();
+    else build.tryUpgrade(code);
 }));
 
 function tryMerge(build) {
@@ -398,6 +401,7 @@ blockType.buildType = prov(() => {
     let mergeTimer = 0;
     let subs = [];
     let auto = false;
+    let stopped = false;
     let autoTimer = 0;
     let levels = PATHS.map(() => 0);
     let progress = 0;
@@ -417,6 +421,14 @@ blockType.buildType = prov(() => {
         selectedItem() { return item; },
         setAuto(v) { auto = v; if (auto) this.pickLowest(); },
         isAuto() { return auto; },
+        setStopped(v) { stopped = v; progress = 0; },
+        isStopped() { return stopped; },
+        killDrones() {
+            if (Vars.net.client()) return;
+            for (let i = 0; i < subs.length; i++) if (!subs[i].unit.dead) subs[i].unit.kill();
+            for (let i = 0; i < units.length; i++) if (!units[i].dead) units[i].kill();
+            progress = 0;
+        },
         // Rebuilds the ore index (e.g. after a Chrono Item Tiler painted ore) and sends every drone to a fresh spot.
         rescan() {
             oreIndex.reset();
@@ -450,7 +462,7 @@ blockType.buildType = prov(() => {
         },
         subCount() { pruneSubs(); return subs.length; },
         subCountOf(parent) { pruneSubs(); return subs.filter(s => s.parent == parent).length; },
-        spawnFrac() { return units.length >= this.unitCap() ? 0 : Mathf.clamp(progress / SPAWN_TIME); },
+        spawnFrac() { return stopped || units.length >= this.unitCap() ? 0 : Mathf.clamp(progress / SPAWN_TIME); },
         droneStats() {
             return {
                 speed: PATHS[PATH_SPEED].values[levels[PATH_SPEED]],
@@ -525,7 +537,7 @@ blockType.buildType = prov(() => {
                 if (autoTimer >= ORE_REFIND) { autoTimer = 0; this.pickLowest(); }
             }
             pruneUnits();
-            if (units.length >= this.unitCap()) { progress = 0; return; }
+            if (stopped || units.length >= this.unitCap()) { progress = 0; return; }
             progress += this.edelta();
             if (progress >= SPAWN_TIME) {
                 progress = 0;
@@ -578,7 +590,7 @@ blockType.buildType = prov(() => {
             const build = this;
             const self = this;
             let snapshot = "";
-            const state = () => levels.join(",") + "|" + (item == null ? -1 : item.id) + "|" + auto;
+            const state = () => levels.join(",") + "|" + (item == null ? -1 : item.id) + "|" + auto + "|" + stopped;
             table.background(Styles.black6);
             table.margin(8);
             const root = table.table().get();
@@ -613,6 +625,10 @@ blockType.buildType = prov(() => {
                             .height(32).minWidth(90).checked(boolf(b => auto)).tooltip(bundle("lowest.tooltip"));
                         head.button(bundle("rescan"), run(() => build.configure(lib.int(CONFIG_RESCAN))))
                             .height(32).minWidth(90).padLeft(6).tooltip(bundle("rescan.tooltip"));
+                        head.button(bundle("stop"), Styles.togglet, run(() => build.configure(lib.int(CONFIG_STOP))))
+                            .height(32).minWidth(90).padLeft(6).checked(boolf(b => stopped)).tooltip(bundle("stop.tooltip"));
+                        head.button(bundle("kill"), run(() => build.configure(lib.int(CONFIG_KILL))))
+                            .height(32).minWidth(90).padLeft(6).tooltip(bundle("kill.tooltip"));
                     })).left().colspan(2).row();
                     let ores = oreItems(MAX_TIER);
                     let rows = [
@@ -660,12 +676,13 @@ blockType.buildType = prov(() => {
 
         config() { return auto ? java.lang.Boolean.TRUE : item; },
 
-        version() { return 3; },
+        version() { return 4; },
 
         write(write) {
             this.super$write(write);
             write.s(item == null ? -1 : item.id);
             write.bool(auto);
+            write.bool(stopped);
             write.f(progress);
             write.b(PATHS.length);
             for (let i = 0; i < PATHS.length; i++) write.b(levels[i]);
@@ -682,6 +699,7 @@ blockType.buildType = prov(() => {
             let id = read.s();
             item = id < 0 ? null : Vars.content.items().get(id);
             auto = revision >= 2 ? read.bool() : false;
+            stopped = revision >= 4 ? read.bool() : false;
             progress = read.f();
             let pathCount = read.b();
             for (let i = 0; i < pathCount; i++) {
