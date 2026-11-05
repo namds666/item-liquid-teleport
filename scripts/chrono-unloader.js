@@ -62,9 +62,10 @@ blockType.config(IntSeq, lib.cons2((tile, seq) => {
     if (seq.size >= 2 + lc*2 + 6) tile.setAutoFlagsFromSeq(seq, 2 + lc*2);
     if (seq.size >= 2 + lc*2 + 7) tile.setAutoSteal(seq.get(2 + lc*2 + 6) > 0);
     if (seq.size >= 2 + lc*2 + 8) tile.setAutoLiquid(seq.get(2 + lc*2 + 7) > 0);
+    if (seq.size >= 2 + lc*2 + 9) tile.setAutoCore(seq.get(2 + lc*2 + 8) > 0);
 }));
 blockType.config(java.lang.String, lib.cons2((tile, text) => {
-    let cfg = lib.readTransportConfig(text, tile.tileX(), tile.tileY(), 8);
+    let cfg = lib.readTransportConfig(text, tile.tileX(), tile.tileY(), 9);
     if (cfg == null) return;
     tile.setItemTypeId(cfg.selectedId);
     tile.setLinks(cfg.links);
@@ -79,7 +80,7 @@ blockType.buildType = prov(() => {
     const MAX_LOOP = 100, FRAME_DELAY = 5;
     const timer = new Interval(6);
     let itemType = null, links = new Seq(java.lang.Integer), deadLinks = new Seq(java.lang.Integer);
-    let autoFlags = [false, false, false, false, false, false, false], autoSteal = false;
+    let autoFlags = [false, false, false, false, false, false, false, false], autoSteal = false;
     let slowdownDelay = 0, warmup = 0, rotateDeg = 0, rotateSpeed = 0, consValid = false;
     const looper = (() => { let idx = 0; return { next(m) { if (idx < 0 || idx >= m) idx = m-1; let v = idx; idx--; return v; } }; })();
     function lvt(the, t) { return t && t.items != null; }
@@ -138,10 +139,12 @@ blockType.buildType = prov(() => {
             for (let i = 0; i < 6; i++) autoFlags[i] = !!values[i];
             autoSteal = !!values[6];
             autoFlags[6] = !!values[7];
+            autoFlags[7] = !!values[8];
             pruneLinks(this);
         },
         setAutoSteal(v) { autoSteal = !!v; pruneLinks(this); },
         setAutoLiquid(v) { autoFlags[6] = !!v; },
+        setAutoCore(v) { autoFlags[7] = !!v; },
         deadLink(v) {
             if (Vars.net.client()) return;
             let int = new java.lang.Integer(v);
@@ -248,12 +251,12 @@ blockType.buildType = prov(() => {
             })).row();
         },
         config() {
-            return lib.transportConfig(itemType == null ? -1 : itemType.id, links, this.tile.x, this.tile.y, autoFlags.slice(0, 6).concat([autoSteal, autoFlags[6]]));
+            return lib.transportConfig(itemType == null ? -1 : itemType.id, links, this.tile.x, this.tile.y, autoFlags.slice(0, 6).concat([autoSteal, autoFlags[6], autoFlags[7]]));
         },
         outputsItems() { return true; },
         add() { if (this.added) return; theGroup.add(this); this.super$add(); },
         remove() { if (!this.added) return; theGroup.remove(this); this.super$remove(); },
-        version() { return 6; },
+        version() { return 7; },
         canDump(to, item) { return this.linkedCore == null && !links.contains(boolf(pos => { return to == Vars.world.build(pos); })); },
         acceptItem(source, item) { return this.linkedCore != null; },
         acceptStack(item, amount, source) {
@@ -267,6 +270,7 @@ blockType.buildType = prov(() => {
             write.bool(autoFlags[0]); write.bool(autoFlags[1]); write.bool(autoFlags[2]); write.bool(autoFlags[3]); write.bool(autoFlags[4]); write.bool(autoFlags[5]);
             write.bool(autoSteal);
             write.bool(autoFlags[6]);
+            write.bool(autoFlags[7]);
         },
         read(read, revision) {
             this.super$read(read, revision);
@@ -277,6 +281,7 @@ blockType.buildType = prov(() => {
             if (revision >= 4) { autoFlags[4] = read.bool(); autoFlags[5] = read.bool(); }
             if (revision >= 5) autoSteal = read.bool();
             if (revision >= 6) autoFlags[6] = read.bool();
+            if (revision >= 7) autoFlags[7] = read.bool();
         },
     }, blockType);
 });

@@ -29,7 +29,7 @@ const blockType = extend(StorageBlock, "chrono-pusher", {
             let candidateLinks = config.get(1);
             let afterCandidateLinks = 2 + candidateLinks * 2;
             let remaining = config.size - afterCandidateLinks;
-            selectedFormat = candidateLinks >= 0 && afterCandidateLinks <= config.size && remaining >= 6 && remaining <= 7;
+            selectedFormat = candidateLinks >= 0 && afterCandidateLinks <= config.size && remaining >= 6 && remaining <= 8;
         }
         let selectedId = selectedFormat ? config.get(0) : -1;
         let lc         = selectedFormat ? config.get(1) : config.get(0);
@@ -72,7 +72,7 @@ blockType.config(IntSeq, lib.cons2((tile, sq) => {
         let candidateLinks = sq.get(1);
         let afterCandidateLinks = 2 + candidateLinks * 2;
         let remaining = sq.size - afterCandidateLinks;
-        selectedFormat = candidateLinks >= 0 && afterCandidateLinks <= sq.size && remaining >= 6 && remaining <= 7;
+        selectedFormat = candidateLinks >= 0 && afterCandidateLinks <= sq.size && remaining >= 6 && remaining <= 8;
     }
     let selectedId = selectedFormat ? sq.get(0) : -1;
     let lc         = selectedFormat ? sq.get(1) : sq.get(0);
@@ -89,7 +89,7 @@ blockType.config(IntSeq, lib.cons2((tile, sq) => {
     if (sq.size >= autoStart + 6) tile.setAutoFlagsFromSeq(sq, autoStart);
 }));
 blockType.config(java.lang.String, lib.cons2((tile, text) => {
-    let cfg = lib.readTransportConfig(text, tile.tileX(), tile.tileY(), 7);
+    let cfg = lib.readTransportConfig(text, tile.tileX(), tile.tileY(), 8);
     if (cfg == null) return;
     tile.setSelectedItemId(cfg.selectedId);
     tile.setLink(cfg.links);
@@ -104,7 +104,7 @@ blockType.buildType = prov(() => {
     const MAX_LOOP = 100, FRAME_DELAY = 5;
     const timer = new Interval(6);
     let links = new Seq(java.lang.Integer), deadLinks = new Seq(java.lang.Integer);
-    let autoFlags = [false, false, false, false, false, false, false];
+    let autoFlags = [false, false, false, false, false, false, false, false];
     let selectedItem = null;
     let warmup = 0, rotateDeg = 0, rotateSpeed = 0, consValid = false, itemSent = false;
     const looper = (() => { let idx = 0; return { next(m) { if (idx < 0 || idx >= m) idx = m-1; let v = idx; idx--; return v; } }; })();
@@ -253,7 +253,7 @@ blockType.buildType = prov(() => {
         },
         add() { if (this.added) return; rdcGroup.add(this); this.super$add(); },
         remove() { if (!this.added) return; rdcGroup.remove(this); this.super$remove(); },
-        version() { return 4; },
+        version() { return 5; },
         write(write) {
             this.super$write(write);
             write.s(selectedItem == null ? -1 : selectedItem.id);
@@ -261,6 +261,7 @@ blockType.buildType = prov(() => {
             let it = links.iterator(); while (it.hasNext()) write.i(it.next());
             write.bool(autoFlags[0]); write.bool(autoFlags[1]); write.bool(autoFlags[2]); write.bool(autoFlags[3]); write.bool(autoFlags[4]); write.bool(autoFlags[5]);
             write.bool(autoFlags[6]);
+            write.bool(autoFlags[7]);
         },
         read(read, revision) {
             this.super$read(read, revision);
@@ -270,6 +271,7 @@ blockType.buildType = prov(() => {
             if (revision >= 1) { autoFlags[0] = read.bool(); autoFlags[1] = read.bool(); autoFlags[2] = read.bool(); autoFlags[3] = read.bool(); }
             if (revision >= 2) { autoFlags[4] = read.bool(); autoFlags[5] = read.bool(); }
             if (revision >= 4) autoFlags[6] = read.bool();
+            if (revision >= 5) autoFlags[7] = read.bool();
         },
     }, blockType);
 });

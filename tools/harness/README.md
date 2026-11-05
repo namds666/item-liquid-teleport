@@ -5,7 +5,7 @@ Runs the mod inside the official Mindustry server with a tiny helper mod
 lets the game run 300 ticks, and prints `TEST <name> PASS|FAIL <details>`
 per block plus a final `RESULT`.
 
-Covered: mender, unloader, pusher (container and crafter targets), liquid
+Covered: mender, unloader, pusher (container and crafter targets), pusher-core-auto and unloader-core-auto (the Core auto flag links Serpulo and Erekir cores, not containers), liquid
 unloader, liquid pusher, item converter, liquid tiler, item tiler, repair
 point, build tower (rebuilds a destroyed wall), build tower parallel (4 towers take 4 different queued plans of one builder), booster, buffer, debuffer,
 core, outpost range levels (11 mine range upgrades: level, range, cost tier switch), chrono-hypno-upgrade (3 upgrades: level, channel, exact core cost). `api-types` is informational: it prints how Rhino resolves

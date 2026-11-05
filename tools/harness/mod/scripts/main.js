@@ -189,6 +189,28 @@ test("pusher-crafter", 7, 2, (a, s) => {
     return { pass: got > 0, info: "press.coal=" + s.press.items.get(Items.coal) + " graphite=" + s.press.items.get(Items.graphite) + " pusher.coal=" + s.pusher.items.get(Items.coal) + " links=" + s.pusher.getLink().size };
 });
 
+// Core auto flag links every own core, Serpulo and Erekir alike, and nothing else.
+test("pusher-core-auto", 9, 5, (a, s) => {
+    s.bastion = place(Blocks.coreBastion, a.x + 2, a.y + 2);
+    s.box = place(Blocks.container, a.x + 7, a.y);
+    s.pusher = place(modBlock("chrono-pusher"), a.x + 7, a.y + 3);
+    s.pusher.setAutoFlagsFromArray([false, false, false, false, false, false, false, true]);
+}, (a, s) => {
+    let links = s.pusher.getLink(), has = b => links.contains(boolf(i => i == b.pos()));
+    let shard = has(TEAM.core()), bastion = has(s.bastion), box = has(s.box);
+    return { pass: shard && bastion && !box, info: "shard=" + shard + " bastion=" + bastion + " container=" + box + " links=" + links.size };
+});
+
+test("unloader-core-auto", 4, 2, (a, s) => {
+    s.unl = place(modBlock("chrono-unloader"), a.x, a.y);
+    s.unl.configured(null, Items.copper);
+    s.unl.setAutoFlagsFromArray([false, false, false, false, false, false, false, false, true]);
+}, (a, s) => {
+    let links = s.unl.getLinks(), core = TEAM.core();
+    let has = links.contains(boolf(i => i == core.pos()));
+    return { pass: has, info: "core=" + has + " links=" + links.size };
+});
+
 test("api-types", 12, 2, (a, s) => {
     let objs = {
         wall: place(Blocks.copperWall, a.x, a.y),

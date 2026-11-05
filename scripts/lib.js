@@ -460,7 +460,8 @@ exports.makeScanJob = (autoFlags, chunkSize) => {
                           (autoFlags[3] && cat == Category.power) ||
                           (autoFlags[4] && cat == Category.units) ||
                           (autoFlags[5] && cat == Category.production) ||
-                          (autoFlags[6] && cat == Category.liquid);
+                          (autoFlags[6] && cat == Category.liquid) ||
+                          (autoFlags[7] && b.block instanceof CoreBlock);
                     if (!inCategory && !hasLink) continue;
                     if (CHRONO_NAMES.indexOf(b.block.name) >= 0) continue;
                     if (b.block instanceof Packages.mindustry.world.blocks.ConstructBlock) continue;
@@ -554,7 +555,12 @@ exports.addAutoConnectButtons = (table, the, getLinks, lvt, clearFn, autoFlags, 
     makeCheck(table, autoFlags, 5);
     table.button("Drill", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.production, targetFilter); })).size(bw, bh).row();
     makeCheck(table, autoFlags, 6);
-    table.button("Liquid", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.liquid, targetFilter); })).size(bw, bh).row();
+    let liquid = table.button("Liquid", run(() => { autoConnect(the, getLinks, lvt, b => b.block.category == Category.liquid, targetFilter); })).size(bw, bh).padRight(sp);
+    if (autoFlags.length > 7) {
+        makeCheck(table, autoFlags, 7);
+        table.button("Core", run(() => { autoConnect(the, getLinks, lvt, b => b.block instanceof CoreBlock, targetFilter); })).size(bw, bh);
+    }
+    table.row();
     table.button("Clear All Links", run(() => { the.configure(clearFn()); })).size(bw * 2 + cw * 2 + sp, bh).colspan(4).padTop(4).row();
 };
 exports.newEffect = (lifetime, renderer) => new Effect(lifetime, cons(renderer));
